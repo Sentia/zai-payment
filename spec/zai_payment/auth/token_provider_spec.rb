@@ -145,7 +145,7 @@ RSpec.describe ZaiPayment::Auth::TokenProvider do
         'access_token' => 'new_access_token',
         'expires_in' => 7200,
         'token_type' => 'Bearer'
-      }.to_json
+      }
     end
 
     before do
@@ -199,7 +199,7 @@ RSpec.describe ZaiPayment::Auth::TokenProvider do
         {
           'expires_in' => 7200,
           'token_type' => 'Bearer'
-        }.to_json
+        }
       end
 
       it 'raises an AuthError' do
@@ -216,7 +216,7 @@ RSpec.describe ZaiPayment::Auth::TokenProvider do
           'token' => 'alternative_token_value',
           'expires_in' => 3600,
           'token_type' => 'Bearer'
-        }.to_json
+        }
       end
 
       it 'extracts the token value correctly' do
@@ -230,7 +230,7 @@ RSpec.describe ZaiPayment::Auth::TokenProvider do
         {
           'access_token' => 'new_access_token',
           'token_type' => 'Bearer'
-        }.to_json
+        }
       end
 
       it 'defaults to 3600 seconds' do
@@ -321,7 +321,7 @@ RSpec.describe ZaiPayment::Auth::TokenProvider do
         'access_token' => 'parsed_token',
         'expires_in' => 1800,
         'token_type' => 'Bearer'
-      }.to_json
+      }
     end
 
     let(:response) do
@@ -346,13 +346,13 @@ RSpec.describe ZaiPayment::Auth::TokenProvider do
       expect(token.expires_at).to eq(expected_expiration)
     end
 
-    context 'when response body is malformed' do
-      let(:response_body) { 'invalid json' }
+    context 'when response body is missing access_token' do
+      let(:response_body) { {} }
 
-      it 'raises a JSON parse error' do
+      it 'raises an AuthError' do
         expect do
           provider.send(:parse_token_response, response)
-        end.to raise_error(JSON::ParserError)
+        end.to raise_error(ZaiPayment::Errors::AuthError, 'No access_token found')
       end
     end
   end

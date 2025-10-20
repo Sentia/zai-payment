@@ -59,7 +59,7 @@ module ZaiPayment
       end
 
       def parse_token_response(resp)
-        data = JSON.parse(resp.body)
+        data = resp.body
         token_value = data['access_token'] || data['token']
         expires_in  = (data['expires_in'] || 3600).to_i
         data['token_type'] || 'Bearer'
