@@ -1,0 +1,13 @@
+plugins:
+  - rubocop-performance
+  - rubocop-rspec
+  - rubocop-packaging
+
+AllCops:
+  TargetRubyVersion: 3.2
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'spec/fixtures/**/*'
+    - 'vendor/**/*'
+    - 'bin/*'

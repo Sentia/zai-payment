@@ -8,6 +8,14 @@ gemspec
 gem 'irb'
 gem 'rake', '~> 13.0'
 
-gem 'rspec', '~> 3.0'
+group :development, :test do
+  gem 'rspec'
+  gem 'simplecov', require: false
+  gem 'vcr', require: false
+  gem 'webmock', require: false
 
-gem 'rubocop', '~> 1.21'
+  gem 'rubocop', require: false
+  gem 'rubocop-packaging', require: false
+  gem 'rubocop-performance', require: false
+  gem 'rubocop-rspec', require: false
+end
