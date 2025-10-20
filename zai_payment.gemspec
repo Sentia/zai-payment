@@ -8,16 +8,16 @@ Gem::Specification.new do |spec|
   spec.authors = ['Eddy Jaga']
   spec.email = ['eddy.jaga@sentia.com.au']
 
-  spec.summary = 'TODO: Write a short summary, because RubyGems requires one.'
-  spec.description = 'TODO: Write a longer description or delete this line.'
-  spec.homepage = "TODO: Put your gem's website or public repo URL here."
+  spec.summary = 'Ruby gem for Zai payment integration'
+  spec.description = 'A Ruby gem for integrating with Zai payment platform APIs.'
+  spec.homepage = "https://github.com/Sentia/zai-payment"
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.2.0'
 
-  spec.metadata['allowed_push_host'] = "TODO: Set to your gem server 'https://example.com'"
+  spec.metadata['allowed_push_host'] = "https://rubygems.org"
   spec.metadata['homepage_uri'] = spec.homepage
-  spec.metadata['source_code_uri'] = "TODO: Put your gem's public repo URL here."
-  spec.metadata['changelog_uri'] = "TODO: Put your gem's CHANGELOG.md URL here."
+  spec.metadata['source_code_uri'] = "https://github.com/Sentia/zai-payment"
+  spec.metadata['changelog_uri'] = "https://github.com/Sentia/zai-payment/CHANGELOG.md"
   spec.metadata['rubygems_mfa_required'] = 'true'
 
   # Specify which files should be added to the gem when it is released.
