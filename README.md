@@ -1,4 +1,4 @@
-# ZaiPayment
+# Zai Payment Ruby Library
 
 [![CI](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml/badge.svg)](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml)
 
