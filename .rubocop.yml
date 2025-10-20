@@ -11,3 +11,10 @@ AllCops:
     - 'spec/fixtures/**/*'
     - 'vendor/**/*'
     - 'bin/*'
+
+Metrics/MethodLength:
+  Max: 20
+
+Style/Documentation:
+  Description: "Document classes and non-namespace modules."
+  Enabled: false
