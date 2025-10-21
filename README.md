@@ -2,44 +2,134 @@
 
 [![CI](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml/badge.svg)](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml)
 
-TODO: Delete this and the text below, and describe your gem
+A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — starting with secure OAuth2 authentication, and ready for Payments, Virtual Accounts, Webhooks, and more.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/zai_payment`. To experiment with that code, run `bin/console` for an interactive prompt.
+---
 
-## Installation
+## ✨ Features
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+- 🔐 OAuth2 Client Credentials authentication with automatic token management  
+- 🧠 Smart token caching and refresh  
+- ⚙️ Environment-aware (Pre-live / Production)  
+- 🧱 Modular structure: easy to extend to Payments, Wallets, Webhooks, etc.  
+- 🧩 Thread-safe in-memory store (Redis support coming soon)  
+- 🧰 Simple Ruby API, no heavy dependencies  
 
-Install the gem and add to the application's Gemfile by executing:
+---
 
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+## 🧭 Installation
+
+### From GitHub (private repo)
+Add this line to your Gemfile:
+
+```ruby
+gem "zai_payment",
+    git: "https://github.com/Sentia/zai-payment.git",
+    branch: "main"
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+Then install
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+bundle install
 ```
 
-## Usage
+## ⚙️ Configuration
 
-TODO: Write usage instructions here
+```ruby
+# config/initializers/zai_payment.rb
+ZaiPayment.configure do |c|
+  c.environment   = Rails.env.production? ? :production : :prelive
+  c.client_id     = ENV.fetch("ZAI_CLIENT_ID")
+  c.client_secret = ENV.fetch("ZAI_CLIENT_SECRET")
+  c.scope         = ENV.fetch("ZAI_OAUTH_SCOPE")
+end
+```
 
-## Development
+## 🚀 Authentication
+
+The Zai Payment gem implements OAuth2 Client Credentials flow for secure authentication with the Zai API. The gem intelligently manages your authentication tokens behind the scenes, so you don't have to worry about token expiration or manual refreshes.
+
+When you request a token, the gem automatically caches it and reuses it for subsequent requests. Since Zai tokens expire after 60 minutes, the gem monitors the token lifetime and seamlessly refreshes it before expiration — ensuring your API calls never fail due to stale credentials.
+
+This automatic token management means you can focus on building your integration while the gem handles all the authentication complexity for you. Simply configure your credentials once, and the gem takes care of the rest.
+
+For more details about Zai's OAuth2 authentication, see the [official documentation](https://developer.hellozai.com/reference/overview#authentication).
+
+```ruby
+client = ZaiPayment::Auth::TokenProvider.new(config: ZaiPayment.config)
+
+client.bearer_token
+```
+
+Or, more easily, you can get a token with the convenience one-liner:
+
+
+```ruby
+ZaiPayment.token
+```
+
+## 🧩 Roadmap
+
+| Area                            | Description                       | Status         |
+| ------------------------------- | --------------------------------- | -------------- |
+| ✅ Authentication                | OAuth2 Client Credentials flow    | Done           |
+| 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
+| 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
+| 🧾 Webhooks                     | CRUD for webhook endpoints        | ⏳ Planned      |
+| 👤 Users                        | Manage PayIn / PayOut users       | ⏳ Planned      |
+| 💼 Wallets                      | Create and manage wallet accounts | ⏳ Planned      |
+
+## 🧪 Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+To install this gem onto your local machine, run `bundle exec rake install`.
 
-## Contributing
+### Running Tests
+
+```bash
+bundle exec rspec
+```
+
+### Code Quality
+
+This project uses RuboCop for linting. Run it with:
+
+```bash
+bundle exec rubocop
+```
+
+### Interactive Console
+
+For development and testing, use the interactive console:
+
+```bash
+bin/console
+```
+
+This will load the gem and all its dependencies, allowing you to experiment with the API in a REPL environment.
+
+## 🧾 Versioning
+This gem follows [Semantic Versioning](https://semver.org).
+
+See [CHANGELOG.md](./CHANGELOG.md) for release history.
+
+
+## 🤝 Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/Sentia/zai-payment. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/Sentia/zai-payment/blob/main/CODE_OF_CONDUCT.md).
 
-## License
+## 🪪 License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 ## Code of Conduct
 
 Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/Sentia/zai-payment/blob/main/CODE_OF_CONDUCT.md).
+
+## 🔗 Resources
+
+- [Zai Developer Portal](https://developer.hellozai.com/)
+- [Zai API Reference](https://developer.hellozai.com/reference)
+- [AssemblyPay Auth Documentation](https://developer.hellozai.com/docs/introduction)
