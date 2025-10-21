@@ -8,9 +8,9 @@ require 'faraday'
 module ZaiPayment
   module Auth
     class TokenProvider
-      def initialize(config:, store:)
+      def initialize(config:, store: nil)
         @config = config
-        @store  = store
+        @store  = store || TokenStores::MemoryStore.new
         @mutex  = Mutex.new
       end
 
@@ -27,6 +27,29 @@ module ZaiPayment
           @store.write(new_token)
           "Bearer #{new_token.value}"
         end
+      end
+
+      # Force refresh: clears current token then fetches a new one
+      def refresh_token
+        clear_token
+        bearer_token
+      end
+
+      # Clear cached token (next call will re-auth)
+      def clear_token
+        @store.clear
+      end
+
+      # Returns a Time (or nil if no token cached)
+      def token_expiry
+        token = @store.fetch
+        token&.expires_at
+      end
+
+      # Returns the token type string (e.g., "Bearer") or nil if none cached
+      def token_type
+        token = @store.fetch
+        token&.type
       end
 
       private
@@ -62,13 +85,14 @@ module ZaiPayment
         data = resp.body
         token_value = data['access_token'] || data['token']
         expires_in  = (data['expires_in'] || 3600).to_i
-        data['token_type'] || 'Bearer'
+        token_type  = data['token_type'] || 'Bearer'
 
         raise ZaiPayment::Errors::AuthError, 'No access_token found' unless token_value
 
         TokenStore::Token.new(
           value: token_value,
-          expires_at: Time.now + expires_in - 60
+          expires_at: Time.now + expires_in - 60,
+          type: token_type
         )
       end
     end

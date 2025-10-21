@@ -3,7 +3,7 @@
 module ZaiPayment
   module Auth
     class TokenStore
-      Token = Struct.new(:value, :expires_at, keyword_init: true)
+      Token = Struct.new(:value, :expires_at, :type, keyword_init: true)
 
       def fetch = raise(NotImplementedError)
       def write(token) = raise(NotImplementedError)
