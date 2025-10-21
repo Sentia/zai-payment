@@ -17,5 +17,17 @@ module ZaiPayment
     def configure
       yield config
     end
+
+    # Singleton auth token provider (uses default MemoryStore under the hood)
+    def auth
+      @auth ||= ZaiPayment::Auth::TokenProvider.new(config: config)
+    end
+
+    # --- Convenience one-liners ---
+    def token            = auth.bearer_token
+    def refresh_token!   = auth.refresh_token
+    def clear_token!     = auth.clear_token
+    def token_expiry     = auth.token_expiry
+    def token_type       = auth.token_type
   end
 end
