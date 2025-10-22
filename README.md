@@ -67,14 +67,78 @@ Or, more easily, you can get a token with the convenience one-liner:
 ZaiPayment.token
 ```
 
+## 🚀 Usage
+
+### Webhooks
+
+The gem provides a comprehensive interface for managing Zai webhooks:
+
+```ruby
+# List all webhooks
+response = ZaiPayment.webhooks.list
+webhooks = response.data
+
+# List with pagination
+response = ZaiPayment.webhooks.list(limit: 20, offset: 10)
+
+# Get a specific webhook
+response = ZaiPayment.webhooks.show('webhook_id')
+webhook = response.data
+
+# Create a webhook
+response = ZaiPayment.webhooks.create(
+  url: 'https://example.com/webhooks/zai',
+  object_type: 'transactions',
+  enabled: true,
+  description: 'Production webhook for transactions'
+)
+
+# Update a webhook
+response = ZaiPayment.webhooks.update(
+  'webhook_id',
+  enabled: false,
+  description: 'Temporarily disabled'
+)
+
+# Delete a webhook
+response = ZaiPayment.webhooks.delete('webhook_id')
+```
+
+For more examples, see [examples/webhooks.rb](examples/webhooks.rb).
+
+### Error Handling
+
+The gem provides specific error classes for different scenarios:
+
+```ruby
+begin
+  response = ZaiPayment.webhooks.create(
+    url: 'https://example.com/webhook',
+    object_type: 'transactions'
+  )
+rescue ZaiPayment::Errors::ValidationError => e
+  # Handle validation errors (400, 422)
+  puts "Validation error: #{e.message}"
+rescue ZaiPayment::Errors::UnauthorizedError => e
+  # Handle authentication errors (401)
+  puts "Authentication failed: #{e.message}"
+rescue ZaiPayment::Errors::NotFoundError => e
+  # Handle not found errors (404)
+  puts "Resource not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  # Handle other API errors
+  puts "API error: #{e.message}"
+end
+```
+
 ## 🧩 Roadmap
 
 | Area                            | Description                       | Status         |
 | ------------------------------- | --------------------------------- | -------------- |
 | ✅ Authentication                | OAuth2 Client Credentials flow    | Done           |
+| ✅ Webhooks                     | CRUD for webhook endpoints        | Done           |
 | 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
 | 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
-| 🧾 Webhooks                     | CRUD for webhook endpoints        | ⏳ Planned      |
 | 👤 Users                        | Manage PayIn / PayOut users       | ⏳ Planned      |
 | 💼 Wallets                      | Create and manage wallet accounts | ⏳ Planned      |
 

@@ -1,0 +1,99 @@
+# frozen_string_literal: true
+
+require 'faraday'
+
+module ZaiPayment
+  # Base API client that handles HTTP requests to Zai API
+  class Client
+    attr_reader :config, :token_provider
+
+    def initialize(config: nil, token_provider: nil)
+      @config = config || ZaiPayment.config
+      @token_provider = token_provider || ZaiPayment.auth
+    end
+
+    # Perform a GET request
+    #
+    # @param path [String] the API endpoint path
+    # @param params [Hash] query parameters
+    # @return [Response] the API response
+    def get(path, params: {})
+      request(:get, path, params: params)
+    end
+
+    # Perform a POST request
+    #
+    # @param path [String] the API endpoint path
+    # @param body [Hash] request body
+    # @return [Response] the API response
+    def post(path, body: {})
+      request(:post, path, body: body)
+    end
+
+    # Perform a PATCH request
+    #
+    # @param path [String] the API endpoint path
+    # @param body [Hash] request body
+    # @return [Response] the API response
+    def patch(path, body: {})
+      request(:patch, path, body: body)
+    end
+
+    # Perform a DELETE request
+    #
+    # @param path [String] the API endpoint path
+    # @return [Response] the API response
+    def delete(path)
+      request(:delete, path)
+    end
+
+    private
+
+    def request(method, path, params: {}, body: {})
+      response = connection.public_send(method) do |req|
+        req.url path
+        req.params = params if params.any?
+        req.body = body if body.any?
+      end
+
+      Response.new(response)
+    rescue Faraday::Error => e
+      handle_faraday_error(e)
+    end
+
+    def connection
+      @connection ||= Faraday.new do |faraday|
+        faraday.url_prefix = base_url
+        faraday.headers['Authorization'] = token_provider.bearer_token
+        faraday.headers['Content-Type'] = 'application/json'
+        faraday.headers['Accept'] = 'application/json'
+
+        faraday.request :json
+        faraday.response :json, content_type: /\bjson$/
+
+        faraday.options.timeout = config.timeout if config.timeout
+        faraday.options.open_timeout = config.open_timeout if config.open_timeout
+
+        faraday.adapter Faraday.default_adapter
+      end
+    end
+
+    def base_url
+      # Webhooks API uses va_base endpoint
+      config.endpoints[:va_base]
+    end
+
+    def handle_faraday_error(error)
+      case error
+      when Faraday::TimeoutError
+        raise Errors::TimeoutError, "Request timed out: #{error.message}"
+      when Faraday::ConnectionFailed
+        raise Errors::ConnectionError, "Connection failed: #{error.message}"
+      when Faraday::ClientError
+        raise Errors::ApiError, "Client error: #{error.message}"
+      else
+        raise Errors::ApiError, "Request failed: #{error.message}"
+      end
+    end
+  end
+end

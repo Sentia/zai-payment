@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.metadata['allowed_push_host'] = 'https://rubygems.org'
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = 'https://github.com/Sentia/zai-payment'
-  spec.metadata['changelog_uri'] = 'https://github.com/Sentia/zai-payment/blob/main/CHANGELOG.md'
+  spec.metadata['changelog_uri'] = 'https://github.com/Sentia/zai-payment/releases'
   spec.metadata['code_of_conduct_uri'] = 'https://github.com/Sentia/zai-payment/blob/main/CODE_OF_CONDUCT.md'
   spec.metadata['rubygems_mfa_required'] = 'true'
   spec.metadata['documentation_uri'] = 'https://github.com/Sentia/zai-payment#readme'

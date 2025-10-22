@@ -10,6 +10,8 @@ module ZaiPayment
       @client_id    = nil
       @client_secret = nil
       @scope = nil
+      @timeout = 10
+      @open_timeout = 10
     end
 
     def validate!
