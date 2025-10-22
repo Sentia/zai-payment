@@ -106,7 +106,7 @@ Please follow these steps to have your contribution considered by the maintainer
 1. **Fork and clone the repository:**
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/zai-payment.git
+git clone git@github.com:Sentia/zai-payment.git
 cd zai-payment
 ```
 
