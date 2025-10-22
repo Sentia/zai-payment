@@ -19,7 +19,6 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 
 ## 🧭 Installation
 
-### From GitHub (private repo)
 Add this line to your Gemfile:
 
 ```ruby
