@@ -123,8 +123,8 @@ end
 
 ## 📚 Full Documentation
 
-- [Complete Setup Guide](docs/WEBHOOKS.md#webhook-security-signature-verification)
-- [More Examples](examples/webhooks.md#webhook-security-complete-setup-guide)
+- [Complete Setup Guide](WEBHOOKS.md#webhook-security-signature-verification)
+- [More Examples](../examples/webhooks.md#webhook-security-complete-setup-guide)
 - [Zai Official Docs](https://developer.hellozai.com/docs/verify-webhook-signatures)
 
 ## 💡 Pro Tips
@@ -134,8 +134,3 @@ end
 3. **Add Rate Limiting**: Protect against DoS attacks
 4. **Log Everything**: Monitor for suspicious activity
 5. **Test Replay Attacks**: Ensure old webhooks are rejected
-
----
-
-**Need Help?** See the [full implementation guide](WEBHOOK_SIGNATURE_IMPLEMENTATION.md)
-

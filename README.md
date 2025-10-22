@@ -23,7 +23,7 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 Add this line to your Gemfile:
 
 ```ruby
-gem 'zai_payment', '~> 1.0', '>= 1.0.2'
+gem 'zai_payment'
 ```
 
 Then install
