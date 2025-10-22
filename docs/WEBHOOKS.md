@@ -153,5 +153,5 @@ For the official Zai API documentation, see:
 - [Show Webhook](https://developer.hellozai.com/reference/getwebhookbyid)
 - [Create Webhook](https://developer.hellozai.com/reference/createwebhook)
 - [Update Webhook](https://developer.hellozai.com/reference/updatewebhook)
-- [Delete Webhook](https://developer.hellozai.com/reference/deletewebhook)
+- [Delete Webhook](https://developer.hellozai.com/reference/deletewebhookbyid)
 
