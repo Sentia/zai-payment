@@ -44,7 +44,9 @@ ZaiPayment.configure do |c|
 end
 ```
 
-## 🚀 Authentication
+## 🚀 Usage
+
+### Authentication
 
 The Zai Payment gem implements OAuth2 Client Credentials flow for secure authentication with the Zai API. The gem intelligently manages your authentication tokens behind the scenes, so you don't have to worry about token expiration or manual refreshes.
 
@@ -66,8 +68,6 @@ Or, more easily, you can get a token with the convenience one-liner:
 ```ruby
 ZaiPayment.token
 ```
-
-## 🚀 Usage
 
 ### Webhooks
 
