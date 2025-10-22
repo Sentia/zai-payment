@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    zai-payment (1.0.1)
+    zai_payment (1.0.2)
       faraday (~> 2.0)
 
 GEM
@@ -132,7 +132,7 @@ DEPENDENCIES
   simplecov
   vcr
   webmock
-  zai-payment!
+  zai_payment!
 
 BUNDLED WITH
    2.7.1

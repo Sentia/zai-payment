@@ -3,7 +3,7 @@
 require_relative 'lib/zai_payment/version'
 
 Gem::Specification.new do |spec|
-  spec.name = 'zai-payment'
+  spec.name = 'zai_payment'
   spec.version = ZaiPayment::VERSION
   spec.authors = ['Eddy Jaga']
   spec.email = ['eddy.jaga@sentia.com.au']
@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
   spec.metadata['changelog_uri'] = 'https://github.com/Sentia/zai-payment/blob/main/CHANGELOG.md'
   spec.metadata['code_of_conduct_uri'] = 'https://github.com/Sentia/zai-payment/blob/main/CODE_OF_CONDUCT.md'
   spec.metadata['rubygems_mfa_required'] = 'true'
+  spec.metadata['documentation_uri'] = 'https://github.com/Sentia/zai-payment#readme'
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
