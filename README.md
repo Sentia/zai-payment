@@ -2,6 +2,7 @@
 ![GitHub License](https://img.shields.io/github/license/Sentia/zai-payment)
 [![Gem Version](https://badge.fury.io/rb/zai_payment.svg)](https://badge.fury.io/rb/zai_payment)
 [![CI](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml/badge.svg)](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Sentia/zai-payment/main/badges/coverage.json)
 ![GitHub top language](https://img.shields.io/github/languages/top/Sentia/zai-payment)
 
 
