@@ -1,6 +1,7 @@
 # Zai Payment Ruby Library
 
 ![GitHub License](https://img.shields.io/github/license/Sentia/zai-payment)
+[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-MIT-blue.svg)](./CODE_OF_CONDUCT.md)
 [![Gem Version](https://badge.fury.io/rb/zai_payment.svg)](https://badge.fury.io/rb/zai_payment)
 [![GitHub release](https://img.shields.io/github/release/Sentia/zai-payment.svg)](https://github.com/Sentia/zai-payment/releases)
 [![Gem](https://img.shields.io/gem/dt/zai_payment.svg)](https://rubygems.org/gems/zai_payment)
@@ -9,7 +10,6 @@
 ![GitHub top language](https://img.shields.io/github/languages/top/Sentia/zai-payment)
 [![Documentation](https://img.shields.io/badge/docs-rubydoc.info-blue.svg)](https://rubydoc.info/gems/zai_payment)
 [![Contributing](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](./CONTRIBUTING.md)
-[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-MIT-blue.svg)](./CODE_OF_CONDUCT.md)
 
 A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — starting with secure OAuth2 authentication, and ready for Payments, Virtual Accounts, Webhooks, and more.
 

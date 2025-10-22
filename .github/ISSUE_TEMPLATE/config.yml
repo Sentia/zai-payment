@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community Discussion
+    url: https://github.com/Sentia/zai-payment/discussions
+    about: Ask questions and discuss with other community members
+  - name: 📖 Documentation
+    url: https://rubydoc.info/gems/zai_payment
+    about: Read the documentation for usage guides and API reference
+
