@@ -226,7 +226,8 @@ RSpec.describe ZaiPayment::Resources::Webhook do
     context 'when url is invalid' do
       it 'raises a ValidationError' do
         params = webhook_params.merge(url: 'not-a-valid-url')
-        expect { webhook_resource.create(**params) }.to raise_error(ZaiPayment::Errors::ValidationError, /valid URL/)
+        expect { webhook_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /valid HTTP or HTTPS URL/)
       end
     end
 
@@ -296,7 +297,7 @@ RSpec.describe ZaiPayment::Resources::Webhook do
       it 'raises a ValidationError' do
         expect do
           webhook_resource.update('webhook_123', url: 'invalid-url')
-        end.to raise_error(ZaiPayment::Errors::ValidationError, /valid URL/)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /valid HTTP or HTTPS URL/)
       end
     end
 

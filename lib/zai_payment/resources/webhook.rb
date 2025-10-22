@@ -66,7 +66,7 @@ module ZaiPayment
       #   )
       #
       # @see https://developer.hellozai.com/reference/createwebhook
-      def create(url:, object_type:, enabled: true, description: nil)
+      def create(url: nil, object_type: nil, enabled: true, description: nil)
         validate_presence!(url, 'url')
         validate_presence!(object_type, 'object_type')
         validate_url!(url)
