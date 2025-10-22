@@ -1,5 +1,17 @@
 # frozen_string_literal: true
 
+require 'simplecov'
+
+# Configure SimpleCov
+SimpleCov.start do
+  enable_coverage :branch
+  add_filter '/spec/'
+  add_filter '/bin/'
+
+  # SimpleCov automatically generates .resultset.json which we use for the badge
+  # No need for additional formatters
+end
+
 require 'zai_payment'
 
 RSpec.configure do |config|

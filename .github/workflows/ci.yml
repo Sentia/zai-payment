@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -27,4 +30,35 @@ jobs:
     
     - name: Run RSpec
       run: bundle exec rspec
+    
+    - name: Extract coverage percentage
+      if: matrix.ruby-version == '3.3'
+      run: |
+        COVERAGE=$(ruby -r json -e "
+          data = JSON.parse(File.read('coverage/.resultset.json'))
+          result = data.values.first
+          covered = 0
+          total = 0
+          result['coverage'].each do |file, lines|
+            lines['lines'].each do |count|
+              next if count.nil?
+              total += 1
+              covered += 1 if count > 0
+            end
+          end
+          percentage = (covered.to_f / total * 100).round(2)
+          puts percentage
+        ")
+        echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+        mkdir -p badges
+        echo "{\"schemaVersion\": 1, \"label\": \"coverage\", \"message\": \"${COVERAGE}%\", \"color\": \"$(ruby -e "c=${COVERAGE}; puts c >= 90 ? 'brightgreen' : c >= 80 ? 'green' : c >= 70 ? 'yellow' : c >= 60 ? 'orange' : 'red'")\"}" > badges/coverage.json
+    
+    - name: Commit coverage badge data
+      if: matrix.ruby-version == '3.3' && github.ref == 'refs/heads/main'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add badges/coverage.json || true
+        git diff --quiet && git diff --staged --quiet || git commit -m "Update coverage badge [skip ci]"
+        git push || true
 
