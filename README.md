@@ -44,67 +44,57 @@ ZaiPayment.configure do |c|
 end
 ```
 
-## 🚀 Usage
+## 🚀 Quick Start
 
 ### Authentication
 
-The Zai Payment gem implements OAuth2 Client Credentials flow for secure authentication with the Zai API. The gem intelligently manages your authentication tokens behind the scenes, so you don't have to worry about token expiration or manual refreshes.
-
-When you request a token, the gem automatically caches it and reuses it for subsequent requests. Since Zai tokens expire after 60 minutes, the gem monitors the token lifetime and seamlessly refreshes it before expiration — ensuring your API calls never fail due to stale credentials.
-
-This automatic token management means you can focus on building your integration while the gem handles all the authentication complexity for you. Simply configure your credentials once, and the gem takes care of the rest.
-
-For more details about Zai's OAuth2 authentication, see the [official documentation](https://developer.hellozai.com/reference/overview#authentication).
+Get an OAuth2 token with automatic caching and refresh:
 
 ```ruby
-client = ZaiPayment::Auth::TokenProvider.new(config: ZaiPayment.config)
+# Simple one-liner (recommended)
+token = ZaiPayment.token
 
-client.bearer_token
+# Or with full control (advanced)
+config = ZaiPayment::Config.new
+config.environment = :prelive
+config.client_id = 'your_client_id'
+config.client_secret = 'your_client_secret'
+config.scope = 'your_scope'
+
+token_provider = ZaiPayment::Auth::TokenProvider.new(config: config)
+token = token_provider.bearer_token
 ```
 
-Or, more easily, you can get a token with the convenience one-liner:
+The gem handles OAuth2 Client Credentials flow automatically - tokens are cached and refreshed before expiration.
 
-
-```ruby
-ZaiPayment.token
-```
+📖 **[Complete Authentication Guide](docs/AUTHENTICATION.md)** - Two approaches, examples, and best practices
 
 ### Webhooks
 
-The gem provides a comprehensive interface for managing Zai webhooks:
+Manage webhook endpoints:
 
 ```ruby
-# List all webhooks
+# List webhooks
 response = ZaiPayment.webhooks.list
 webhooks = response.data
-
-# List with pagination
-response = ZaiPayment.webhooks.list(limit: 20, offset: 10)
-
-# Get a specific webhook
-response = ZaiPayment.webhooks.show('webhook_id')
-webhook = response.data
 
 # Create a webhook
 response = ZaiPayment.webhooks.create(
   url: 'https://example.com/webhooks/zai',
   object_type: 'transactions',
-  enabled: true,
-  description: 'Production webhook for transactions'
+  enabled: true
 )
 
-# Update a webhook
-response = ZaiPayment.webhooks.update(
-  'webhook_id',
-  enabled: false,
-  description: 'Temporarily disabled'
-)
-
-# Delete a webhook
-response = ZaiPayment.webhooks.delete('webhook_id')
+# Secure your webhooks with signature verification
+secret_key = SecureRandom.alphanumeric(32)
+ZaiPayment.webhooks.create_secret_key(secret_key: secret_key)
 ```
 
-For more examples, see [examples/webhooks.md](examples/webhooks.md).
+**📚 Documentation:**
+- 📖 [Webhook Examples & Complete Guide](examples/webhooks.md) - Full CRUD operations and patterns
+- 🔒 [Security Quick Start](docs/WEBHOOK_SECURITY_QUICKSTART.md) - 5-minute webhook security setup
+- 🏗️ [Architecture & Implementation](docs/WEBHOOKS.md) - Detailed technical documentation
+- 🔐 [Signature Verification Details](docs/WEBHOOK_SIGNATURE.md) - Security implementation specs
 
 ### Error Handling
 
@@ -190,8 +180,22 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/Sentia/zai-payment/blob/main/CODE_OF_CONDUCT.md).
 
-## 🔗 Resources
+## 📚 Documentation
 
+### Getting Started
+- [**Authentication Guide**](docs/AUTHENTICATION.md) - Two approaches to getting tokens, automatic management
+- [**Webhook Examples**](examples/webhooks.md) - Complete webhook usage guide
+- [**Documentation Index**](docs/README.md) - Full documentation navigation
+
+### Technical Guides
+- [Webhook Architecture](docs/WEBHOOKS.md) - Technical implementation details
+- [Architecture Overview](docs/ARCHITECTURE.md) - System architecture and design
+
+### Security
+- [Webhook Security Quick Start](docs/WEBHOOK_SECURITY_QUICKSTART.md) - 5-minute setup guide
+- [Signature Verification](docs/WEBHOOK_SIGNATURE.md) - Implementation details
+
+### External Resources
 - [Zai Developer Portal](https://developer.hellozai.com/)
 - [Zai API Reference](https://developer.hellozai.com/reference)
-- [AssemblyPay Auth Documentation](https://developer.hellozai.com/docs/introduction)
+- [Zai OAuth Documentation](https://developer.hellozai.com/docs/introduction)
