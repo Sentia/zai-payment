@@ -104,7 +104,7 @@ response = ZaiPayment.webhooks.update(
 response = ZaiPayment.webhooks.delete('webhook_id')
 ```
 
-For more examples, see [examples/webhooks.rb](examples/webhooks.rb).
+For more examples, see [examples/webhooks.md](examples/webhooks.md).
 
 ### Error Handling
 

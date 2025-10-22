@@ -62,20 +62,37 @@ module ZaiPayment
     end
 
     def connection
-      @connection ||= Faraday.new do |faraday|
-        faraday.url_prefix = base_url
-        faraday.headers['Authorization'] = token_provider.bearer_token
-        faraday.headers['Content-Type'] = 'application/json'
-        faraday.headers['Accept'] = 'application/json'
+      @connection ||= build_connection
+    end
 
-        faraday.request :json
-        faraday.response :json, content_type: /\bjson$/
-
-        faraday.options.timeout = config.timeout if config.timeout
-        faraday.options.open_timeout = config.open_timeout if config.open_timeout
-
-        faraday.adapter Faraday.default_adapter
+    def build_connection
+      Faraday.new do |faraday|
+        configure_connection(faraday)
       end
+    end
+
+    def configure_connection(faraday)
+      faraday.url_prefix = base_url
+      apply_headers(faraday)
+      apply_middleware(faraday)
+      apply_timeouts(faraday)
+      faraday.adapter Faraday.default_adapter
+    end
+
+    def apply_headers(faraday)
+      faraday.headers['Authorization'] = token_provider.bearer_token
+      faraday.headers['Content-Type'] = 'application/json'
+      faraday.headers['Accept'] = 'application/json'
+    end
+
+    def apply_middleware(faraday)
+      faraday.request :json
+      faraday.response :json, content_type: /\bjson$/
+    end
+
+    def apply_timeouts(faraday)
+      faraday.options.timeout = config.timeout if config.timeout
+      faraday.options.open_timeout = config.open_timeout if config.open_timeout
     end
 
     def base_url

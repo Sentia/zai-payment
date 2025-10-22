@@ -39,31 +39,31 @@ module ZaiPayment
       body.is_a?(Hash) ? body['meta'] : nil
     end
 
+    ERROR_STATUS_MAP = {
+      400 => Errors::BadRequestError,
+      401 => Errors::UnauthorizedError,
+      403 => Errors::ForbiddenError,
+      404 => Errors::NotFoundError,
+      422 => Errors::ValidationError,
+      429 => Errors::RateLimitError
+    }.merge((500..599).to_h { |code| [code, Errors::ServerError] }).freeze
+
     private
 
     def check_for_errors!
       return if success?
 
-      error_message = extract_error_message
+      raise_appropriate_error
+    end
 
-      case status
-      when 400
-        raise Errors::BadRequestError, error_message
-      when 401
-        raise Errors::UnauthorizedError, error_message
-      when 403
-        raise Errors::ForbiddenError, error_message
-      when 404
-        raise Errors::NotFoundError, error_message
-      when 422
-        raise Errors::ValidationError, error_message
-      when 429
-        raise Errors::RateLimitError, error_message
-      when 500..599
-        raise Errors::ServerError, error_message
-      else
-        raise Errors::ApiError, error_message
-      end
+    def raise_appropriate_error
+      error_message = extract_error_message
+      error_class = error_class_for_status
+      raise error_class, error_message
+    end
+
+    def error_class_for_status
+      ERROR_STATUS_MAP.fetch(status, Errors::ApiError)
     end
 
     def extract_error_message
