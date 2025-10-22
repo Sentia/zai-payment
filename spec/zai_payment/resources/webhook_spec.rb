@@ -400,10 +400,10 @@ RSpec.describe ZaiPayment::Resources::Webhook do
   describe '#generate_signature' do
     let(:payload) { '{"event": "status_updated"}' }
     let(:secret) { 'xPpcHHoAOM' }
-    let(:timestamp) { 1_257_894_000 }
 
     context 'with known values from Zai documentation' do
       it 'generates the correct signature matching Zai example' do
+        timestamp = 1_257_894_000
         signature = webhook_resource.generate_signature(payload, secret, timestamp)
         # Expected signature based on HMAC SHA256 calculation
         expect(signature).to eq('MHs6orLEJg1W1wPqkL_8X24UjUVe-ZiAXtk2ICHotuQ')
@@ -422,16 +422,18 @@ RSpec.describe ZaiPayment::Resources::Webhook do
   describe '#verify_signature' do
     let(:payload) { '{"event": "status_updated"}' }
     let(:secret) { 'xPpcHHoAOM' }
-    let(:timestamp) { Time.now.to_i }
-    let(:signature) { webhook_resource.generate_signature(payload, secret, timestamp) }
-    let(:signature_header) { "t=#{timestamp},v=#{signature}" }
+
+    def generate_valid_header(payload, secret, timestamp)
+      signature = webhook_resource.generate_signature(payload, secret, timestamp)
+      "t=#{timestamp},v=#{signature}"
+    end
 
     context 'when signature is valid' do
       it 'returns true for valid signature' do
+        timestamp = Time.now.to_i
+        signature_header = generate_valid_header(payload, secret, timestamp)
         result = webhook_resource.verify_signature(
-          payload: payload,
-          signature_header: signature_header,
-          secret_key: secret
+          payload: payload, signature_header: signature_header, secret_key: secret
         )
         expect(result).to be true
       end
@@ -439,11 +441,10 @@ RSpec.describe ZaiPayment::Resources::Webhook do
 
     context 'when signature is invalid' do
       it 'returns false for incorrect signature' do
+        timestamp = Time.now.to_i
         invalid_header = "t=#{timestamp},v=invalid_signature"
         result = webhook_resource.verify_signature(
-          payload: payload,
-          signature_header: invalid_header,
-          secret_key: secret
+          payload: payload, signature_header: invalid_header, secret_key: secret
         )
         expect(result).to be false
       end
@@ -452,15 +453,10 @@ RSpec.describe ZaiPayment::Resources::Webhook do
     context 'when timestamp is outside tolerance' do
       it 'raises ValidationError for old timestamp' do
         old_timestamp = Time.now.to_i - 600 # 10 minutes ago
-        old_signature = webhook_resource.generate_signature(payload, secret, old_timestamp)
-        old_header = "t=#{old_timestamp},v=#{old_signature}"
-
+        old_header = generate_valid_header(payload, secret, old_timestamp)
         expect do
           webhook_resource.verify_signature(
-            payload: payload,
-            signature_header: old_header,
-            secret_key: secret,
-            tolerance: 300
+            payload: payload, signature_header: old_header, secret_key: secret, tolerance: 300
           )
         end.to raise_error(ZaiPayment::Errors::ValidationError, /outside tolerance/)
       end
@@ -468,11 +464,10 @@ RSpec.describe ZaiPayment::Resources::Webhook do
 
     context 'when signature header is malformed' do
       it 'raises ValidationError for missing timestamp' do
+        signature = webhook_resource.generate_signature(payload, secret, Time.now.to_i)
         expect do
           webhook_resource.verify_signature(
-            payload: payload,
-            signature_header: "v=#{signature}",
-            secret_key: secret
+            payload: payload, signature_header: "v=#{signature}", secret_key: secret
           )
         end.to raise_error(ZaiPayment::Errors::ValidationError, /missing or invalid timestamp/)
       end
@@ -480,11 +475,10 @@ RSpec.describe ZaiPayment::Resources::Webhook do
 
     context 'when signature header is missing signature' do
       it 'raises ValidationError' do
+        timestamp = Time.now.to_i
         expect do
           webhook_resource.verify_signature(
-            payload: payload,
-            signature_header: "t=#{timestamp}",
-            secret_key: secret
+            payload: payload, signature_header: "t=#{timestamp}", secret_key: secret
           )
         end.to raise_error(ZaiPayment::Errors::ValidationError, /missing signature/)
       end
@@ -492,13 +486,11 @@ RSpec.describe ZaiPayment::Resources::Webhook do
 
     context 'with multiple signatures in header' do
       it 'returns true if any signature matches' do
+        timestamp = Time.now.to_i
         valid_sig = webhook_resource.generate_signature(payload, secret, timestamp)
         header_with_multiple = "t=#{timestamp},v=invalid_sig1,v=#{valid_sig},v=invalid_sig2"
-
         result = webhook_resource.verify_signature(
-          payload: payload,
-          signature_header: header_with_multiple,
-          secret_key: secret
+          payload: payload, signature_header: header_with_multiple, secret_key: secret
         )
         expect(result).to be true
       end
@@ -506,11 +498,11 @@ RSpec.describe ZaiPayment::Resources::Webhook do
 
     context 'when required parameters are missing' do
       it 'raises ValidationError for missing payload' do
+        timestamp = Time.now.to_i
+        signature_header = generate_valid_header(payload, secret, timestamp)
         expect do
           webhook_resource.verify_signature(
-            payload: nil,
-            signature_header: signature_header,
-            secret_key: secret
+            payload: nil, signature_header: signature_header, secret_key: secret
           )
         end.to raise_error(ZaiPayment::Errors::ValidationError, /payload/)
       end

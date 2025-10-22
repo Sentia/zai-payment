@@ -266,6 +266,15 @@ module ZaiPayment
         # Format: "t=1257894000,v=signature1,v=signature2"
         parts = header.split(',').map(&:strip)
 
+        timestamp, signatures = extract_timestamp_and_signatures(parts)
+
+        validate_timestamp_presence!(timestamp)
+        validate_signatures_presence!(signatures)
+
+        [timestamp, signatures]
+      end
+
+      def extract_timestamp_and_signatures(parts)
         timestamp = nil
         signatures = []
 
@@ -279,13 +288,17 @@ module ZaiPayment
           end
         end
 
-        if timestamp.nil? || timestamp.zero?
-          raise Errors::ValidationError, 'Invalid signature header: missing or invalid timestamp'
-        end
-
-        raise Errors::ValidationError, 'Invalid signature header: missing signature' if signatures.empty?
-
         [timestamp, signatures]
+      end
+
+      def validate_timestamp_presence!(timestamp)
+        return unless timestamp.nil? || timestamp.zero?
+
+        raise Errors::ValidationError, 'Invalid signature header: missing or invalid timestamp'
+      end
+
+      def validate_signatures_presence!(signatures)
+        raise Errors::ValidationError, 'Invalid signature header: missing signature' if signatures.empty?
       end
 
       def verify_timestamp!(timestamp, tolerance)
@@ -301,15 +314,15 @@ module ZaiPayment
 
       # Constant-time string comparison to prevent timing attacks
       # Uses OpenSSL's secure_compare if available, otherwise falls back to manual comparison
-      def secure_compare(a, b)
-        return false unless a.bytesize == b.bytesize
+      def secure_compare(str_a, str_b)
+        return false unless str_a.bytesize == str_b.bytesize
 
         if defined?(OpenSSL.fixed_length_secure_compare)
-          OpenSSL.fixed_length_secure_compare(a, b)
+          OpenSSL.fixed_length_secure_compare(str_a, str_b)
         else
           # Fallback for older Ruby versions
           result = 0
-          a.bytes.zip(b.bytes) { |x, y| result |= x ^ y }
+          str_a.bytes.zip(str_b.bytes) { |x, y| result |= x ^ y }
           result.zero?
         end
       end
