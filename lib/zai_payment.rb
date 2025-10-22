@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
 require 'faraday'
+require 'uri'
 require_relative 'zai_payment/version'
 require_relative 'zai_payment/config'
 require_relative 'zai_payment/errors'
 require_relative 'zai_payment/auth/token_provider'
 require_relative 'zai_payment/auth/token_store'
 require_relative 'zai_payment/auth/token_stores/memory_store'
+require_relative 'zai_payment/client'
+require_relative 'zai_payment/response'
+require_relative 'zai_payment/resources/webhook'
 
 module ZaiPayment
   class << self
@@ -29,5 +33,11 @@ module ZaiPayment
     def clear_token!     = auth.clear_token
     def token_expiry     = auth.token_expiry
     def token_type       = auth.token_type
+
+    # --- Resource accessors ---
+    # @return [ZaiPayment::Resources::Webhook] webhook resource instance
+    def webhooks
+      @webhooks ||= Resources::Webhook.new
+    end
   end
 end
