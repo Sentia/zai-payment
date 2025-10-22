@@ -1,5 +1,5 @@
 # Zai Payment Ruby Library
-
+[![Gem Version](https://badge.fury.io/rb/zai_payment.svg)](https://badge.fury.io/rb/zai_payment)
 [![CI](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml/badge.svg)](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml)
 
 A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — starting with secure OAuth2 authentication, and ready for Payments, Virtual Accounts, Webhooks, and more.
