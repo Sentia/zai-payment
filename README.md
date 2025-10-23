@@ -77,6 +77,49 @@ The gem handles OAuth2 Client Credentials flow automatically - tokens are cached
 
 📖 **[Complete Authentication Guide](docs/AUTHENTICATION.md)** - Two approaches, examples, and best practices
 
+### Users
+
+Manage payin (buyer) and payout (seller/merchant) users:
+
+```ruby
+# Create a payin user (buyer)
+response = ZaiPayment.users.create(
+  email: 'buyer@example.com',
+  first_name: 'John',
+  last_name: 'Doe',
+  country: 'USA',
+  mobile: '+1234567890'
+)
+
+# Create a payout user (seller/merchant)
+response = ZaiPayment.users.create(
+  email: 'seller@example.com',
+  first_name: 'Jane',
+  last_name: 'Smith',
+  country: 'AUS',
+  dob: '19900101',
+  address_line1: '456 Market St',
+  city: 'Sydney',
+  state: 'NSW',
+  zip: '2000'
+)
+
+# List users
+response = ZaiPayment.users.list(limit: 10, offset: 0)
+
+# Get user details
+response = ZaiPayment.users.show('user_id')
+
+# Update user
+response = ZaiPayment.users.update('user_id', mobile: '+9876543210')
+```
+
+**📚 Documentation:**
+- 📖 [User Management Guide](docs/USERS.md) - Complete guide for payin and payout users
+- 💡 [User Examples](examples/users.md) - Real-world usage patterns and Rails integration
+- 🔗 [Zai: Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-payin-user)
+- 🔗 [Zai: Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-payout-user)
+
 ### Webhooks
 
 Manage webhook endpoints:
@@ -135,9 +178,9 @@ end
 | ------------------------------- | --------------------------------- | -------------- |
 | ✅ Authentication                | OAuth2 Client Credentials flow    | Done           |
 | ✅ Webhooks                     | CRUD for webhook endpoints        | Done           |
+| ✅ Users                        | Manage PayIn / PayOut users       | Done           |
 | 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
 | 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
-| 👤 Users                        | Manage PayIn / PayOut users       | ⏳ Planned      |
 | 💼 Wallets                      | Create and manage wallet accounts | ⏳ Planned      |
 
 ## 🧪 Development
@@ -192,8 +235,13 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 
 ### Getting Started
 - [**Authentication Guide**](docs/AUTHENTICATION.md) - Two approaches to getting tokens, automatic management
+- [**User Management Guide**](docs/USERS.md) - Managing payin and payout users
 - [**Webhook Examples**](examples/webhooks.md) - Complete webhook usage guide
 - [**Documentation Index**](docs/README.md) - Full documentation navigation
+
+### Examples & Patterns
+- [User Examples](examples/users.md) - Real-world user management patterns
+- [Webhook Examples](examples/webhooks.md) - Webhook integration patterns
 
 ### Technical Guides
 - [Webhook Architecture](docs/WEBHOOKS.md) - Technical implementation details

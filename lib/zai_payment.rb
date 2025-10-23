@@ -11,6 +11,7 @@ require_relative 'zai_payment/auth/token_stores/memory_store'
 require_relative 'zai_payment/client'
 require_relative 'zai_payment/response'
 require_relative 'zai_payment/resources/webhook'
+require_relative 'zai_payment/resources/user'
 
 module ZaiPayment
   class << self
@@ -38,6 +39,11 @@ module ZaiPayment
     # @return [ZaiPayment::Resources::Webhook] webhook resource instance
     def webhooks
       @webhooks ||= Resources::Webhook.new
+    end
+
+    # @return [ZaiPayment::Resources::User] user resource instance
+    def users
+      @users ||= Resources::User.new(client: Client.new(base_endpoint: :core_base))
     end
   end
 end

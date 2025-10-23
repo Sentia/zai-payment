@@ -31,7 +31,7 @@ module ZaiPayment
 
     # Get the data from the response body
     def data
-      body.is_a?(Hash) ? body['webhooks'] || body : body
+      body.is_a?(Hash) ? body['webhooks'] || body['users'] || body : body
     end
 
     # Get pagination or metadata info
