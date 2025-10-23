@@ -136,7 +136,7 @@ DEPENDENCIES
   simplecov
   vcr
   webmock
-  yard (~> 0.9.37, ~> 0.9)
+  yard (~> 0.9.37)
   zai_payment!
 
 BUNDLED WITH
