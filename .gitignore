@@ -51,3 +51,4 @@ Gemfile.lock
 # Used by RSpec
 .rspec_status
 
+.DS_Store
