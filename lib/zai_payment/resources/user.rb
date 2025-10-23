@@ -18,6 +18,7 @@ module ZaiPayment
 
       # Map of attribute keys to API field names
       FIELD_MAPPING = {
+        id: :id,
         email: :email,
         first_name: :first_name,
         last_name: :last_name,
@@ -80,6 +81,9 @@ module ZaiPayment
       # Create a new user (payin or payout)
       #
       # @param attributes [Hash] user attributes
+      # @option attributes [String] :id Optional unique ID for the user. If not provided,
+      #   Zai will generate one automatically. Cannot contain '.' character.
+      #   Useful for mapping to your existing system's user IDs.
       # @option attributes [String] :email (Required) user's email address
       # @option attributes [String] :first_name (Required) user's first name
       # @option attributes [String] :last_name (Required) user's last name
@@ -98,7 +102,7 @@ module ZaiPayment
       # @option attributes [String] :ip_address IP address for fraud prevention
       # @return [Response] the API response containing created user
       #
-      # @example Create a payin user (buyer)
+      # @example Create a payin user (buyer) with auto-generated ID
       #   users = ZaiPayment::Resources::User.new
       #   response = users.create(
       #     email: "buyer@example.com",
@@ -110,6 +114,16 @@ module ZaiPayment
       #     city: "New York",
       #     state: "NY",
       #     zip: "10001"
+      #   )
+      #
+      # @example Create a payin user with custom ID
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.create(
+      #     id: "buyer-#{your_user_id}",
+      #     email: "buyer@example.com",
+      #     first_name: "John",
+      #     last_name: "Doe",
+      #     country: "USA"
       #   )
       #
       # @example Create a payout user (seller/merchant)
@@ -131,11 +145,7 @@ module ZaiPayment
       # @see https://developer.hellozai.com/docs/onboarding-a-payin-user
       # @see https://developer.hellozai.com/docs/onboarding-a-payout-user
       def create(**attributes)
-        validate_required_attributes!(attributes)
-        validate_user_type!(attributes[:user_type]) if attributes[:user_type]
-        validate_email!(attributes[:email])
-        validate_country!(attributes[:country])
-        validate_dob!(attributes[:dob]) if attributes[:dob]
+        validate_create_attributes!(attributes)
 
         body = build_user_body(attributes)
         client.post('/users', body: body)
@@ -195,6 +205,15 @@ module ZaiPayment
         raise Errors::ValidationError, "#{field_name} is required and cannot be blank"
       end
 
+      def validate_create_attributes!(attributes)
+        validate_required_attributes!(attributes)
+        validate_user_type!(attributes[:user_type]) if attributes[:user_type]
+        validate_email!(attributes[:email])
+        validate_country!(attributes[:country])
+        validate_dob!(attributes[:dob]) if attributes[:dob]
+        validate_user_id!(attributes[:id]) if attributes[:id]
+      end
+
       def validate_required_attributes!(attributes)
         required_fields = %i[email first_name last_name country]
 
@@ -235,6 +254,16 @@ module ZaiPayment
         return if dob.to_s.match?(/\A\d{8}\z/)
 
         raise Errors::ValidationError, 'dob must be in YYYYMMDD format (e.g., 19900101)'
+      end
+
+      def validate_user_id!(user_id)
+        # User ID cannot contain '.' character
+        raise Errors::ValidationError, "id cannot contain '.' character" if user_id.to_s.include?('.')
+
+        # Check if empty
+        return unless user_id.nil? || user_id.to_s.strip.empty?
+
+        raise Errors::ValidationError, 'id cannot be blank if provided'
       end
 
       def build_user_body(attributes)

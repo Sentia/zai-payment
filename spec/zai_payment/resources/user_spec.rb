@@ -384,6 +384,41 @@ RSpec.describe ZaiPayment::Resources::User do
       end
     end
 
+    context 'when custom id is provided' do
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          [201, { 'Content-Type' => 'application/json' }, created_response] if body['id'] == 'my-custom-user-123'
+        end
+      end
+
+      let(:created_response) do
+        base_params.transform_keys(&:to_s).merge('id' => 'my-custom-user-123')
+      end
+
+      it 'creates user with custom ID' do
+        params = base_params.merge(id: 'my-custom-user-123')
+        response = user_resource.create(**params)
+        expect(response.data['id']).to eq('my-custom-user-123')
+      end
+    end
+
+    context 'when custom id contains dot character' do
+      it 'raises a ValidationError' do
+        params = base_params.merge(id: 'user.123')
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /cannot contain '.' character/)
+      end
+    end
+
+    context 'when custom id is blank' do
+      it 'raises a ValidationError' do
+        params = base_params.merge(id: '  ')
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /cannot be blank/)
+      end
+    end
+
     context 'when API returns validation error' do
       before do
         stubs.post('/users') do
