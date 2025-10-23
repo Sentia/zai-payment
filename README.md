@@ -106,6 +106,24 @@ response = ZaiPayment.users.create(
   zip: '2000'
 )
 
+# Create a business user with company details
+response = ZaiPayment.users.create(
+  email: 'director@company.com',
+  first_name: 'John',
+  last_name: 'Director',
+  country: 'AUS',
+  mobile: '+61412345678',
+  authorized_signer_title: 'Director',
+  company: {
+    name: 'My Company',
+    legal_name: 'My Company Pty Ltd',
+    tax_number: '123456789',
+    business_email: 'admin@company.com',
+    country: 'AUS',
+    charge_tax: true
+  }
+)
+
 # List users
 response = ZaiPayment.users.list(limit: 10, offset: 0)
 

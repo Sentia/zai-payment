@@ -32,9 +32,32 @@ module ZaiPayment
         country: :country,
         dob: :dob,
         government_number: :government_number,
+        drivers_license_number: :drivers_license_number,
+        drivers_license_state: :drivers_license_state,
+        logo_url: :logo_url,
+        color_1: :color_1,
+        color_2: :color_2,
+        custom_descriptor: :custom_descriptor,
+        authorized_signer_title: :authorized_signer_title,
         user_type: :user_type,
         device_id: :device_id,
         ip_address: :ip_address
+      }.freeze
+
+      # Map of company attribute keys to API field names
+      COMPANY_FIELD_MAPPING = {
+        name: :name,
+        legal_name: :legal_name,
+        tax_number: :tax_number,
+        business_email: :business_email,
+        charge_tax: :charge_tax,
+        address_line1: :address_line1,
+        address_line2: :address_line2,
+        city: :city,
+        state: :state,
+        zip: :zip,
+        country: :country,
+        phone: :phone
       }.freeze
 
       def initialize(client: nil)
@@ -89,15 +112,23 @@ module ZaiPayment
       # @option attributes [String] :last_name (Required) user's last name
       # @option attributes [String] :country (Required) user's country code (ISO 3166-1 alpha-3)
       # @option attributes [String] :user_type Optional user type ('payin' or 'payout')
-      # @option attributes [String] :mobile user's mobile phone number
+      # @option attributes [String] :mobile user's mobile phone number (international format with '+')
       # @option attributes [String] :phone user's phone number
       # @option attributes [String] :address_line1 user's address line 1
       # @option attributes [String] :address_line2 user's address line 2
       # @option attributes [String] :city user's city
       # @option attributes [String] :state user's state
       # @option attributes [String] :zip user's postal/zip code
-      # @option attributes [String] :dob user's date of birth (YYYYMMDD)
-      # @option attributes [String] :government_number user's government ID number
+      # @option attributes [String] :dob user's date of birth (DD/MM/YYYY)
+      # @option attributes [String] :government_number user's government ID number (SSN, TFN, etc.)
+      # @option attributes [String] :drivers_license_number driving license number
+      # @option attributes [String] :drivers_license_state state section of the user's driving license
+      # @option attributes [String] :logo_url URL link to the logo
+      # @option attributes [String] :color_1 color code number 1
+      # @option attributes [String] :color_2 color code number 2
+      # @option attributes [String] :custom_descriptor custom descriptor for bundle direct debit statements
+      # @option attributes [String] :authorized_signer_title job title for AMEX merchants (e.g., Director)
+      # @option attributes [Hash] :company company details (creates a company for the user)
       # @option attributes [String] :device_id device ID for fraud prevention
       # @option attributes [String] :ip_address IP address for fraud prevention
       # @return [Response] the API response containing created user
@@ -141,6 +172,30 @@ module ZaiPayment
       #     mobile: "+61412345678"
       #   )
       #
+      # @example Create a user with company details
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.create(
+      #     email: "business@example.com",
+      #     first_name: "John",
+      #     last_name: "Doe",
+      #     country: "AUS",
+      #     mobile: "+61412345678",
+      #     authorized_signer_title: "Director",
+      #     company: {
+      #       name: "ABC Company",
+      #       legal_name: "ABC Pty Ltd",
+      #       tax_number: "123456789",
+      #       business_email: "admin@abc.com",
+      #       country: "AUS",
+      #       charge_tax: true,
+      #       address_line1: "123 Business St",
+      #       city: "Melbourne",
+      #       state: "VIC",
+      #       zip: "3000",
+      #       phone: "+61398765432"
+      #     }
+      #   )
+      #
       # @see https://developer.hellozai.com/reference/createuser
       # @see https://developer.hellozai.com/docs/onboarding-a-payin-user
       # @see https://developer.hellozai.com/docs/onboarding-a-payout-user
@@ -158,15 +213,22 @@ module ZaiPayment
       # @option attributes [String] :email user's email address
       # @option attributes [String] :first_name user's first name
       # @option attributes [String] :last_name user's last name
-      # @option attributes [String] :mobile user's mobile phone number
+      # @option attributes [String] :mobile user's mobile phone number (international format with '+')
       # @option attributes [String] :phone user's phone number
       # @option attributes [String] :address_line1 user's address line 1
       # @option attributes [String] :address_line2 user's address line 2
       # @option attributes [String] :city user's city
       # @option attributes [String] :state user's state
       # @option attributes [String] :zip user's postal/zip code
-      # @option attributes [String] :dob user's date of birth (YYYYMMDD)
-      # @option attributes [String] :government_number user's government ID number
+      # @option attributes [String] :dob user's date of birth (DD/MM/YYYY)
+      # @option attributes [String] :government_number user's government ID number (SSN, TFN, etc.)
+      # @option attributes [String] :drivers_license_number driving license number
+      # @option attributes [String] :drivers_license_state state section of the user's driving license
+      # @option attributes [String] :logo_url URL link to the logo
+      # @option attributes [String] :color_1 color code number 1
+      # @option attributes [String] :color_2 color code number 2
+      # @option attributes [String] :custom_descriptor custom descriptor for bundle direct debit statements
+      # @option attributes [String] :authorized_signer_title job title for AMEX merchants (e.g., Director)
       # @return [Response] the API response containing updated user
       #
       # @example
@@ -205,13 +267,14 @@ module ZaiPayment
         raise Errors::ValidationError, "#{field_name} is required and cannot be blank"
       end
 
-      def validate_create_attributes!(attributes)
+      def validate_create_attributes!(attributes) # rubocop:disable Metrics/AbcSize
         validate_required_attributes!(attributes)
         validate_user_type!(attributes[:user_type]) if attributes[:user_type]
         validate_email!(attributes[:email])
         validate_country!(attributes[:country])
         validate_dob!(attributes[:dob]) if attributes[:dob]
         validate_user_id!(attributes[:id]) if attributes[:id]
+        validate_company!(attributes[:company]) if attributes[:company]
       end
 
       def validate_required_attributes!(attributes)
@@ -266,17 +329,54 @@ module ZaiPayment
         raise Errors::ValidationError, 'id cannot be blank if provided'
       end
 
-      def build_user_body(attributes)
+      def validate_company!(company)
+        return unless company.is_a?(Hash)
+
+        # Required company fields
+        required_company_fields = %i[name legal_name tax_number business_email country]
+
+        missing_fields = required_company_fields.select do |field|
+          company[field].nil? || company[field].to_s.strip.empty?
+        end
+
+        return if missing_fields.empty?
+
+        raise Errors::ValidationError,
+              "Company is missing required fields: #{missing_fields.join(', ')}"
+      end
+
+      def build_user_body(attributes) # rubocop:disable Metrics/CyclomaticComplexity
         body = {}
 
         attributes.each do |key, value|
           next if value.nil? || (value.respond_to?(:empty?) && value.empty?)
+
+          # Handle company object separately
+          if key == :company
+            body[:company] = build_company_body(value) if value.is_a?(Hash)
+            next
+          end
 
           api_field = FIELD_MAPPING[key]
           body[api_field] = value if api_field
         end
 
         body
+      end
+
+      def build_company_body(company_attributes)
+        company = {}
+
+        company_attributes.each do |key, value|
+          # Don't skip false values for charge_tax
+          next if value.nil?
+          next if key != :charge_tax && value.respond_to?(:empty?) && value.empty?
+
+          api_field = COMPANY_FIELD_MAPPING[key]
+          company[api_field] = value if api_field
+        end
+
+        company
       end
     end
   end

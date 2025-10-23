@@ -157,6 +157,57 @@ response = ZaiPayment.users.update(
 updated_user = response.data
 ```
 
+### Create Business User with Company
+
+Create a payout user representing a business entity with full company details. This is useful for merchants, marketplace sellers, or any business that needs to receive payments.
+
+#### Required Company Fields
+
+When the `company` parameter is provided, the following fields are required:
+- `name` - Company name
+- `legal_name` - Legal business name
+- `tax_number` - Tax/ABN/TFN number
+- `business_email` - Business email address
+- `country` - Country code (ISO 3166-1 alpha-3)
+
+#### Example
+
+```ruby
+response = ZaiPayment.users.create(
+  # Personal details (authorized signer)
+  email: 'john.director@example.com',
+  first_name: 'John',
+  last_name: 'Smith',
+  country: 'AUS',
+  mobile: '+61412345678',
+  
+  # Job title (required for AMEX merchants)
+  authorized_signer_title: 'Director',
+  
+  # Company details
+  company: {
+    name: 'Smith Trading Co',
+    legal_name: 'Smith Trading Company Pty Ltd',
+    tax_number: '53004085616',  # ABN for Australian companies
+    business_email: 'accounts@smithtrading.com',
+    country: 'AUS',
+    charge_tax: true,  # GST registered
+    
+    # Optional company fields
+    address_line1: '123 Business Street',
+    address_line2: 'Suite 5',
+    city: 'Melbourne',
+    state: 'VIC',
+    zip: '3000',
+    phone: '+61398765432'
+  }
+)
+
+user = response.data
+puts "Business user created: #{user['id']}"
+puts "Company: #{user['company']['name']}"
+```
+
 ## Field Reference
 
 ### All User Fields
@@ -172,15 +223,42 @@ updated_user = response.data
 | `city` | String | City | Recommended | ✓ |
 | `state` | String | State/Province | Recommended | ✓ |
 | `zip` | String | Postal/ZIP code | Recommended | ✓ |
-| `mobile` | String | Mobile phone number | Recommended | Recommended |
+| `mobile` | String | Mobile phone number (international format) | Recommended | Recommended |
 | `phone` | String | Phone number | Optional | Optional |
-| `dob` | String | Date of birth (YYYYMMDD) | Recommended | ✓ |
-| `government_number` | String | Tax/Government ID | Optional | Recommended |
+| `dob` | String | Date of birth (DD/MM/YYYY) | Recommended | ✓ |
+| `government_number` | String | Tax/Government ID (SSN, TFN, etc.) | Optional | Recommended |
+| `drivers_license_number` | String | Driving license number | Optional | Optional |
+| `drivers_license_state` | String | State section of driving license | Optional | Optional |
+| `logo_url` | String | URL link to logo | Optional | Optional |
+| `color_1` | String | Color code number 1 | Optional | Optional |
+| `color_2` | String | Color code number 2 | Optional | Optional |
+| `custom_descriptor` | String | Custom text for bank statements | Optional | Optional |
+| `authorized_signer_title` | String | Job title (e.g., Director) - Required for AMEX | Optional | AMEX Required |
+| `company` | Object | Company details (see below) | Optional | Optional |
 | `device_id` | String | Device ID for fraud prevention | When charging* | N/A |
 | `ip_address` | String | IP address for fraud prevention | When charging* | N/A |
 | `user_type` | String | 'payin' or 'payout' | Optional | Optional |
 
 \* Required when an item is created and a card is charged
+
+### Company Object Fields
+
+When creating a business user, you can provide a `company` object with the following fields:
+
+| Field | Type | Description | Required |
+|-------|------|-------------|----------|
+| `name` | String | Company name | ✓ |
+| `legal_name` | String | Legal business name | ✓ |
+| `tax_number` | String | ABN/TFN/Tax number | ✓ |
+| `business_email` | String | Business email address | ✓ |
+| `country` | String | Country code (ISO 3166-1 alpha-3) | ✓ |
+| `charge_tax` | Boolean | Charge GST/tax? (true/false) | Optional |
+| `address_line1` | String | Business address line 1 | Optional |
+| `address_line2` | String | Business address line 2 | Optional |
+| `city` | String | Business city | Optional |
+| `state` | String | Business state | Optional |
+| `zip` | String | Business postal code | Optional |
+| `phone` | String | Business phone number | Optional |
 
 ## Error Handling
 

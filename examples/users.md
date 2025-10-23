@@ -585,9 +585,162 @@ def create_user_with_retry(attributes, max_retries: 3)
 end
 ```
 
+### Pattern 3: Business User with Company
+
+Create a user representing a business entity with full company details.
+
+```ruby
+# Example: Create a merchant user with company information
+response = ZaiPayment.users.create(
+  # Personal details
+  email: 'john.director@example.com',
+  first_name: 'John',
+  last_name: 'Smith',
+  country: 'AUS',
+  mobile: '+61412345678',
+  
+  # Business role
+  authorized_signer_title: 'Director',
+  
+  # Company details
+  company: {
+    name: 'Smith Trading Co',
+    legal_name: 'Smith Trading Company Pty Ltd',
+    tax_number: '53004085616',  # ABN for Australian companies
+    business_email: 'accounts@smithtrading.com',
+    country: 'AUS',
+    charge_tax: true,  # GST registered
+    
+    # Business address
+    address_line1: '123 Business Street',
+    address_line2: 'Suite 5',
+    city: 'Melbourne',
+    state: 'VIC',
+    zip: '3000',
+    phone: '+61398765432'
+  }
+)
+
+if response.success?
+  user = response.data
+  puts "Business user created: #{user['id']}"
+  puts "Company: #{user['company']['name']}"
+end
+```
+
+### Pattern 4: Enhanced Fraud Prevention
+
+Create users with additional verification data for enhanced security.
+
+```ruby
+# Example: Payin user with driver's license and IP tracking
+response = ZaiPayment.users.create(
+  # Required fields
+  email: 'secure.buyer@example.com',
+  first_name: 'Sarah',
+  last_name: 'Johnson',
+  country: 'USA',
+  
+  # Enhanced verification
+  dob: '15/01/1990',
+  government_number: '123-45-6789',  # SSN for US
+  drivers_license_number: 'D1234567',
+  drivers_license_state: 'CA',
+  
+  # Fraud prevention
+  ip_address: '192.168.1.100',
+  device_id: 'device_abc123xyz',
+  
+  # Contact and address
+  mobile: '+14155551234',
+  address_line1: '456 Market Street',
+  address_line2: 'Apt 12',
+  city: 'San Francisco',
+  state: 'CA',
+  zip: '94103'
+)
+
+puts "Secure user created with enhanced verification"
+```
+
+### Pattern 5: Custom Branding for Merchants
+
+Create a merchant user with custom branding for statements and payment pages.
+
+```ruby
+# Example: Merchant with custom branding
+response = ZaiPayment.users.create(
+  email: 'merchant@brandedstore.com',
+  first_name: 'Alex',
+  last_name: 'Merchant',
+  country: 'AUS',
+  mobile: '+61411222333',
+  dob: '10/05/1985',
+  
+  # Branding
+  logo_url: 'https://example.com/logo.png',
+  color_1: '#FF5733',  # Primary brand color
+  color_2: '#C70039',  # Secondary brand color
+  custom_descriptor: 'BRANDED STORE',  # Shows on bank statements
+  
+  # Address
+  address_line1: '789 Retail Plaza',
+  city: 'Brisbane',
+  state: 'QLD',
+  zip: '4000'
+)
+
+merchant = response.data
+puts "Branded merchant created: #{merchant['id']}"
+puts "Custom descriptor: #{merchant['custom_descriptor']}"
+```
+
+### Pattern 6: AMEX Merchant Setup
+
+Create a merchant specifically configured for American Express transactions.
+
+```ruby
+# Example: AMEX merchant with required fields
+response = ZaiPayment.users.create(
+  email: 'director@amexshop.com',
+  first_name: 'Michael',
+  last_name: 'Director',
+  country: 'AUS',
+  mobile: '+61400111222',
+  dob: '20/03/1980',
+  
+  # AMEX requirement: Must specify authorized signer title
+  authorized_signer_title: 'Managing Director',
+  
+  # Business details
+  address_line1: '100 Corporate Drive',
+  city: 'Sydney',
+  state: 'NSW',
+  zip: '2000',
+  
+  # Company for AMEX merchants
+  company: {
+    name: 'AMEX Shop',
+    legal_name: 'AMEX Shop Pty Limited',
+    tax_number: '51824753556',
+    business_email: 'finance@amexshop.com',
+    country: 'AUS',
+    charge_tax: true,
+    address_line1: '100 Corporate Drive',
+    city: 'Sydney',
+    state: 'NSW',
+    zip: '2000',
+    phone: '+61299887766'
+  }
+)
+
+puts "AMEX-ready merchant created: #{response.data['id']}"
+```
+
 ## See Also
 
 - [User Management Documentation](../docs/USERS.md)
 - [Webhook Examples](webhooks.md)
 - [Zai API Reference](https://developer.hellozai.com/reference)
+
 
