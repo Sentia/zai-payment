@@ -269,7 +269,7 @@ old_user.update(zai_user_id: new_response.data['id'])
 
 ## References
 
-- [Zai Developer Documentation](https://developer.hellozai.com/docs/onboarding-a-payin-user)
+- [Zai Developer Documentation](https://developer.hellozai.com/docs/onboarding-a-pay-in-user)
 - [Zai API Reference](https://developer.hellozai.com/reference/createuser)
 - [User Management Guide](USERS.md)
 

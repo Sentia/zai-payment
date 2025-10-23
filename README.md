@@ -137,8 +137,8 @@ response = ZaiPayment.users.update('user_id', mobile: '+9876543210')
 **📚 Documentation:**
 - 📖 [User Management Guide](docs/USERS.md) - Complete guide for payin and payout users
 - 💡 [User Examples](examples/users.md) - Real-world usage patterns and Rails integration
-- 🔗 [Zai: Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-payin-user)
-- 🔗 [Zai: Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-payout-user)
+- 🔗 [Zai: Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-pay-in-user)
+- 🔗 [Zai: Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-pay-out-user)
 
 ### Webhooks
 

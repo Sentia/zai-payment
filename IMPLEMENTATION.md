@@ -285,8 +285,8 @@ The implementation is complete and ready for use. Recommended next steps:
 
 ## References
 
-- [Zai: Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-payin-user)
-- [Zai: Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-payout-user)
+- [Zai: Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-pay-in-user)
+- [Zai: Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-pay-out-user)
 - [Zai API Reference](https://developer.hellozai.com/reference)
 
 ## Support

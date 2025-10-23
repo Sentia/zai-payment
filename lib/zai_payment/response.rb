@@ -68,9 +68,22 @@ module ZaiPayment
 
     def extract_error_message
       if body.is_a?(Hash)
-        body['error'] || body['message'] || body['errors']&.join(', ') || "HTTP #{status}"
+        body['error'] || body['message'] || format_errors(body['errors']) || "HTTP #{status}"
       else
         "HTTP #{status}: #{body}"
+      end
+    end
+
+    def format_errors(errors)
+      return nil if errors.nil?
+
+      case errors
+      when Array
+        errors.join(', ')
+      when Hash
+        errors.map { |key, value| "#{key}: #{value}" }.join(', ')
+      else
+        errors.to_s
       end
     end
   end

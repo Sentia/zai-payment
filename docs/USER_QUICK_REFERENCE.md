@@ -218,8 +218,8 @@ ruby examples/user_demo.rb
 
 - [Full User Guide](USERS.md)
 - [Usage Examples](../examples/users.md)
-- [Zai: Payin User](https://developer.hellozai.com/docs/onboarding-a-payin-user)
-- [Zai: Payout User](https://developer.hellozai.com/docs/onboarding-a-payout-user)
+- [Zai: Payin User](https://developer.hellozai.com/docs/onboarding-a-pay-in-user)
+- [Zai: Payout User](https://developer.hellozai.com/docs/onboarding-a-pay-out-user)
 
 ## Support
 
