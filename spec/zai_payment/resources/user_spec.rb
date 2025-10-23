@@ -558,5 +558,477 @@ RSpec.describe ZaiPayment::Resources::User do
       expect(ZaiPayment.users).to be_a(described_class)
     end
   end
+
+  describe '#create with company attributes' do
+    let(:base_user_params) do
+      {
+        email: 'director@example.com',
+        first_name: 'John',
+        last_name: 'Director',
+        country: 'AUS',
+        mobile: '+61412345678',
+        authorized_signer_title: 'Director'
+      }
+    end
+
+    let(:valid_company_params) do
+      {
+        name: 'Test Company',
+        legal_name: 'Test Company Pty Ltd',
+        tax_number: '123456789',
+        business_email: 'business@testcompany.com',
+        country: 'AUS',
+        charge_tax: true,
+        address_line1: '123 Business St',
+        address_line2: 'Suite 5',
+        city: 'Melbourne',
+        state: 'VIC',
+        zip: '3000',
+        phone: '+61398765432'
+      }
+    end
+
+    context 'when creating user with valid company' do
+      let(:user_with_company_params) do
+        base_user_params.merge(company: valid_company_params)
+      end
+
+      let(:created_user_response) do
+        {
+          'id' => 'user_business_123',
+          'email' => 'director@example.com',
+          'first_name' => 'John',
+          'last_name' => 'Director',
+          'country' => 'AUS',
+          'mobile' => '+61412345678',
+          'authorized_signer_title' => 'Director',
+          'company' => {
+            'id' => 'company_123',
+            'name' => 'Test Company',
+            'legal_name' => 'Test Company Pty Ltd',
+            'tax_number' => '123456789',
+            'business_email' => 'business@testcompany.com',
+            'country' => 'AUS',
+            'charge_tax' => true,
+            'address_line1' => '123 Business St',
+            'address_line2' => 'Suite 5',
+            'city' => 'Melbourne',
+            'state' => 'VIC',
+            'zip' => '3000',
+            'phone' => '+61398765432'
+          }
+        }
+      end
+
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          if body['email'] == 'director@example.com' && body['company']
+            [201, { 'Content-Type' => 'application/json' }, created_user_response]
+          end
+        end
+      end
+
+      it 'creates user with company successfully' do
+        response = user_resource.create(**user_with_company_params)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns user with company data' do
+        response = user_resource.create(**user_with_company_params)
+        expect(response.data['id']).to eq('user_business_123')
+        expect(response.data['company']).to be_a(Hash)
+      end
+
+      it 'includes all company fields in response' do # rubocop:disable RSpec/ExampleLength
+        response = user_resource.create(**user_with_company_params)
+        company = response.data['company']
+
+        aggregate_failures do
+          expect(company['id']).to eq('company_123')
+          expect(company['name']).to eq('Test Company')
+          expect(company['legal_name']).to eq('Test Company Pty Ltd')
+          expect(company['tax_number']).to eq('123456789')
+          expect(company['business_email']).to eq('business@testcompany.com')
+          expect(company['country']).to eq('AUS')
+          expect(company['charge_tax']).to be true
+        end
+      end
+
+      it 'includes company address fields in response' do # rubocop:disable RSpec/ExampleLength
+        response = user_resource.create(**user_with_company_params)
+        company = response.data['company']
+
+        aggregate_failures do
+          expect(company['address_line1']).to eq('123 Business St')
+          expect(company['address_line2']).to eq('Suite 5')
+          expect(company['city']).to eq('Melbourne')
+          expect(company['state']).to eq('VIC')
+          expect(company['zip']).to eq('3000')
+          expect(company['phone']).to eq('+61398765432')
+        end
+      end
+
+      it 'includes authorized_signer_title in user data' do
+        response = user_resource.create(**user_with_company_params)
+        expect(response.data['authorized_signer_title']).to eq('Director')
+      end
+
+      it 'sends company data in request body' do
+        expect do
+          user_resource.create(**user_with_company_params)
+        end.not_to raise_error
+
+        # Verify the stub was called with correct data
+        expect(stubs).to be_a(Faraday::Adapter::Test::Stubs)
+      end
+    end
+
+    context 'when company charge_tax is false' do
+      let(:company_no_tax_params) do
+        valid_company_params.merge(charge_tax: false)
+      end
+
+      let(:user_with_company_no_tax) do
+        base_user_params.merge(company: company_no_tax_params)
+      end
+
+      let(:created_user_no_tax_response) do
+        {
+          'id' => 'user_business_456',
+          'email' => 'director@example.com',
+          'first_name' => 'John',
+          'last_name' => 'Director',
+          'country' => 'AUS',
+          'company' => {
+            'id' => 'company_456',
+            'name' => 'Test Company',
+            'legal_name' => 'Test Company Pty Ltd',
+            'tax_number' => '123456789',
+            'business_email' => 'business@testcompany.com',
+            'country' => 'AUS',
+            'charge_tax' => false
+          }
+        }
+      end
+
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          if body['company'] && body['company']['charge_tax'] == false
+            [201, { 'Content-Type' => 'application/json' }, created_user_no_tax_response]
+          end
+        end
+      end
+
+      it 'preserves charge_tax false value' do
+        response = user_resource.create(**user_with_company_no_tax)
+        expect(response.data['company']['charge_tax']).to be false
+      end
+    end
+
+    context 'when company has only required fields' do
+      let(:minimal_company_params) do
+        {
+          name: 'Minimal Company',
+          legal_name: 'Minimal Company Pty Ltd',
+          tax_number: '987654321',
+          business_email: 'info@minimal.com',
+          country: 'AUS'
+        }
+      end
+
+      let(:user_with_minimal_company) do
+        base_user_params.merge(company: minimal_company_params)
+      end
+
+      let(:created_minimal_company_response) do
+        {
+          'id' => 'user_business_789',
+          'email' => 'director@example.com',
+          'first_name' => 'John',
+          'last_name' => 'Director',
+          'country' => 'AUS',
+          'company' => {
+            'id' => 'company_789',
+            'name' => 'Minimal Company',
+            'legal_name' => 'Minimal Company Pty Ltd',
+            'tax_number' => '987654321',
+            'business_email' => 'info@minimal.com',
+            'country' => 'AUS'
+          }
+        }
+      end
+
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          if body['company'] && body['company']['name'] == 'Minimal Company'
+            [201, { 'Content-Type' => 'application/json' }, created_minimal_company_response]
+          end
+        end
+      end
+
+      it 'creates user with minimal company fields' do
+        response = user_resource.create(**user_with_minimal_company)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns company with required fields' do # rubocop:disable RSpec/ExampleLength
+        response = user_resource.create(**user_with_minimal_company)
+        company = response.data['company']
+
+        aggregate_failures do
+          expect(company['name']).to eq('Minimal Company')
+          expect(company['legal_name']).to eq('Minimal Company Pty Ltd')
+          expect(company['tax_number']).to eq('987654321')
+          expect(company['business_email']).to eq('info@minimal.com')
+          expect(company['country']).to eq('AUS')
+        end
+      end
+    end
+
+    context 'when company is missing required fields' do
+      it 'raises ValidationError when name is missing' do
+        company_params = valid_company_params.except(:name)
+        params = base_user_params.merge(company: company_params)
+
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /Company is missing required fields:.*name/)
+      end
+
+      it 'raises ValidationError when legal_name is missing' do
+        company_params = valid_company_params.except(:legal_name)
+        params = base_user_params.merge(company: company_params)
+
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /Company is missing required fields:.*legal_name/)
+      end
+
+      it 'raises ValidationError when tax_number is missing' do
+        company_params = valid_company_params.except(:tax_number)
+        params = base_user_params.merge(company: company_params)
+
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /Company is missing required fields:.*tax_number/)
+      end
+
+      it 'raises ValidationError when business_email is missing' do
+        company_params = valid_company_params.except(:business_email)
+        params = base_user_params.merge(company: company_params)
+
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /Company is missing required fields:.*business_email/)
+      end
+
+      it 'raises ValidationError when country is missing' do
+        company_params = valid_company_params.except(:country)
+        params = base_user_params.merge(company: company_params)
+
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /Company is missing required fields:.*country/)
+      end
+
+      it 'raises ValidationError when multiple required fields are missing' do
+        company_params = { name: 'Test Company' }
+        params = base_user_params.merge(company: company_params)
+
+        expect { user_resource.create(**params) }
+          .to raise_error(
+            ZaiPayment::Errors::ValidationError,
+            /Company is missing required fields:.*legal_name.*tax_number.*business_email.*country/
+          )
+      end
+    end
+
+    context 'when company fields are empty strings' do
+      it 'raises ValidationError for empty name' do
+        company_params = valid_company_params.merge(name: '')
+        params = base_user_params.merge(company: company_params)
+
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /Company is missing required fields:.*name/)
+      end
+
+      it 'raises ValidationError for blank business_email' do
+        company_params = valid_company_params.merge(business_email: '   ')
+        params = base_user_params.merge(company: company_params)
+
+        expect { user_resource.create(**params) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /Company is missing required fields:.*business_email/)
+      end
+    end
+  end
+
+  describe '#create with additional user parameters' do
+    let(:base_params) do
+      {
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+        country: 'USA'
+      }
+    end
+
+    context 'when creating user with drivers license' do
+      let(:user_with_license_params) do
+        base_params.merge(
+          drivers_license_number: 'D1234567',
+          drivers_license_state: 'CA'
+        )
+      end
+
+      let(:created_user_response) do
+        user_with_license_params.transform_keys(&:to_s).merge('id' => 'user_with_license_123')
+      end
+
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          if body['drivers_license_number'] == 'D1234567'
+            [201, { 'Content-Type' => 'application/json' }, created_user_response]
+          end
+        end
+      end
+
+      it 'creates user with drivers license successfully' do
+        response = user_resource.create(**user_with_license_params)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'includes drivers license in response' do
+        response = user_resource.create(**user_with_license_params)
+        expect(response.data['drivers_license_number']).to eq('D1234567')
+        expect(response.data['drivers_license_state']).to eq('CA')
+      end
+    end
+
+    context 'when creating user with branding parameters' do
+      let(:user_with_branding_params) do
+        base_params.merge(
+          logo_url: 'https://example.com/logo.png',
+          color_1: '#FF5733', # rubocop:disable Naming/VariableNumber
+          color_2: '#C70039', # rubocop:disable Naming/VariableNumber
+          custom_descriptor: 'MY STORE'
+        )
+      end
+
+      let(:created_user_response) do
+        user_with_branding_params.transform_keys(&:to_s).merge('id' => 'user_with_branding_456')
+      end
+
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          if body['logo_url'] == 'https://example.com/logo.png'
+            [201, { 'Content-Type' => 'application/json' }, created_user_response]
+          end
+        end
+      end
+
+      it 'creates user with branding parameters successfully' do
+        response = user_resource.create(**user_with_branding_params)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'includes all branding parameters in response' do
+        response = user_resource.create(**user_with_branding_params)
+
+        aggregate_failures do
+          expect(response.data['logo_url']).to eq('https://example.com/logo.png')
+          expect(response.data['color_1']).to eq('#FF5733')
+          expect(response.data['color_2']).to eq('#C70039')
+          expect(response.data['custom_descriptor']).to eq('MY STORE')
+        end
+      end
+    end
+
+    context 'when creating user with authorized_signer_title' do
+      let(:user_with_title_params) do
+        base_params.merge(authorized_signer_title: 'Managing Director')
+      end
+
+      let(:created_user_response) do
+        user_with_title_params.transform_keys(&:to_s).merge('id' => 'user_with_title_789')
+      end
+
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          if body['authorized_signer_title'] == 'Managing Director'
+            [201, { 'Content-Type' => 'application/json' }, created_user_response]
+          end
+        end
+      end
+
+      it 'creates user with authorized_signer_title successfully' do
+        response = user_resource.create(**user_with_title_params)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'includes authorized_signer_title in response' do
+        response = user_resource.create(**user_with_title_params)
+        expect(response.data['authorized_signer_title']).to eq('Managing Director')
+      end
+    end
+
+    context 'when creating user with all new parameters' do
+      let(:comprehensive_user_params) do
+        base_params.merge(
+          drivers_license_number: 'ABC123456',
+          drivers_license_state: 'NY',
+          logo_url: 'https://brand.example.com/logo.png',
+          color_1: '#0066CC', # rubocop:disable Naming/VariableNumber
+          color_2: '#FF9900', # rubocop:disable Naming/VariableNumber
+          custom_descriptor: 'COMPREHENSIVE STORE',
+          authorized_signer_title: 'CEO',
+          mobile: '+12125551234',
+          address_line1: '789 Broadway',
+          city: 'New York',
+          state: 'NY',
+          zip: '10003'
+        )
+      end
+
+      let(:created_comprehensive_response) do
+        comprehensive_user_params.transform_keys(&:to_s).merge('id' => 'user_comprehensive_999')
+      end
+
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          if body['custom_descriptor'] == 'COMPREHENSIVE STORE'
+            [201, { 'Content-Type' => 'application/json' }, created_comprehensive_response]
+          end
+        end
+      end
+
+      it 'creates user with all parameters successfully' do
+        response = user_resource.create(**comprehensive_user_params)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'includes all parameters in response' do # rubocop:disable RSpec/ExampleLength
+        response = user_resource.create(**comprehensive_user_params)
+        data = response.data
+
+        aggregate_failures do
+          expect(data['drivers_license_number']).to eq('ABC123456')
+          expect(data['drivers_license_state']).to eq('NY')
+          expect(data['logo_url']).to eq('https://brand.example.com/logo.png')
+          expect(data['color_1']).to eq('#0066CC')
+          expect(data['color_2']).to eq('#FF9900')
+          expect(data['custom_descriptor']).to eq('COMPREHENSIVE STORE')
+          expect(data['authorized_signer_title']).to eq('CEO')
+        end
+      end
+    end
+  end
 end
 # rubocop:enable RSpec/MultipleMemoizedHelpers
