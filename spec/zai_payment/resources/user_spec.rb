@@ -196,7 +196,7 @@ RSpec.describe ZaiPayment::Resources::User do
     let(:payout_user_params) do
       base_params.merge(
         email: 'seller@example.com',
-        dob: '19900101',
+        dob: '01/01/1990',
         address_line1: '456 Market St',
         city: 'Sydney',
         state: 'NSW',
@@ -366,13 +366,13 @@ RSpec.describe ZaiPayment::Resources::User do
       it 'raises a ValidationError for incorrect format' do
         params = base_params.merge(dob: '1990-01-01')
         expect { user_resource.create(**params) }
-          .to raise_error(ZaiPayment::Errors::ValidationError, /YYYYMMDD format/)
+          .to raise_error(ZaiPayment::Errors::ValidationError, %r{DD/MM/YYYY format})
       end
 
       it 'raises a ValidationError for short date' do
         params = base_params.merge(dob: '199001')
         expect { user_resource.create(**params) }
-          .to raise_error(ZaiPayment::Errors::ValidationError, /YYYYMMDD format/)
+          .to raise_error(ZaiPayment::Errors::ValidationError, %r{DD/MM/YYYY format})
       end
     end
 
@@ -500,7 +500,7 @@ RSpec.describe ZaiPayment::Resources::User do
       it 'raises a ValidationError' do
         expect do
           user_resource.update('user_123', dob: '1990-01-01')
-        end.to raise_error(ZaiPayment::Errors::ValidationError, /YYYYMMDD format/)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, %r{DD/MM/YYYY format})
       end
     end
 

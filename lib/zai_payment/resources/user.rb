@@ -313,10 +313,10 @@ module ZaiPayment
       end
 
       def validate_dob!(dob)
-        # Date of birth should be in YYYYMMDD format
-        return if dob.to_s.match?(/\A\d{8}\z/)
+        # Date of birth should be in DD/MM/YYYY format
+        return if dob.to_s.match?(%r{\A\d{2}/\d{2}/\d{4}\z})
 
-        raise Errors::ValidationError, 'dob must be in YYYYMMDD format (e.g., 19900101)'
+        raise Errors::ValidationError, 'dob must be in DD/MM/YYYY format (e.g., 15/01/1990)'
       end
 
       def validate_user_id!(user_id)

@@ -67,7 +67,7 @@ response = ZaiPayment.users.create(
   state: 'NY',
   zip: '10001',
   mobile: '+1234567890',
-  dob: '19900115',
+  dob: '15/01/1990',
   
   # For fraud prevention (required when charging)
   device_id: 'device_abc123xyz',
@@ -129,7 +129,7 @@ response = ZaiPayment.users.create(
   first_name: 'Alice',
   last_name: 'Johnson',
   country: 'USA',
-  dob: '19850320',
+  dob: '20/03/1985',
   address_line1: '789 Market Street',
   city: 'San Francisco',
   state: 'CA',
@@ -156,7 +156,7 @@ response = ZaiPayment.users.create(
   first_name: 'Bruce',
   last_name: 'Williams',
   country: 'AUS',
-  dob: '19800710',
+  dob: '10/07/1980',
   
   # Australian address
   address_line1: '123 George Street',
@@ -186,7 +186,7 @@ response = ZaiPayment.users.create(
   first_name: 'Oliver',
   last_name: 'Brown',
   country: 'GBR',  # ISO 3166-1 alpha-3 code for United Kingdom
-  dob: '19920505',
+  dob: '05/05/1992',
   
   # UK address
   address_line1: '10 Downing Street',
@@ -332,7 +332,7 @@ users_to_create = [
     first_name: 'Charlie',
     last_name: 'Chen',
     country: 'AUS',
-    dob: '19900101',
+    dob: '01/01/1990',
     address_line1: '123 Test St',
     city: 'Sydney',
     state: 'NSW',
@@ -383,7 +383,7 @@ class UserValidator
     end
     
     if attributes[:dob] && !valid_dob?(attributes[:dob])
-      errors << "DOB must be in YYYYMMDD format"
+      errors << "DOB must be in DD/MM/YYYY format"
     end
     
     errors
@@ -409,7 +409,7 @@ class UserValidator
   end
   
   def self.valid_dob?(dob)
-    dob.to_s.match?(/\A\d{8}\z/)
+    dob.to_s.match?(%r{\A\d{2}/\d{2}/\d{4}\z})
   end
 end
 
