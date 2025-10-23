@@ -17,12 +17,14 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 
 ## ✨ Features
 
-- 🔐 OAuth2 Client Credentials authentication with automatic token management  
-- 🧠 Smart token caching and refresh  
-- ⚙️ Environment-aware (Pre-live / Production)  
-- 🧱 Modular structure: easy to extend to Payments, Wallets, Webhooks, etc.  
-- 🧩 Thread-safe in-memory store (Redis support coming soon)  
-- 🧰 Simple Ruby API, no heavy dependencies  
+- 🔐 **OAuth2 Authentication** - Client Credentials flow with automatic token management  
+- 🧠 **Smart Token Caching** - Auto-refresh before expiration, thread-safe storage  
+- 👥 **User Management** - Create and manage payin (buyers) & payout (sellers) users  
+- 🪝 **Webhooks** - Full CRUD + secure signature verification (HMAC SHA256)  
+- ⚙️ **Environment-Aware** - Seamless Pre-live / Production switching  
+- 🧱 **Modular & Extensible** - Clean resource-based architecture  
+- 🧰 **Zero Heavy Dependencies** - Lightweight, fast, and reliable  
+- 📦 **Production Ready** - 88%+ test coverage, RuboCop compliant  
 
 ---
 
