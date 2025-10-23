@@ -1,5 +1,12 @@
 ## [Released]
 
+## [1.3.1] - 2025-10-23
+### Changed
+- Update error response format
+- Update some docs
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v1.3.0...v1.3.1
+
 ## [1.3.0] - 2025-10-23
 ### Added
 - **User Management API**: Full CRUD operations for managing Zai users (payin and payout) 👥
