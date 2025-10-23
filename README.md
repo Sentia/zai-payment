@@ -2,7 +2,7 @@
 
 ![GitHub License](https://img.shields.io/github/license/Sentia/zai-payment)
 [![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-MIT-blue.svg)](./CODE_OF_CONDUCT.md)
-[![Gem Version](https://badge.fury.io/rb/zai_payment.svg)](https://badge.fury.io/rb/zai_payment)
+[![Gem Version](https://img.shields.io/gem/v/zai_payment.svg)](https://rubygems.org/gems/zai_payment)
 [![GitHub release](https://img.shields.io/github/release/Sentia/zai-payment.svg)](https://github.com/Sentia/zai-payment/releases)
 [![Gem](https://img.shields.io/gem/dt/zai_payment.svg)](https://rubygems.org/gems/zai_payment)
 [![CI](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml/badge.svg)](https://github.com/Sentia/zai-payment/actions/workflows/ci.yml)
