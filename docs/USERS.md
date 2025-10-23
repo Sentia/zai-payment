@@ -12,8 +12,8 @@ Both user types use the same endpoints but have different required information b
 
 ## References
 
-- [Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-payin-user)
-- [Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-payout-user)
+- [Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-pay-in-user)
+- [Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-pay-out-user)
 
 ## Usage
 

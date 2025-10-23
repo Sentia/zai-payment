@@ -4,8 +4,8 @@ module ZaiPayment
   module Resources
     # User resource for managing Zai users (payin and payout)
     #
-    # @see https://developer.hellozai.com/docs/onboarding-a-payin-user
-    # @see https://developer.hellozai.com/docs/onboarding-a-payout-user
+    # @see https://developer.hellozai.com/docs/onboarding-a-pay-in-user
+    # @see https://developer.hellozai.com/docs/onboarding-a-pay-out-user
     class User
       attr_reader :client
 
@@ -197,8 +197,8 @@ module ZaiPayment
       #   )
       #
       # @see https://developer.hellozai.com/reference/createuser
-      # @see https://developer.hellozai.com/docs/onboarding-a-payin-user
-      # @see https://developer.hellozai.com/docs/onboarding-a-payout-user
+      # @see https://developer.hellozai.com/docs/onboarding-a-pay-in-user
+      # @see https://developer.hellozai.com/docs/onboarding-a-pay-out-user
       def create(**attributes)
         validate_create_attributes!(attributes)
 
