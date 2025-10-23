@@ -5,11 +5,12 @@ require 'faraday'
 module ZaiPayment
   # Base API client that handles HTTP requests to Zai API
   class Client
-    attr_reader :config, :token_provider
+    attr_reader :config, :token_provider, :base_endpoint
 
-    def initialize(config: nil, token_provider: nil)
+    def initialize(config: nil, token_provider: nil, base_endpoint: nil)
       @config = config || ZaiPayment.config
       @token_provider = token_provider || ZaiPayment.auth
+      @base_endpoint = base_endpoint
     end
 
     # Perform a GET request
@@ -96,8 +97,14 @@ module ZaiPayment
     end
 
     def base_url
+      # Use specified base_endpoint or default to va_base
+      # Users API uses core_base endpoint
       # Webhooks API uses va_base endpoint
-      config.endpoints[:va_base]
+      if base_endpoint
+        config.endpoints[base_endpoint]
+      else
+        config.endpoints[:va_base]
+      end
     end
 
     def handle_faraday_error(error)

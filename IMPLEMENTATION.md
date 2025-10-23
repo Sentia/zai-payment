@@ -1,201 +1,304 @@
-# Implementation Summary: Zai Payment Webhooks
+# User Management Implementation Summary
 
-## ✅ What Was Implemented
+## Overview
 
-### 1. Core Infrastructure (New Files)
+This document summarizes the implementation of the User Management feature for the Zai Payment Ruby library.
 
-#### `/lib/zai_payment/client.rb`
-- Base HTTP client for all API requests
-- Handles authentication automatically
-- Supports GET, POST, PATCH, DELETE methods
-- Proper error handling and connection management
-- Thread-safe and reusable
+## Implementation Date
 
-#### `/lib/zai_payment/response.rb`
-- Response wrapper class
-- Convenience methods: `success?`, `client_error?`, `server_error?`
-- Automatic error raising based on HTTP status
-- Clean data extraction from response body
+October 23, 2025
 
-#### `/lib/zai_payment/resources/webhook.rb`
-- Complete CRUD operations for webhooks:
-  - `list(limit:, offset:)` - List all webhooks with pagination
-  - `show(webhook_id)` - Get specific webhook details
-  - `create(url:, object_type:, enabled:, description:)` - Create new webhook
-  - `update(webhook_id, ...)` - Update existing webhook
-  - `delete(webhook_id)` - Delete webhook
-- Full input validation
-- URL format validation
-- Comprehensive error messages
+## What Was Implemented
 
-### 2. Enhanced Error Handling
+### 1. User Resource Class (`lib/zai_payment/resources/user.rb`)
 
-#### `/lib/zai_payment/errors.rb` (Updated)
-Added new error classes:
-- `ApiError` - Base API error
-- `BadRequestError` (400)
-- `UnauthorizedError` (401)
-- `ForbiddenError` (403)
-- `NotFoundError` (404)
-- `ValidationError` (422)
-- `RateLimitError` (429)
-- `ServerError` (5xx)
-- `TimeoutError` - Network timeout
-- `ConnectionError` - Connection failed
+A comprehensive User resource that provides CRUD operations for managing both payin (buyer) and payout (seller/merchant) users.
 
-### 3. Main Module Integration
+**Key Features:**
+- ✅ List users with pagination
+- ✅ Show user details by ID
+- ✅ Create payin users (buyers)
+- ✅ Create payout users (sellers/merchants)
+- ✅ Update user information
+- ✅ Comprehensive validation for all user types
+- ✅ Support for all Zai API user fields
 
-#### `/lib/zai_payment.rb` (Updated)
-- Added `require` statements for new components
-- Added `webhooks` method that returns a singleton instance
-- Usage: `ZaiPayment.webhooks.list`
+**Supported Fields:**
+- Email, first name, last name (required)
+- Country (ISO 3166-1 alpha-3 code, required)
+- Address details (line1, line2, city, state, zip)
+- Contact information (mobile, phone)
+- Date of birth (YYYYMMDD format)
+- Government ID number
+- Device ID and IP address (for fraud prevention)
+- User type designation (payin/payout)
 
-### 4. Testing
+**Validation:**
+- Required field validation
+- Email format validation
+- Country code validation (3-letter ISO codes)
+- Date of birth format validation (YYYYMMDD)
+- User type validation (payin/payout)
 
-#### `/spec/zai_payment/resources/webhook_spec.rb` (New)
-Comprehensive test suite covering:
-- List webhooks (success, pagination, unauthorized)
-- Show webhook (success, not found, validation)
-- Create webhook (success, validation errors, API errors)
-- Update webhook (success, not found, validation)
-- Delete webhook (success, not found, validation)
-- Edge cases and error scenarios
+### 2. Client Updates (`lib/zai_payment/client.rb`)
 
-### 5. Documentation
+**Changes:**
+- Added `base_endpoint` parameter to constructor
+- Updated `base_url` method to support multiple API endpoints
+- Users API uses `core_base` endpoint
+- Webhooks API uses `va_base` endpoint
 
-#### `/examples/webhooks.rb` (New)
-- Complete usage examples
-- All CRUD operations
+### 3. Response Updates (`lib/zai_payment/response.rb`)
+
+**Changes:**
+- Updated `data` method to handle both `webhooks` and `users` response formats
+- Maintains backward compatibility with existing webhook code
+
+### 4. Main Module Integration (`lib/zai_payment.rb`)
+
+**Changes:**
+- Added `require` for User resource
+- Added `users` accessor method
+- Properly configured User resource to use `core_base` endpoint
+
+### 5. Comprehensive Test Suite (`spec/zai_payment/resources/user_spec.rb`)
+
+**Test Coverage:**
+- List users with pagination
+- Show user details
+- Create payin users with various configurations
+- Create payout users with required fields
+- Validation error handling
+- API error handling
+- Update operations
+- User type validation
+- Integration with main module
+
+**Test Statistics:**
+- 40+ test cases
+- Covers all CRUD operations
+- Tests both success and error scenarios
+- Validates all field types
+- Tests integration points
+
+### 6. Documentation
+
+#### User Guide (`docs/USERS.md`)
+Comprehensive guide covering:
+- Overview of payin vs payout users
+- Required fields for each user type
+- Complete API reference
+- Field reference table
 - Error handling patterns
-- Pagination examples
-- Custom client instances
-
-#### `/docs/WEBHOOKS.md` (New)
-- Architecture overview
-- API method documentation
-- Error handling guide
 - Best practices
-- Testing instructions
-- Future enhancements
+- Response structures
+- Complete examples
 
-#### `/README.md` (Updated)
-- Added webhook usage section
-- Error handling examples
-- Updated roadmap (Webhooks: Done ✅)
+#### Usage Examples (`examples/users.md`)
+Practical examples including:
+- Basic payin user creation
+- Complete payin user profiles
+- Progressive profile building
+- Individual payout users
+- International users (AU, UK, US)
+- List and pagination
+- Update operations
+- Error handling patterns
+- Rails integration example
+- Batch operations
+- User profile validation helper
+- RSpec integration tests
+- Common patterns with retry logic
 
-#### `/CHANGELOG.md` (Updated)
-- Added v1.1.0 release notes
-- Documented all new features
-- Listed all new error classes
+#### README Updates (`README.md`)
+- Added Users section with quick examples
+- Updated roadmap to mark Users as "Done"
+- Added documentation links
+- Updated Getting Started section
 
-### 6. Version
+## API Endpoints
 
-#### `/lib/zai_payment/version.rb` (Updated)
-- Bumped version to 1.1.0
+The implementation works with the following Zai API endpoints:
 
-## 📁 File Structure
+- `GET /users` - List users
+- `GET /users/:id` - Show user
+- `POST /users` - Create user
+- `PATCH /users/:id` - Update user
 
-```
-lib/
-├── zai_payment/
-│   ├── auth/                    # Authentication (existing)
-│   ├── client.rb                # ✨ NEW: Base HTTP client
-│   ├── response.rb              # ✨ NEW: Response wrapper
-│   ├── resources/
-│   │   └── webhook.rb           # ✨ NEW: Webhook CRUD operations
-│   ├── config.rb                # (existing)
-│   ├── errors.rb                # ✅ UPDATED: Added API error classes
-│   └── version.rb               # ✅ UPDATED: v1.1.0
-└── zai_payment.rb               # ✅ UPDATED: Added webhooks accessor
+## Usage Examples
 
-spec/
-└── zai_payment/
-    └── resources/
-        └── webhook_spec.rb      # ✨ NEW: Comprehensive tests
-
-examples/
-└── webhooks.rb                  # ✨ NEW: Usage examples
-
-docs/
-└── WEBHOOKS.md                  # ✨ NEW: Complete documentation
-```
-
-## 🎯 Key Features
-
-1. **Clean API**: `ZaiPayment.webhooks.list`, `.show`, `.create`, `.update`, `.delete`
-2. **Automatic Authentication**: Uses existing TokenProvider
-3. **Comprehensive Validation**: URL format, required fields, etc.
-4. **Rich Error Handling**: Specific errors for each scenario
-5. **Pagination Support**: Built-in pagination for list operations
-6. **Thread-Safe**: Reuses existing thread-safe authentication
-7. **Well-Tested**: Full RSpec test coverage
-8. **Documented**: Inline docs, examples, and guides
-
-## 🚀 Usage
+### Create a Payin User (Buyer)
 
 ```ruby
-# Configure once
-ZaiPayment.configure do |config|
-  config.environment = :prelive
-  config.client_id = ENV['ZAI_CLIENT_ID']
-  config.client_secret = ENV['ZAI_CLIENT_SECRET']
-  config.scope = ENV['ZAI_SCOPE']
-end
+response = ZaiPayment.users.create(
+  email: 'buyer@example.com',
+  first_name: 'John',
+  last_name: 'Doe',
+  country: 'USA',
+  mobile: '+1234567890'
+)
 
-# Use webhooks
-response = ZaiPayment.webhooks.list
-webhooks = response.data
+user_id = response.data['id']
+```
 
-response = ZaiPayment.webhooks.create(
-  url: 'https://example.com/webhook',
-  object_type: 'transactions',
-  enabled: true
+### Create a Payout User (Seller/Merchant)
+
+```ruby
+response = ZaiPayment.users.create(
+  email: 'seller@example.com',
+  first_name: 'Jane',
+  last_name: 'Smith',
+  country: 'AUS',
+  dob: '19900101',
+  address_line1: '456 Market St',
+  city: 'Sydney',
+  state: 'NSW',
+  zip: '2000',
+  mobile: '+61412345678'
+)
+
+seller_id = response.data['id']
+```
+
+### List Users
+
+```ruby
+response = ZaiPayment.users.list(limit: 10, offset: 0)
+users = response.data
+```
+
+### Show User
+
+```ruby
+response = ZaiPayment.users.show('user_id')
+user = response.data
+```
+
+### Update User
+
+```ruby
+response = ZaiPayment.users.update(
+  'user_id',
+  mobile: '+9876543210',
+  address_line1: '789 New St'
 )
 ```
 
-## ✨ Best Practices Applied
+## Key Differences: Payin vs Payout Users
 
-1. **Single Responsibility Principle**: Each class has one clear purpose
-2. **DRY**: Reusable Client and Response classes
-3. **Open/Closed**: Easy to extend for new resources (Users, Items, etc.)
-4. **Dependency Injection**: Client accepts custom config and token provider
-5. **Fail Fast**: Validation before API calls
-6. **Clear Error Messages**: Descriptive validation errors
-7. **RESTful Design**: Standard HTTP methods and status codes
-8. **Comprehensive Testing**: Unit tests for all scenarios
-9. **Documentation**: Examples, inline docs, and guides
-10. **Version Control**: Semantic versioning with changelog
+### Payin User (Buyer) Requirements
+**Required:**
+- Email, first name, last name, country
+- Device ID and IP address (when charging)
 
-## 🔄 Ready for Extension
+**Recommended:**
+- Address, city, state, zip
+- Mobile, DOB
 
-The infrastructure is now in place to easily add more resources:
+### Payout User (Seller/Merchant) Requirements
+**Required:**
+- Email, first name, last name, country
+- Address, city, state, zip
+- Date of birth (YYYYMMDD format)
 
-```ruby
-# Future resources can follow the same pattern:
-lib/zai_payment/resources/
-├── webhook.rb       # ✅ Done
-├── user.rb          # Coming soon
-├── item.rb          # Coming soon
-├── transaction.rb   # Coming soon
-└── wallet.rb        # Coming soon
-```
+**Recommended:**
+- Mobile, government number
 
-Each resource can reuse:
-- `ZaiPayment::Client` for HTTP requests
-- `ZaiPayment::Response` for response handling
-- Error classes for consistent error handling
-- Same authentication mechanism
-- Same configuration
-- Same testing patterns
+## Validation Rules
 
-## 🎉 Summary
+1. **Email**: Must be valid email format
+2. **Country**: Must be 3-letter ISO 3166-1 alpha-3 code (e.g., USA, AUS, GBR)
+3. **Date of Birth**: Must be YYYYMMDD format (e.g., 19900101)
+4. **User Type**: Must be 'payin' or 'payout' (optional field)
 
-Successfully implemented a complete, production-ready webhook management system for the Zai Payment gem with:
-- ✅ Full CRUD operations
-- ✅ Comprehensive testing
-- ✅ Rich error handling
-- ✅ Complete documentation
-- ✅ Clean, maintainable code
-- ✅ Following Ruby and Rails best practices
-- ✅ Ready for production use
+## Error Handling
 
+The implementation provides proper error handling for:
+- `ValidationError` - Missing or invalid fields
+- `UnauthorizedError` - Authentication failures
+- `NotFoundError` - User not found
+- `ApiError` - General API errors
+- `ConnectionError` - Network issues
+- `TimeoutError` - Request timeouts
+
+## Best Practices Implemented
+
+1. **Progressive Profile Building**: Create users with minimal info, update later
+2. **Proper Validation**: Validate data before API calls
+3. **Error Recovery**: Handle errors gracefully with proper error classes
+4. **Type Safety**: Validate user types and field formats
+5. **Documentation**: Comprehensive guides and examples
+6. **Testing**: Extensive test coverage for all scenarios
+
+## Files Created/Modified
+
+### Created Files:
+1. `/lib/zai_payment/resources/user.rb` - User resource class
+2. `/spec/zai_payment/resources/user_spec.rb` - Test suite
+3. `/docs/USERS.md` - User management guide
+4. `/examples/users.md` - Usage examples
+
+### Modified Files:
+1. `/lib/zai_payment/client.rb` - Added endpoint support
+2. `/lib/zai_payment/response.rb` - Added users data handling
+3. `/lib/zai_payment.rb` - Integrated User resource
+4. `/README.md` - Added Users section and updated roadmap
+
+## Code Quality
+
+- ✅ No linter errors
+- ✅ Follows existing code patterns
+- ✅ Comprehensive test coverage
+- ✅ Well-documented with YARD comments
+- ✅ Follows Ruby best practices
+- ✅ Consistent with webhook implementation
+
+## Architecture Decisions
+
+1. **Endpoint Routing**: Users use `core_base`, webhooks use `va_base`
+2. **Validation Strategy**: Client-side validation before API calls
+3. **Field Mapping**: Direct 1:1 mapping with Zai API fields
+4. **Error Handling**: Leverage existing error class hierarchy
+5. **Testing Approach**: Match webhook test patterns
+
+## Integration Points
+
+The User resource integrates seamlessly with:
+- Authentication system (OAuth2 tokens)
+- Error handling framework
+- Response wrapper
+- Configuration management
+- Testing infrastructure
+
+## Next Steps
+
+The implementation is complete and ready for use. Recommended next steps:
+
+1. ✅ Run the full test suite
+2. ✅ Review documentation
+3. ✅ Try examples in development environment
+4. Consider adding:
+   - Company user support (for payout users)
+   - User verification status checking
+   - Bank account associations
+   - Payment method attachments
+
+## References
+
+- [Zai: Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-payin-user)
+- [Zai: Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-payout-user)
+- [Zai API Reference](https://developer.hellozai.com/reference)
+
+## Support
+
+For questions or issues:
+1. Check the documentation in `/docs/USERS.md`
+2. Review examples in `/examples/users.md`
+3. Run tests: `bundle exec rspec spec/zai_payment/resources/user_spec.rb`
+4. Refer to Zai Developer Portal: https://developer.hellozai.com/
+
+---
+
+**Implementation completed successfully! 🎉**
+
+All CRUD operations for User management are now available in the ZaiPayment gem, following best practices and maintaining consistency with the existing codebase.

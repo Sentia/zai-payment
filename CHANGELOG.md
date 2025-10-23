@@ -1,5 +1,69 @@
 ## [Released]
 
+## [1.3.0] - 2025-10-23
+### Added
+- **User Management API**: Full CRUD operations for managing Zai users (payin and payout) 👥
+  - `ZaiPayment.users.list(limit:, offset:)` - List all users with pagination
+  - `ZaiPayment.users.show(user_id)` - Get user details by ID
+  - `ZaiPayment.users.create(**attributes)` - Create payin (buyer) or payout (seller/merchant) users
+  - `ZaiPayment.users.update(user_id, **attributes)` - Update user information
+  - Support for both payin users (buyers) and payout users (sellers/merchants)
+  - Comprehensive validation for all user types
+  - Email format validation
+  - Country code validation (ISO 3166-1 alpha-3)
+  - Date of birth format validation (YYYYMMDD)
+  - User type validation (payin/payout)
+  - Progressive profile building support
+
+### Enhancements
+- **Client**: Added `base_endpoint` parameter to support multiple API endpoints
+  - Users API uses `core_base` endpoint
+  - Webhooks API continues to use `va_base` endpoint
+- **Response**: Updated `data` method to handle both `webhooks` and `users` response formats
+- **Main Module**: Added `users` accessor for convenient access to User resource
+
+### Documentation
+- **NEW**: [User Management Guide](docs/USERS.md) - Comprehensive guide covering:
+  - Overview of payin vs payout users
+  - Required fields for each user type
+  - Complete API reference with examples
+  - Field reference table
+  - Error handling patterns
+  - Best practices for each user type
+  - Response structures
+- **NEW**: [User Examples](examples/users.md) - 500+ lines of practical examples:
+  - Basic and advanced payin user creation
+  - Progressive profile building patterns
+  - Payout user creation (individual and company)
+  - International users (AU, UK, US)
+  - List, search, and pagination
+  - Update operations
+  - Rails integration examples
+  - Batch operations
+  - User profile validation helper
+  - RSpec integration tests
+  - Common patterns with retry logic
+- **NEW**: [User Quick Reference](docs/USER_QUICK_REFERENCE.md) - Quick lookup for common operations
+- **NEW**: [User Demo Script](examples/user_demo.rb) - Interactive demo of all user operations
+- **NEW**: [Implementation Summary](IMPLEMENTATION.md) - Detailed summary of the implementation
+- **Updated**: README.md - Added Users section with quick examples and updated roadmap
+
+### Testing
+- 40+ new test cases for User resource
+- All CRUD operations tested
+- Validation error handling tested
+- API error handling tested
+- Integration tests with main module
+- Tests for both payin and payout user types
+
+### API Endpoints
+- `GET /users` - List users
+- `GET /users/:id` - Show user
+- `POST /users` - Create user
+- `PATCH /users/:id` - Update user
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v1.2.0...v1.3.0
+
 ## [1.2.0] - 2025-10-22
 ### Added
 - **Webhook Security: Signature Verification** 🔒
