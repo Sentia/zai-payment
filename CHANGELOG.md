@@ -1,5 +1,19 @@
 ## [Released]
 
+## [1.3.2] - 2025-10-23
+### Added
+- YARD documentation generation support with `.yardopts` configuration
+- Added `yard` gem as development dependency for API documentation
+
+### Fixed
+- Fixed YARD link resolution warning in README.md by converting markdown link to HTML format
+
+### Documentation
+- Configured YARD to generate comprehensive API documentation
+- Documentation coverage: 70.59% (51 methods, 22 classes, 5 modules)
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v1.3.1...v1.3.2
+
 ## [1.3.1] - 2025-10-23
 ### Changed
 - Update error response format

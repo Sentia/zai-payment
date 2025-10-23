@@ -18,4 +18,5 @@ group :development, :test do
   gem 'rubocop-packaging', require: false
   gem 'rubocop-performance', require: false
   gem 'rubocop-rspec', require: false
+  gem 'yard', '~> 0.9.37', require: false
 end

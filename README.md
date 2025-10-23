@@ -77,7 +77,7 @@ token = token_provider.bearer_token
 
 The gem handles OAuth2 Client Credentials flow automatically - tokens are cached and refreshed before expiration.
 
-📖 **[Complete Authentication Guide](docs/AUTHENTICATION.md)** - Two approaches, examples, and best practices
+📖 **<a href="docs/AUTHENTICATION.md">Complete Authentication Guide</a>** - Two approaches, examples, and best practices
 
 ### Users
 
