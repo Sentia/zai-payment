@@ -47,7 +47,7 @@ response = ZaiPayment.users.create(
   first_name: 'Jane',
   last_name: 'Smith',
   country: 'AUS',
-  dob: '19900101',
+  dob: '01/01/1990',
   address_line1: '123 Main St',
   city: 'Sydney',
   state: 'NSW',
@@ -83,7 +83,7 @@ response = ZaiPayment.users.update(
 | first_name | String | ✓ |
 | last_name | String | ✓ |
 | country | String (ISO 3166-1 alpha-3) | ✓ |
-| dob | String (YYYYMMDD) | ✓ |
+| dob | String (DD/MM/YYYY) | ✓ |
 | address_line1 | String | ✓ |
 | city | String | ✓ |
 | state | String | ✓ |
@@ -106,9 +106,9 @@ country: 'GBR'  # United Kingdom
 country: 'CAN'  # Canada
 ```
 
-### Date of Birth (YYYYMMDD)
+### Date of Birth (DD/MM/YYYY)
 ```ruby
-dob: '19900101'  # January 1, 1990
+dob: '01/01/1990'  # January 1, 1990
 ```
 
 ## Error Handling
@@ -216,7 +216,7 @@ ruby examples/user_demo.rb
 
 ## Documentation Links
 
-- [Full User Guide](USERS.md)
+- [Full User Guide](users.md)
 - [Usage Examples](../examples/users.md)
 - [Zai: Payin User](https://developer.hellozai.com/docs/onboarding-a-pay-in-user)
 - [Zai: Payout User](https://developer.hellozai.com/docs/onboarding-a-pay-out-user)
@@ -224,7 +224,7 @@ ruby examples/user_demo.rb
 ## Support
 
 For issues or questions:
-1. Check the [User Management Guide](USERS.md)
+1. Check the [User Management Guide](users.md)
 2. Review [Examples](../examples/users.md)
 3. Visit [Zai Developer Portal](https://developer.hellozai.com/)
 

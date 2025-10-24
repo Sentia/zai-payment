@@ -32,6 +32,7 @@ Create a buyer with minimal required information.
 ```ruby
 # Create a basic payin user
 response = ZaiPayment.users.create(
+  user_type: 'payin',
   email: 'buyer@example.com',
   first_name: 'John',
   last_name: 'Doe',
@@ -43,6 +44,9 @@ if response.success?
   puts "Payin user created successfully!"
   puts "User ID: #{user['id']}"
   puts "Email: #{user['email']}"
+  
+  # Note: device_id and ip_address will be required later
+  # when creating an item and charging a card
 else
   puts "Failed to create user"
 end
@@ -55,6 +59,7 @@ Create a buyer with all recommended information for better fraud prevention.
 ```ruby
 response = ZaiPayment.users.create(
   # Required fields
+  user_type: 'payin',
   email: 'john.buyer@example.com',
   first_name: 'John',
   last_name: 'Doe',
@@ -67,15 +72,14 @@ response = ZaiPayment.users.create(
   state: 'NY',
   zip: '10001',
   mobile: '+1234567890',
-  dob: '15/01/1990',
-  
-  # For fraud prevention (required when charging)
-  device_id: 'device_abc123xyz',
-  ip_address: '192.168.1.1'
+  dob: '15/01/1990'
 )
 
 user = response.data
 puts "Complete payin user profile created: #{user['id']}"
+
+# Note: device_id and ip_address can be stored separately 
+# and will be required when creating an item and charging a card
 ```
 
 ### Example 3: Progressive Profile Building
@@ -85,6 +89,7 @@ Create a user quickly, then update with additional information later.
 ```ruby
 # Step 1: Quick user creation during signup
 response = ZaiPayment.users.create(
+  user_type: 'payin',
   email: 'quicksignup@example.com',
   first_name: 'Jane',
   last_name: 'Smith',
@@ -106,14 +111,9 @@ ZaiPayment.users.update(
 
 puts "User profile updated with shipping address"
 
-# Step 3: Add device info before payment
-ZaiPayment.users.update(
-  user_id,
-  device_id: 'device_xyz789',
-  ip_address: '203.0.113.42'
-)
-
-puts "Device information added for payment"
+# Note: device_id and ip_address should be captured during 
+# payment flow and will be required when creating an item
+# They are not stored in the user profile, but used at transaction time
 ```
 
 ## Payout User Examples
@@ -124,6 +124,9 @@ Create a seller who will receive payments. All required fields must be provided.
 
 ```ruby
 response = ZaiPayment.users.create(
+  # User type
+  user_type: 'payout',
+  
   # Required for payout users
   email: 'seller@example.com',
   first_name: 'Alice',
@@ -137,8 +140,7 @@ response = ZaiPayment.users.create(
   
   # Recommended
   mobile: '+14155551234',
-  government_number: '123456789',  # SSN or Tax ID
-  user_type: 'payout'
+  government_number: '123456789'  # SSN or Tax ID
 )
 
 seller = response.data
@@ -152,6 +154,7 @@ Create an Australian seller with appropriate details.
 
 ```ruby
 response = ZaiPayment.users.create(
+  user_type: 'payout',
   email: 'aussie.seller@example.com',
   first_name: 'Bruce',
   last_name: 'Williams',
@@ -165,8 +168,7 @@ response = ZaiPayment.users.create(
   zip: '2000',
   
   mobile: '+61298765432',
-  government_number: '123456789',  # TFN (Tax File Number)
-  user_type: 'payout'
+  government_number: '123456789'  # TFN (Tax File Number)
 )
 
 if response.success?
@@ -182,6 +184,7 @@ Create a UK-based seller.
 
 ```ruby
 response = ZaiPayment.users.create(
+  user_type: 'payout',
   email: 'uk.merchant@example.com',
   first_name: 'Oliver',
   last_name: 'Brown',
@@ -195,8 +198,7 @@ response = ZaiPayment.users.create(
   zip: 'SW1A 2AA',
   
   mobile: '+447700900123',
-  government_number: 'AB123456C',  # National Insurance Number
-  user_type: 'payout'
+  government_number: 'AB123456C'  # National Insurance Number
 )
 
 merchant = response.data
@@ -316,18 +318,21 @@ Create multiple users efficiently.
 ```ruby
 users_to_create = [
   {
+    user_type: 'payin',
     email: 'buyer1@example.com',
     first_name: 'Alice',
     last_name: 'Anderson',
     country: 'USA'
   },
   {
+    user_type: 'payin',
     email: 'buyer2@example.com',
     first_name: 'Bob',
     last_name: 'Brown',
     country: 'USA'
   },
   {
+    user_type: 'payout',
     email: 'seller1@example.com',
     first_name: 'Charlie',
     last_name: 'Chen',
@@ -336,8 +341,7 @@ users_to_create = [
     address_line1: '123 Test St',
     city: 'Sydney',
     state: 'NSW',
-    zip: '2000',
-    user_type: 'payout'
+    zip: '2000'
   }
 ]
 
@@ -549,6 +553,7 @@ end
 # Step 1: Create user during signup (minimal info)
 def create_initial_user(email:, name_parts:)
   ZaiPayment.users.create(
+    user_type: 'payin',  # or 'payout' based on your use case
     email: email,
     first_name: name_parts[:first],
     last_name: name_parts[:last],
@@ -592,32 +597,40 @@ Create a user representing a business entity with full company details.
 ```ruby
 # Example: Create a merchant user with company information
 response = ZaiPayment.users.create(
-  # Personal details
+  # User type
+  user_type: 'payout',
+  
+  # Personal details (required for payout users)
   email: 'john.director@example.com',
   first_name: 'John',
   last_name: 'Smith',
   country: 'AUS',
+  dob: '15/06/1985',
+  address_line1: '789 Business Ave',
+  city: 'Melbourne',
+  state: 'VIC',
+  zip: '3000',
   mobile: '+61412345678',
   
   # Business role
   authorized_signer_title: 'Director',
   
-  # Company details
+  # Company details (required fields for payout companies)
   company: {
     name: 'Smith Trading Co',
     legal_name: 'Smith Trading Company Pty Ltd',
     tax_number: '53004085616',  # ABN for Australian companies
     business_email: 'accounts@smithtrading.com',
     country: 'AUS',
-    charge_tax: true,  # GST registered
-    
-    # Business address
     address_line1: '123 Business Street',
-    address_line2: 'Suite 5',
     city: 'Melbourne',
     state: 'VIC',
     zip: '3000',
-    phone: '+61398765432'
+    phone: '+61398765432',
+    
+    # Optional fields
+    address_line2: 'Suite 5',
+    charge_tax: true  # GST registered
   }
 )
 
@@ -630,26 +643,23 @@ end
 
 ### Pattern 4: Enhanced Fraud Prevention
 
-Create users with additional verification data for enhanced security.
+Capture device information for payin users during payment flow.
 
 ```ruby
-# Example: Payin user with driver's license and IP tracking
+# Example: Payin user creation with recommended fields
 response = ZaiPayment.users.create(
   # Required fields
+  user_type: 'payin',
   email: 'secure.buyer@example.com',
   first_name: 'Sarah',
   last_name: 'Johnson',
   country: 'USA',
   
-  # Enhanced verification
+  # Recommended verification fields
   dob: '15/01/1990',
   government_number: '123-45-6789',  # SSN for US
   drivers_license_number: 'D1234567',
   drivers_license_state: 'CA',
-  
-  # Fraud prevention
-  ip_address: '192.168.1.100',
-  device_id: 'device_abc123xyz',
   
   # Contact and address
   mobile: '+14155551234',
@@ -660,16 +670,22 @@ response = ZaiPayment.users.create(
   zip: '94103'
 )
 
-puts "Secure user created with enhanced verification"
+user_id = response.data['id']
+puts "User created with enhanced profile"
+
+# Note: device_id and ip_address should be captured during payment
+# and will be required when creating an item and charging a card.
+# They are typically obtained from your payment form or checkout page.
 ```
 
 ### Pattern 5: Custom Branding for Merchants
 
-Create a merchant user with custom branding for statements and payment pages.
+Create a payout merchant user with custom branding for statements and payment pages.
 
 ```ruby
 # Example: Merchant with custom branding
 response = ZaiPayment.users.create(
+  user_type: 'payout',
   email: 'merchant@brandedstore.com',
   first_name: 'Alex',
   last_name: 'Merchant',
@@ -677,17 +693,17 @@ response = ZaiPayment.users.create(
   mobile: '+61411222333',
   dob: '10/05/1985',
   
+  # Required address for payout users
+  address_line1: '789 Retail Plaza',
+  city: 'Brisbane',
+  state: 'QLD',
+  zip: '4000',
+  
   # Branding
   logo_url: 'https://example.com/logo.png',
   color_1: '#FF5733',  # Primary brand color
   color_2: '#C70039',  # Secondary brand color
-  custom_descriptor: 'BRANDED STORE',  # Shows on bank statements
-  
-  # Address
-  address_line1: '789 Retail Plaza',
-  city: 'Brisbane',
-  state: 'QLD',
-  zip: '4000'
+  custom_descriptor: 'BRANDED STORE'  # Shows on bank statements
 )
 
 merchant = response.data
@@ -697,11 +713,12 @@ puts "Custom descriptor: #{merchant['custom_descriptor']}"
 
 ### Pattern 6: AMEX Merchant Setup
 
-Create a merchant specifically configured for American Express transactions.
+Create a payout merchant specifically configured for American Express transactions.
 
 ```ruby
 # Example: AMEX merchant with required fields
 response = ZaiPayment.users.create(
+  user_type: 'payout',
   email: 'director@amexshop.com',
   first_name: 'Michael',
   last_name: 'Director',
@@ -712,25 +729,27 @@ response = ZaiPayment.users.create(
   # AMEX requirement: Must specify authorized signer title
   authorized_signer_title: 'Managing Director',
   
-  # Business details
+  # Required address for payout users
   address_line1: '100 Corporate Drive',
   city: 'Sydney',
   state: 'NSW',
   zip: '2000',
   
-  # Company for AMEX merchants
+  # Company for AMEX merchants (required fields for payout companies)
   company: {
     name: 'AMEX Shop',
     legal_name: 'AMEX Shop Pty Limited',
     tax_number: '51824753556',
     business_email: 'finance@amexshop.com',
     country: 'AUS',
-    charge_tax: true,
     address_line1: '100 Corporate Drive',
     city: 'Sydney',
     state: 'NSW',
     zip: '2000',
-    phone: '+61299887766'
+    phone: '+61299887766',
+    
+    # Optional
+    charge_tax: true
   }
 )
 
@@ -739,7 +758,7 @@ puts "AMEX-ready merchant created: #{response.data['id']}"
 
 ## See Also
 
-- [User Management Documentation](../docs/USERS.md)
+- [User Management Documentation](../docs/users.md)
 - [Webhook Examples](webhooks.md)
 - [Zai API Reference](https://developer.hellozai.com/reference)
 

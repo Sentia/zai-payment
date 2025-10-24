@@ -1,5 +1,32 @@
 ## [Released]
 
+## [2.0.0] - 2025-10-24
+### Added
+- **Items Management API**: Full CRUD operations for managing Zai items (transactions/payments) 🛒
+  - `ZaiPayment.items.list(limit:, offset:)` - List all items with pagination
+  - `ZaiPayment.items.show(item_id)` - Get item details by ID
+  - `ZaiPayment.items.create(**attributes)` - Create new item/transaction
+  - `ZaiPayment.items.update(item_id, **attributes)` - Update item information
+  - `ZaiPayment.items.delete(item_id)` - Delete an item
+  - `ZaiPayment.items.show_seller(item_id)` - Get seller details for an item
+  - `ZaiPayment.items.show_buyer(item_id)` - Get buyer details for an item
+  - `ZaiPayment.items.show_fees(item_id)` - Get fees associated with an item
+  - `ZaiPayment.items.show_wire_details(item_id)` - Get wire transfer details for an item
+  - `ZaiPayment.items.list_transactions(item_id, limit:, offset:)` - List transactions for an item
+  - `ZaiPayment.items.list_batch_transactions(item_id, limit:, offset:)` - List batch transactions for an item
+  - `ZaiPayment.items.show_status(item_id)` - Get current status of an item
+- Comprehensive validation for item attributes (name, amount, payment_type, buyer_id, seller_id)
+- Support for optional item fields (description, currency, fee_ids, custom_descriptor, deposit_reference, etc.)
+- Full RSpec test suite for Items resource with 100% coverage
+- Comprehensive examples documentation in `examples/items.md`
+
+### Documentation
+- Added detailed Items API examples with complete workflow demonstrations
+- Payment types documentation (1-7: Direct Debit, Credit Card, Bank Transfer, Wallet, BPay, PayPal, Other)
+- Error handling examples for Items operations
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v1.3.2...v2.0.0
+
 ## [1.3.2] - 2025-10-23
 ### Added
 - YARD documentation generation support with `.yardopts` configuration
@@ -32,7 +59,7 @@
   - Comprehensive validation for all user types
   - Email format validation
   - Country code validation (ISO 3166-1 alpha-3)
-  - Date of birth format validation (YYYYMMDD)
+  - Date of birth format validation (DD/MM/YYYY)
   - User type validation (payin/payout)
   - Progressive profile building support
 
@@ -44,7 +71,7 @@
 - **Main Module**: Added `users` accessor for convenient access to User resource
 
 ### Documentation
-- **NEW**: [User Management Guide](docs/USERS.md) - Comprehensive guide covering:
+- **NEW**: [User Management Guide](docs/users.md) - Comprehensive guide covering:
   - Overview of payin vs payout users
   - Required fields for each user type
   - Complete API reference with examples
@@ -64,10 +91,10 @@
   - User profile validation helper
   - RSpec integration tests
   - Common patterns with retry logic
-- **NEW**: [User Quick Reference](docs/USER_QUICK_REFERENCE.md) - Quick lookup for common operations
+- **NEW**: [User Quick Reference](docs/user_quick_reference.md) - Quick lookup for common operations
 - **NEW**: [User Demo Script](examples/user_demo.rb) - Interactive demo of all user operations
-- **NEW**: [Implementation Summary](IMPLEMENTATION.md) - Detailed summary of the implementation
-- **Updated**: README.md - Added Users section with quick examples and updated roadmap
+- **NEW**: [Implementation Summary](implementation.md) - Detailed summary of the implementation
+- **Updated**: readme.md - Added Users section with quick examples and updated roadmap
 
 ### Testing
 - 40+ new test cases for User resource
@@ -97,24 +124,24 @@
   - Support for multiple signatures (key rotation scenarios)
 
 ### Documentation
-- **NEW**: [Authentication Guide](docs/AUTHENTICATION.md) - Comprehensive guide covering:
+- **NEW**: [Authentication Guide](docs/authentication.md) - Comprehensive guide covering:
   - Short way: `ZaiPayment.token` (one-liner approach)
   - Long way: `TokenProvider.new(config:).bearer_token` (advanced control)
   - Token lifecycle and automatic management
   - Multiple configurations, testing, error handling
   - Best practices and troubleshooting
-- **NEW**: [Webhook Security Quick Start](docs/WEBHOOK_SECURITY_QUICKSTART.md) - 5-minute setup guide
-- **NEW**: [Webhook Signature Implementation](docs/WEBHOOK_SIGNATURE.md) - Technical details
-- **NEW**: [Documentation Index](docs/README.md) - Central navigation for all docs
+- **NEW**: [Webhook Security Quick Start](docs/webhook_security_quickstart.md) - 5-minute setup guide
+- **NEW**: [Webhook Signature Implementation](docs/webhook_signature.md) - Technical details
+- **NEW**: [Documentation Index](docs/readme.md) - Central navigation for all docs
 - **Enhanced**: [Webhook Examples](examples/webhooks.md) - Added 400+ lines of examples:
   - Complete Rails controller implementation
   - Sinatra example
   - Rack middleware example
   - Background job processing pattern
   - Idempotency pattern
-- **Enhanced**: [Webhook Technical Guide](docs/WEBHOOKS.md) - Added 170+ lines on security
+- **Enhanced**: [Webhook Technical Guide](docs/webhooks.md) - Added 170+ lines on security
 - **Reorganized**: All documentation moved to `docs/` folder for better organization
-- **Updated**: README.md - Now concise with clear links to detailed documentation
+- **Updated**: readme.md - Now concise with clear links to detailed documentation
 
 ### Testing
 - 56 new test cases for webhook signature verification

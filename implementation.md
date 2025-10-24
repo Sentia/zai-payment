@@ -28,7 +28,7 @@ A comprehensive User resource that provides CRUD operations for managing both pa
 - Country (ISO 3166-1 alpha-3 code, required)
 - Address details (line1, line2, city, state, zip)
 - Contact information (mobile, phone)
-- Date of birth (YYYYMMDD format)
+- Date of birth (DD/MM/YYYY format)
 - Government ID number
 - Device ID and IP address (for fraud prevention)
 - User type designation (payin/payout)
@@ -37,7 +37,7 @@ A comprehensive User resource that provides CRUD operations for managing both pa
 - Required field validation
 - Email format validation
 - Country code validation (3-letter ISO codes)
-- Date of birth format validation (YYYYMMDD)
+- Date of birth format validation (DD/MM/YYYY)
 - User type validation (payin/payout)
 
 ### 2. Client Updates (`lib/zai_payment/client.rb`)
@@ -83,7 +83,7 @@ A comprehensive User resource that provides CRUD operations for managing both pa
 
 ### 6. Documentation
 
-#### User Guide (`docs/USERS.md`)
+#### User Guide (`docs/users.md`)
 Comprehensive guide covering:
 - Overview of payin vs payout users
 - Required fields for each user type
@@ -110,7 +110,7 @@ Practical examples including:
 - RSpec integration tests
 - Common patterns with retry logic
 
-#### README Updates (`README.md`)
+#### README Updates (`readme.md`)
 - Added Users section with quick examples
 - Updated roadmap to mark Users as "Done"
 - Added documentation links
@@ -199,7 +199,7 @@ response = ZaiPayment.users.update(
 **Required:**
 - Email, first name, last name, country
 - Address, city, state, zip
-- Date of birth (YYYYMMDD format)
+- Date of birth (DD/MM/YYYY format)
 
 **Recommended:**
 - Mobile, government number
@@ -208,7 +208,7 @@ response = ZaiPayment.users.update(
 
 1. **Email**: Must be valid email format
 2. **Country**: Must be 3-letter ISO 3166-1 alpha-3 code (e.g., USA, AUS, GBR)
-3. **Date of Birth**: Must be YYYYMMDD format (e.g., 19900101)
+3. **Date of Birth**: Must be DD/MM/YYYY format (e.g., 19900101)
 4. **User Type**: Must be 'payin' or 'payout' (optional field)
 
 ## Error Handling
@@ -235,14 +235,14 @@ The implementation provides proper error handling for:
 ### Created Files:
 1. `/lib/zai_payment/resources/user.rb` - User resource class
 2. `/spec/zai_payment/resources/user_spec.rb` - Test suite
-3. `/docs/USERS.md` - User management guide
+3. `/docs/users.md` - User management guide
 4. `/examples/users.md` - Usage examples
 
 ### Modified Files:
 1. `/lib/zai_payment/client.rb` - Added endpoint support
 2. `/lib/zai_payment/response.rb` - Added users data handling
 3. `/lib/zai_payment.rb` - Integrated User resource
-4. `/README.md` - Added Users section and updated roadmap
+4. `/readme.md` - Added Users section and updated roadmap
 
 ## Code Quality
 
@@ -292,7 +292,7 @@ The implementation is complete and ready for use. Recommended next steps:
 ## Support
 
 For questions or issues:
-1. Check the documentation in `/docs/USERS.md`
+1. Check the documentation in `/docs/users.md`
 2. Review examples in `/examples/users.md`
 3. Run tests: `bundle exec rspec spec/zai_payment/resources/user_spec.rb`
 4. Refer to Zai Developer Portal: https://developer.hellozai.com/
