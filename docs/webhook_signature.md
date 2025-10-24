@@ -60,7 +60,7 @@ Test categories:
 ### 4. Documentation
 
 #### Updated Files:
-1. **`docs/WEBHOOKS.md`** (170+ lines added)
+1. **`docs/webhooks.md`** (170+ lines added)
    - Complete security section
    - Step-by-step setup guide
    - Rails controller examples
@@ -77,7 +77,7 @@ Test categories:
    - Background job processing pattern
    - Idempotency pattern
 
-3. **`README.md`** (40+ lines added)
+3. **`readme.md`** (40+ lines added)
    - Quick start guide
    - Security features highlights
    - Simple usage example

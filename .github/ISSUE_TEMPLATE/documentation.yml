@@ -16,7 +16,7 @@ body:
       label: Documentation Type
       description: What type of documentation needs attention?
       options:
-        - README
+        - readme
         - API Documentation
         - Code Examples
         - Architecture Documentation
@@ -47,7 +47,7 @@ body:
     attributes:
       label: Location
       description: Where is the documentation issue? (file path, URL, or section name)
-      placeholder: e.g., README.md line 42, or docs/WEBHOOKS.md
+      placeholder: e.g., readme.md line 42, or docs/WEBHOOKS.md
     validations:
       required: true
 
