@@ -31,21 +31,39 @@ module ZaiPayment
 
       # List all items
       #
-      # @param limit [Integer] number of records to return (default: 10)
+      # @param limit [Integer] number of records to return (default: 10, max: 200)
       # @param offset [Integer] number of records to skip (default: 0)
+      # @param search [String] optional text value to search within item description
+      # @param created_before [String] optional ISO 8601 date/time to filter items created before
+      #   (e.g. '2020-02-27T23:54:59Z')
+      # @param created_after [String] optional ISO 8601 date/time to filter items created after
+      #   (e.g. '2020-02-27T23:54:59Z')
       # @return [Response] the API response containing items array
       #
-      # @example
+      # @example List all items
       #   items = ZaiPayment::Resources::Item.new
       #   response = items.list
-      #   response.data # => {"items" => [{"id" => "...", "name" => "..."}, ...]}
+      #   response.data # => [{"id" => "...", "name" => "..."}, ...]
+      #
+      # @example List items with search
+      #   response = items.list(search: "product")
+      #
+      # @example List items created within a date range
+      #   response = items.list(
+      #     created_after: "2024-01-01T00:00:00Z",
+      #     created_before: "2024-12-31T23:59:59Z"
+      #   )
       #
       # @see https://developer.hellozai.com/reference/listitems
-      def list(limit: 10, offset: 0)
+      def list(limit: 10, offset: 0, search: nil, created_before: nil, created_after: nil)
         params = {
           limit: limit,
           offset: offset
         }
+
+        params[:search] = search if search
+        params[:created_before] = created_before if created_before
+        params[:created_after] = created_after if created_after
 
         client.get('/items', params: params)
       end

@@ -105,7 +105,7 @@ end
 
 ## List Items
 
-Retrieve a list of all items with pagination.
+Retrieve a list of all items with pagination and optional search/filtering.
 
 ```ruby
 # List items with default pagination (10 items)
@@ -134,6 +134,53 @@ response = items.list(limit: 20, offset: 40)
 if response.success?
   items_list = response.data
   puts "Retrieved #{items_list.length} items"
+end
+```
+
+### Search Items by Description
+
+```ruby
+# Search for items with "product" in the description
+response = items.list(search: "product")
+
+if response.success?
+  items_list = response.data
+  puts "Found #{items_list.length} items matching 'product'"
+  items_list.each do |item|
+    puts "  - #{item['name']}: #{item['description']}"
+  end
+end
+```
+
+### Filter Items by Creation Date
+
+```ruby
+# Get items created in a specific date range
+response = items.list(
+  created_after: "2024-01-01T00:00:00Z",
+  created_before: "2024-12-31T23:59:59Z"
+)
+
+if response.success?
+  items_list = response.data
+  puts "Found #{items_list.length} items created in 2024"
+end
+```
+
+### Combine Search and Filters
+
+```ruby
+# Search with pagination and date filters
+response = items.list(
+  limit: 50,
+  offset: 0,
+  search: "premium",
+  created_after: "2024-01-01T00:00:00Z"
+)
+
+if response.success?
+  items_list = response.data
+  puts "Found #{items_list.length} premium items created after Jan 1, 2024"
 end
 ```
 

@@ -103,6 +103,67 @@ RSpec.describe ZaiPayment::Resources::Item do
         expect(response.success?).to be true
       end
     end
+
+    context 'with search parameter' do
+      before do
+        stubs.get('/items') do |env|
+          [200, { 'Content-Type' => 'application/json' }, search_results] if env.params['search'] == 'product'
+        end
+      end
+
+      let(:search_results) do
+        {
+          'items' => [
+            {
+              'id' => 'item_1',
+              'name' => 'Product A',
+              'description' => 'Premium product',
+              'amount' => 10_000
+            }
+          ],
+          'meta' => { 'total' => 1, 'limit' => 10, 'offset' => 0 }
+        }
+      end
+
+      it 'accepts search parameter' do
+        response = item_resource.list(search: 'product')
+        expect(response.success?).to be true
+        expect(response.data.length).to eq(1)
+      end
+    end
+
+    context 'with date filters' do
+      before do
+        stubs.get('/items') do |env|
+          if env.params['created_after'] && env.params['created_before']
+            [200, { 'Content-Type' => 'application/json' }, filtered_results]
+          end
+        end
+      end
+
+      let(:filtered_results) do
+        {
+          'items' => [
+            {
+              'id' => 'item_1',
+              'name' => 'Recent Item',
+              'amount' => 10_000,
+              'created_at' => '2024-06-15T10:00:00Z'
+            }
+          ],
+          'meta' => { 'total' => 1, 'limit' => 10, 'offset' => 0 }
+        }
+      end
+
+      it 'accepts created_after and created_before parameters' do
+        response = item_resource.list(
+          created_after: '2024-01-01T00:00:00Z',
+          created_before: '2024-12-31T23:59:59Z'
+        )
+        expect(response.success?).to be true
+        expect(response.data.length).to eq(1)
+      end
+    end
   end
 
   describe '#show' do
