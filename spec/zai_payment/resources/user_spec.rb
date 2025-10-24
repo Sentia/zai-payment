@@ -902,6 +902,559 @@ RSpec.describe ZaiPayment::Resources::User do
     end
   end
 
+  describe '#wallet_account' do
+    context 'when successful' do
+      before do
+        stubs.get('/users/user_123/wallet_accounts') do
+          [200, { 'Content-Type' => 'application/json' }, wallet_account_data]
+        end
+      end
+
+      let(:wallet_account_data) do
+        {
+          'id' => 'wallet_acc_123',
+          'balance' => 1000,
+          'currency' => 'USD'
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = user_resource.wallet_account('user_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the wallet account details' do
+        response = user_resource.wallet_account('user_123')
+        expect(response.data['id']).to eq('wallet_acc_123')
+        expect(response.data['balance']).to eq(1000)
+      end
+    end
+
+    context 'when user_id is blank' do
+      it 'raises a ValidationError' do
+        expect { user_resource.wallet_account('') }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /user_id/
+        )
+      end
+    end
+
+    context 'when user does not exist' do
+      before do
+        stubs.get('/users/user_123/wallet_accounts') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'User not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { user_resource.wallet_account('user_123') }.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+  end
+
+  describe '#items' do
+    context 'when successful' do
+      before do
+        stubs.get('/users/user_123/items') do |env|
+          [200, { 'Content-Type' => 'application/json' }, items_data] if env.params['limit'] == '10'
+        end
+      end
+
+      let(:items_data) do
+        {
+          'items' => [
+            {
+              'id' => '7139651-1-2046',
+              'name' => 'Item 7139651-1-2046',
+              'description' => 'Test Item 7139651-1-2046',
+              'created_at' => '2020-05-05T12:26:50.782Z',
+              'updated_at' => '2020-05-05T12:31:03.654Z',
+              'state' => 'payment_deposited',
+              'payment_type_id' => 2,
+              'status' => 22_200,
+              'amount' => 109,
+              'deposit_reference' => '100014012501482',
+              'buyer_name' => 'Buyer Last Name',
+              'buyer_country' => 'AUS',
+              'buyer_email' => 'assemblybuyer71391895@assemblypayments.com',
+              'seller_name' => 'Assembly seller71391950',
+              'seller_country' => 'AUS',
+              'seller_email' => 'neol_seller71391950@assemblypayments.com',
+              'tds_check_state' => 'NA',
+              'currency' => 'AUD',
+              'links' => {
+                'self' => '/items/7139651-1-2046',
+                'buyers' => '/items/7139651-1-2046/buyers',
+                'sellers' => '/items/7139651-1-2046/sellers',
+                'status' => '/items/7139651-1-2046/status',
+                'fees' => '/items/7139651-1-2046/fees',
+                'transactions' => '/items/7139651-1-2046/transactions',
+                'batch_transactions' => '/items/7139651-1-2046/batch_transactions',
+                'wire_details' => '/items/7139651-1-2046/wire_details',
+                'bpay_details' => '/items/7139651-1-2046/bpay_details'
+              }
+            }
+          ],
+          'links' => {
+            'self' => '/items'
+          },
+          'meta' => {
+            'limit' => 10,
+            'offset' => 0,
+            'total' => 1
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = user_resource.items('user_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the items data' do
+        response = user_resource.items('user_123')
+        expect(response.data).to eq(items_data['items'])
+      end
+
+      it 'returns the metadata' do
+        response = user_resource.items('user_123')
+        expect(response.meta).to eq(items_data['meta'])
+      end
+
+      it 'includes item details' do
+        response = user_resource.items('user_123')
+        item = response.data.first
+
+        aggregate_failures do
+          expect(item['id']).to eq('7139651-1-2046')
+          expect(item['state']).to eq('payment_deposited')
+          expect(item['amount']).to eq(109)
+          expect(item['currency']).to eq('AUD')
+        end
+      end
+
+      it 'includes buyer and seller information' do
+        response = user_resource.items('user_123')
+        item = response.data.first
+
+        aggregate_failures do
+          expect(item['buyer_name']).to eq('Buyer Last Name')
+          expect(item['buyer_country']).to eq('AUS')
+          expect(item['seller_name']).to eq('Assembly seller71391950')
+          expect(item['seller_country']).to eq('AUS')
+        end
+      end
+
+      it 'includes links to related resources' do
+        response = user_resource.items('user_123')
+        item = response.data.first
+
+        aggregate_failures do
+          expect(item['links']).to be_a(Hash)
+          expect(item['links']['buyers']).to eq('/items/7139651-1-2046/buyers')
+          expect(item['links']['sellers']).to eq('/items/7139651-1-2046/sellers')
+          expect(item['links']['transactions']).to eq('/items/7139651-1-2046/transactions')
+        end
+      end
+    end
+
+    context 'with custom pagination' do
+      before do
+        stubs.get('/users/user_123/items') do |env|
+          if env.params['limit'] == '50' && env.params['offset'] == '10'
+            [200, { 'Content-Type' => 'application/json' }, items_data]
+          end
+        end
+      end
+
+      let(:items_data) do
+        {
+          'items' => [],
+          'meta' => { 'total' => 0, 'limit' => 50, 'offset' => 10 }
+        }
+      end
+
+      it 'accepts custom limit and offset' do
+        response = user_resource.items('user_123', limit: 50, offset: 10)
+        expect(response.success?).to be true
+      end
+    end
+
+    context 'when user_id is blank' do
+      it 'raises a ValidationError' do
+        expect { user_resource.items('') }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /user_id/
+        )
+      end
+    end
+  end
+
+  describe '#set_disbursement_account' do
+    context 'when successful' do
+      before do
+        stubs.patch('/users/user_123/disbursement_account') do |env|
+          body = JSON.parse(env.body)
+          [200, { 'Content-Type' => 'application/json' }, disbursement_response] if body['account_id'] == 'bank_acc_456'
+        end
+      end
+
+      let(:disbursement_response) do
+        { 'id' => 'user_123', 'disbursement_account_id' => 'bank_acc_456' }
+      end
+
+      it 'returns the correct response type' do
+        response = user_resource.set_disbursement_account('user_123', 'bank_acc_456')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'sets the disbursement account' do
+        response = user_resource.set_disbursement_account('user_123', 'bank_acc_456')
+        expect(response.data['disbursement_account_id']).to eq('bank_acc_456')
+      end
+    end
+
+    context 'when user_id is blank' do
+      it 'raises a ValidationError' do
+        expect { user_resource.set_disbursement_account('', 'bank_acc_456') }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /user_id/
+        )
+      end
+    end
+
+    context 'when account_id is blank' do
+      it 'raises a ValidationError' do
+        expect { user_resource.set_disbursement_account('user_123', '') }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /account_id/
+        )
+      end
+    end
+  end
+
+  describe '#bank_account' do
+    context 'when successful' do
+      before do
+        stubs.get('/users/user_123/bank_accounts') do
+          [200, { 'Content-Type' => 'application/json' }, bank_account_data]
+        end
+      end
+
+      let(:bank_account_data) do
+        {
+          'bank_accounts' => {
+            'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+            'created_at' => '2016-04-12T09:20:38.540Z',
+            'updated_at' => '2016-04-12T09:20:38.540Z',
+            'active' => true,
+            'verification_status' => 'not_verified',
+            'currency' => 'AUD',
+            'bank' => {
+              'bank_name' => 'Bank of Australia',
+              'country' => 'AUS',
+              'account_name' => 'Samuel Seller',
+              'routing_number' => 'XXXXX3',
+              'account_number' => 'XXX234',
+              'holder_type' => 'personal',
+              'account_type' => 'checking',
+              'direct_debit_authority_status' => nil
+            },
+            'links' => {
+              'self' => '/users/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/bank_accounts',
+              'users' => '/bank_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/users',
+              'direct_debit_authorities' =>
+                '/bank_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/direct_debit_authorities'
+            }
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = user_resource.bank_account('user_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the bank account details' do
+        response = user_resource.bank_account('user_123')
+        expect(response.data['id']).to eq('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+        expect(response.data['currency']).to eq('AUD')
+        expect(response.data['verification_status']).to eq('not_verified')
+      end
+
+      it 'includes nested bank details' do # rubocop:disable RSpec/ExampleLength
+        response = user_resource.bank_account('user_123')
+        bank = response.data['bank']
+
+        aggregate_failures do
+          expect(bank).to be_a(Hash)
+          expect(bank['bank_name']).to eq('Bank of Australia')
+          expect(bank['account_name']).to eq('Samuel Seller')
+          expect(bank['routing_number']).to eq('XXXXX3')
+          expect(bank['account_number']).to eq('XXX234')
+          expect(bank['holder_type']).to eq('personal')
+          expect(bank['account_type']).to eq('checking')
+        end
+      end
+
+      it 'includes links to related resources' do
+        response = user_resource.bank_account('user_123')
+        links = response.data['links']
+
+        aggregate_failures do
+          expect(links).to be_a(Hash)
+          expect(links['self']).to eq('/users/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/bank_accounts')
+        end
+      end
+    end
+
+    context 'when user_id is blank' do
+      it 'raises a ValidationError' do
+        expect { user_resource.bank_account('') }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /user_id/
+        )
+      end
+    end
+
+    context 'when bank account does not exist' do
+      before do
+        stubs.get('/users/user_123/bank_accounts') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Bank account not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { user_resource.bank_account('user_123') }.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+  end
+
+  describe '#verify' do
+    context 'when successful' do
+      before do
+        stubs.patch('/users/user_123/identity_verified') do
+          [200, { 'Content-Type' => 'application/json' }, { 'id' => 'user_123', 'verification_state' => 'approved' }]
+        end
+      end
+
+      it 'returns the correct response type' do
+        response = user_resource.verify('user_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'verifies the user' do
+        response = user_resource.verify('user_123')
+        expect(response.data['verification_state']).to eq('approved')
+      end
+    end
+
+    context 'when user_id is blank' do
+      it 'raises a ValidationError' do
+        expect { user_resource.verify('') }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /user_id/
+        )
+      end
+    end
+
+    context 'when used in production environment' do
+      before do
+        stubs.patch('/users/user_123/identity_verified') do
+          [403, { 'Content-Type' => 'application/json' }, { 'error' => 'Not available in production' }]
+        end
+      end
+
+      it 'raises a ForbiddenError' do
+        expect { user_resource.verify('user_123') }.to raise_error(ZaiPayment::Errors::ForbiddenError)
+      end
+    end
+  end
+
+  describe '#card_account' do
+    context 'when successful' do
+      before do
+        stubs.get('/users/user_123/card_accounts') do
+          [200, { 'Content-Type' => 'application/json' }, card_account_data]
+        end
+      end
+
+      let(:card_account_data) do
+        {
+          'card_accounts' => {
+            'active' => true,
+            'created_at' => '2020-05-06T01:38:29.022Z',
+            'updated_at' => '2020-05-06T01:38:29.022Z',
+            'id' => '35977230-7168-0138-0a1d-0a58a9feac07',
+            'verification_status' => 'not_verified',
+            'cvv_verified' => true,
+            'currency' => 'AUD',
+            'card' => {
+              'type' => 'visa',
+              'full_name' => 'Neol Test',
+              'number' => 'XXXX-XXXX-XXXX-1111',
+              'expiry_month' => '7',
+              'expiry_year' => '2021'
+            },
+            'links' => {
+              'self' => '/users/buyer-71439598/card_accounts',
+              'users' => '/card_accounts/35977230-7168-0138-0a1d-0a58a9feac07/users'
+            }
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = user_resource.card_account('user_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the card account details' do
+        response = user_resource.card_account('user_123')
+
+        aggregate_failures do
+          expect(response.data['id']).to eq('35977230-7168-0138-0a1d-0a58a9feac07')
+          expect(response.data['active']).to be true
+          expect(response.data['verification_status']).to eq('not_verified')
+          expect(response.data['cvv_verified']).to be true
+          expect(response.data['currency']).to eq('AUD')
+        end
+      end
+
+      it 'includes nested card details' do # rubocop:disable RSpec/ExampleLength
+        response = user_resource.card_account('user_123')
+        card = response.data['card']
+
+        aggregate_failures do
+          expect(card).to be_a(Hash)
+          expect(card['type']).to eq('visa')
+          expect(card['full_name']).to eq('Neol Test')
+          expect(card['number']).to eq('XXXX-XXXX-XXXX-1111')
+          expect(card['expiry_month']).to eq('7')
+          expect(card['expiry_year']).to eq('2021')
+        end
+      end
+
+      it 'includes links to related resources' do
+        response = user_resource.card_account('user_123')
+        links = response.data['links']
+
+        aggregate_failures do
+          expect(links).to be_a(Hash)
+          expect(links['self']).to eq('/users/buyer-71439598/card_accounts')
+          expect(links['users']).to eq('/card_accounts/35977230-7168-0138-0a1d-0a58a9feac07/users')
+        end
+      end
+    end
+
+    context 'when user_id is blank' do
+      it 'raises a ValidationError' do
+        expect { user_resource.card_account('') }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /user_id/
+        )
+      end
+    end
+
+    context 'when card account does not exist' do
+      before do
+        stubs.get('/users/user_123/card_accounts') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Card account not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { user_resource.card_account('user_123') }.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+  end
+
+  describe '#bpay_accounts' do
+    context 'when successful' do
+      before do
+        stubs.get('/users/user_123/bpay_accounts') do
+          [200, { 'Content-Type' => 'application/json' }, bpay_accounts_data]
+        end
+      end
+
+      let(:bpay_accounts_data) do
+        {
+          'bpay_accounts' => [
+            {
+              'id' => 'b0980390-ac5b-0138-8b2e-0a58a9feac03',
+              'active' => true,
+              'created_at' => '2020-07-20 02:07:33.583000+00:00',
+              'updated_at' => '2020-07-20 02:07:33.583000+00:00',
+              'bpay_details' => {
+                'biller_name' => 'APIBCD AV4',
+                'account_name' => 'Test Biller',
+                'biller_code' => '93815',
+                'crn' => '613295205'
+              },
+              'currency' => 'AUD',
+              'verification_status' => 'verified',
+              'links' => {
+                'self' => '/bpay_accounts/b0980390-ac5b-0138-8b2e-0a58a9feac03',
+                'users' => '/bpay_accounts/b0980390-ac5b-0138-8b2e-0a58a9feac03/users'
+              }
+            }
+          ],
+          'meta' => {
+            'limit' => 10,
+            'offset' => 0,
+            'total' => 1
+          },
+          'links' => {
+            'self' => '/users/user_123/bpay_accounts'
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = user_resource.bpay_accounts('user_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the BPay accounts data' do
+        response = user_resource.bpay_accounts('user_123')
+        expect(response.data).to eq(bpay_accounts_data['bpay_accounts'])
+      end
+
+      it 'returns the metadata' do
+        response = user_resource.bpay_accounts('user_123')
+        expect(response.meta).to eq(bpay_accounts_data['meta'])
+      end
+
+      it 'includes bpay_details in the account data' do
+        response = user_resource.bpay_accounts('user_123')
+        account = response.data.first
+        expect(account['bpay_details']).to be_a(Hash)
+        expect(account['bpay_details']['biller_code']).to eq('93815')
+        expect(account['bpay_details']['crn']).to eq('613295205')
+      end
+    end
+
+    context 'when user_id is blank' do
+      it 'raises a ValidationError' do
+        expect { user_resource.bpay_accounts('') }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /user_id/
+        )
+      end
+    end
+
+    context 'when user does not exist' do
+      before do
+        stubs.get('/users/user_123/bpay_accounts') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'User not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { user_resource.bpay_accounts('user_123') }.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+  end
+
   describe '#create with additional user parameters' do
     let(:base_params) do
       {

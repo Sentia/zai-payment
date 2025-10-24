@@ -30,14 +30,15 @@ module ZaiPayment
     end
 
     # Get the data from the response body
-    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def data
       return body unless body.is_a?(Hash)
 
       body['webhooks'] || body['users'] || body['items'] || body['fees'] ||
-        body['transactions'] || body['batch_transactions'] || body
+        body['transactions'] || body['batch_transactions'] || body['bpay_accounts'] ||
+        body['bank_accounts'] || body['card_accounts'] || body
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     # Get pagination or metadata info
     def meta
