@@ -47,7 +47,7 @@ response = ZaiPayment.users.create(
   first_name: 'Jane',
   last_name: 'Smith',
   country: 'AUS',
-  dob: '19900101',
+  dob: '01/01/1990',
   address_line1: '123 Main St',
   city: 'Sydney',
   state: 'NSW',
@@ -108,7 +108,7 @@ country: 'CAN'  # Canada
 
 ### Date of Birth (DD/MM/YYYY)
 ```ruby
-dob: '19900101'  # January 1, 1990
+dob: '01/01/1990'  # January 1, 1990
 ```
 
 ## Error Handling

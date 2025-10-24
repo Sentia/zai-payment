@@ -384,6 +384,43 @@ RSpec.describe ZaiPayment::Resources::User do
       end
     end
 
+    context 'when user_type is not present' do
+      before do
+        stubs.post('/users') do |env|
+          body = JSON.parse(env.body)
+          # API will handle default user_type (likely 'payin')
+          [201, { 'Content-Type' => 'application/json' }, created_response] if body['user_type'].nil?
+        end
+      end
+
+      let(:created_response) do
+        base_params.transform_keys(&:to_s).merge(
+          'id' => 'user-123',
+          'user_type' => 'payin' # API default
+        )
+      end
+
+      it 'allows user creation without user_type' do
+        response = user_resource.create(**base_params)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'only validates base required fields' do
+        # Should NOT require payout fields like address_line1, city, state, zip, dob
+        params = base_params # Only has: email, first_name, last_name, country
+        expect { user_resource.create(**params) }.not_to raise_error
+      end
+
+      it 'does not call validate_user_type! when user_type is nil' do
+        # This validates that the conditional check works
+        params = base_params
+        allow(user_resource).to receive(:validate_user_type!).and_call_original
+        user_resource.create(**params)
+        expect(user_resource).not_to have_received(:validate_user_type!)
+      end
+    end
+
     context 'when custom id is provided' do
       before do
         stubs.post('/users') do |env|

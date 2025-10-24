@@ -279,8 +279,8 @@ module ZaiPayment
       end
 
       def validate_create_attributes!(attributes) # rubocop:disable Metrics/AbcSize
-        validate_user_type!(attributes[:user_type]) if attributes[:user_type]
         validate_required_attributes!(attributes)
+        validate_user_type!(attributes[:user_type]) if attributes[:user_type]
         validate_email!(attributes[:email])
         validate_country!(attributes[:country])
         validate_dob!(attributes[:dob]) if attributes[:dob]

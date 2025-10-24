@@ -100,7 +100,7 @@ response = ZaiPayment.users.create(
   first_name: 'Jane',
   last_name: 'Smith',
   country: 'AUS',
-  dob: '19900101',
+  dob: '01/01/1990',
   address_line1: '456 Market St',
   city: 'Sydney',
   state: 'NSW',
