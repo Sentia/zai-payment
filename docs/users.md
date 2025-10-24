@@ -408,7 +408,7 @@ bundle exec rspec spec/zai_payment/resources/user_spec.rb
 
 ## See Also
 
-- [Webhook Documentation](WEBHOOKS.md)
-- [Authentication Documentation](AUTHENTICATION.md)
-- [Architecture Documentation](ARCHITECTURE.md)
+- [Webhook Documentation](webhooks.md)
+- [Authentication Documentation](authentication.md)
+- [Architecture Documentation](architecture.md)
 
