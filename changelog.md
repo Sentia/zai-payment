@@ -23,6 +23,10 @@
   - Added support for new data keys: `bpay_accounts`, `bank_accounts`, `card_accounts`
   - Reduced complexity metrics (ABC, Cyclomatic, Perceived Complexity)
   - More maintainable and extensible architecture
+- **User Creation Validation**: Made `user_type` a required field
+  - Added validation to ensure `user_type` ('payin' or 'payout') is specified when creating users
+  - Improved error messages for missing required fields
+  - Enhanced test suite with compact, readable validation tests
 
 ### Documentation
 - **Updated User Management Guide** (`docs/users.md`):
