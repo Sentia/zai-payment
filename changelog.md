@@ -1,4 +1,32 @@
 ## [Released]
+## [2.1.0] - 2025-10-24
+### Added
+- **Token Auth API**: Token generation for bank and card accounts 🔐
+  - `ZaiPayment.token_auths.generate(user_id:, token_type:)` - Generate tokens for secure payment data collection
+  - Support for bank tokens (collecting bank account information)
+  - Support for card tokens (collecting credit card information)
+  - Token type validation (bank or card)
+  - User ID validation
+  - Full RSpec test suite for TokenAuth resource
+  - Comprehensive examples documentation in `examples/token_auths.md`
+
+### Documentation
+- Added detailed TokenAuth API examples with complete integration patterns
+- Frontend integration examples (PromisePay.js)
+- Rails controller integration examples
+- Service object pattern examples
+- Error handling and retry logic examples
+- Security best practices (token expiry management, audit logging, rate limiting)
+- Complete payment flow example
+
+### Testing
+- 20+ new test cases for TokenAuth resource
+- Validation error handling tested
+- Case-insensitive token type support tested
+- Default parameter behavior tested
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.0.2...v2.1.0
+
 ## [2.0.2] - 2025-10-24
 ### Fixed
 - **Items API**: Fixed endpoint configuration to use `core_base` instead of `va_base`

@@ -21,6 +21,7 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 - 🧠 **Smart Token Caching** - Auto-refresh before expiration, thread-safe storage  
 - 👥 **User Management** - Create and manage payin (buyers) & payout (sellers) users  
 - 📦 **Item Management** - Full CRUD for transactions/payments between buyers and sellers  
+- 🎫 **Token Auth** - Generate secure tokens for bank and card account data collection  
 - 🪝 **Webhooks** - Full CRUD + secure signature verification (HMAC SHA256)  
 - ⚙️ **Environment-Aware** - Seamless Pre-live / Production switching  
 - 🧱 **Modular & Extensible** - Clean resource-based architecture  
@@ -183,6 +184,34 @@ response = ZaiPayment.items.list_transactions('item_id')
 - 💡 [Item Examples](examples/items.md) - Real-world usage patterns and complete workflows
 - 🔗 [Zai: Items API Reference](https://developer.hellozai.com/reference/listitems)
 
+### Token Auth
+
+Generate secure tokens for collecting bank and card account information:
+
+```ruby
+# Generate a bank token (for collecting bank account details)
+response = ZaiPayment.token_auths.generate(
+  user_id: "seller-68611249",
+  token_type: "bank"
+)
+
+token = response.data['token_auth']['token']
+# Use this token with PromisePay.js on the frontend
+
+# Generate a card token (for collecting credit card details)
+response = ZaiPayment.token_auths.generate(
+  user_id: "buyer-12345",
+  token_type: "card"
+)
+
+token = response.data['token_auth']['token']
+# Use this token with PromisePay.js on the frontend
+```
+
+**📚 Documentation:**
+- 💡 [Token Auth Examples](examples/token_auths.md) - Complete integration guide with PromisePay.js
+- 🔗 [Zai: Generate Token API Reference](https://developer.hellozai.com/reference/generatetoken)
+
 ### Webhooks
 
 Manage webhook endpoints:
@@ -243,6 +272,7 @@ end
 | ✅ Webhooks                     | CRUD for webhook endpoints        | Done           |
 | ✅ Users                        | Manage PayIn / PayOut users       | Done           |
 | ✅ Items                        | Transactions/payments (CRUD)      | Done           |
+| ✅ Token Auth                   | Generate bank/card tokens         | Done           |
 | 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
 | 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
 | 💼 Wallets                      | Create and manage wallet accounts | ⏳ Planned      |
@@ -307,6 +337,7 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 ### Examples & Patterns
 - [User Examples](examples/users.md) - Real-world user management patterns
 - [Item Examples](examples/items.md) - Transaction and payment workflows
+- [Token Auth Examples](examples/token_auths.md) - Secure token generation and integration
 - [Webhook Examples](examples/webhooks.md) - Webhook integration patterns
 
 ### Technical Guides
