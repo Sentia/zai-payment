@@ -1,7 +1,7 @@
 # Zai Payment Ruby Library
 
 ![GitHub License](https://img.shields.io/github/license/Sentia/zai-payment)
-[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-MIT-blue.svg)](./CODE_OF_CONDUCT.md)
+[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-MIT-blue.svg)](./code_of_conduct.md)
 [![Gem Version](https://img.shields.io/gem/v/zai_payment.svg)](https://rubygems.org/gems/zai_payment)
 [![GitHub release](https://img.shields.io/github/release/Sentia/zai-payment.svg)](https://github.com/Sentia/zai-payment/releases)
 [![Gem](https://img.shields.io/gem/dt/zai_payment.svg)](https://rubygems.org/gems/zai_payment)
@@ -9,7 +9,7 @@
 ![Endpoint Badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FSentia%2Fzai-payment%2Fmain%2Fbadges%2Fcoverage.json)
 ![GitHub top language](https://img.shields.io/github/languages/top/Sentia/zai-payment)
 [![Documentation](https://img.shields.io/badge/docs-rubydoc.info-blue.svg)](https://rubydoc.info/gems/zai_payment?refresh=true)
-[![Contributing](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](./CONTRIBUTING.md)
+[![Contributing](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](./contributing.md)
 
 A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — starting with secure OAuth2 authentication, and ready for Payments, Virtual Accounts, Webhooks, and more.
 
@@ -20,6 +20,7 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 - 🔐 **OAuth2 Authentication** - Client Credentials flow with automatic token management  
 - 🧠 **Smart Token Caching** - Auto-refresh before expiration, thread-safe storage  
 - 👥 **User Management** - Create and manage payin (buyers) & payout (sellers) users  
+- 📦 **Item Management** - Full CRUD for transactions/payments between buyers and sellers  
 - 🪝 **Webhooks** - Full CRUD + secure signature verification (HMAC SHA256)  
 - ⚙️ **Environment-Aware** - Seamless Pre-live / Production switching  
 - 🧱 **Modular & Extensible** - Clean resource-based architecture  
@@ -77,7 +78,7 @@ token = token_provider.bearer_token
 
 The gem handles OAuth2 Client Credentials flow automatically - tokens are cached and refreshed before expiration.
 
-📖 **<a href="docs/AUTHENTICATION.md">Complete Authentication Guide</a>** - Two approaches, examples, and best practices
+📖 **<a href="docs/authentication.md">Complete Authentication Guide</a>** - Two approaches, examples, and best practices
 
 ### Users
 
@@ -135,10 +136,52 @@ response = ZaiPayment.users.update('user_id', mobile: '+9876543210')
 ```
 
 **📚 Documentation:**
-- 📖 [User Management Guide](docs/USERS.md) - Complete guide for payin and payout users
+- 📖 [User Management Guide](docs/users.md) - Complete guide for payin and payout users
 - 💡 [User Examples](examples/users.md) - Real-world usage patterns and Rails integration
 - 🔗 [Zai: Onboarding a Payin User](https://developer.hellozai.com/docs/onboarding-a-pay-in-user)
 - 🔗 [Zai: Onboarding a Payout User](https://developer.hellozai.com/docs/onboarding-a-pay-out-user)
+
+### Items
+
+Manage transactions/payments between buyers and sellers:
+
+```ruby
+# Create an item
+response = ZaiPayment.items.create(
+  name: "Product Purchase",
+  amount: 10000, # Amount in cents ($100.00)
+  payment_type: 2, # Credit card
+  buyer_id: "buyer-123",
+  seller_id: "seller-456",
+  description: "Purchase of premium product",
+  currency: "AUD",
+  tax_invoice: true
+)
+
+# List items
+response = ZaiPayment.items.list(limit: 20, offset: 0)
+
+# Get item details
+response = ZaiPayment.items.show('item_id')
+
+# Update item
+response = ZaiPayment.items.update('item_id', name: 'Updated Name')
+
+# Get item status
+response = ZaiPayment.items.show_status('item_id')
+
+# Get buyer/seller details
+response = ZaiPayment.items.show_buyer('item_id')
+response = ZaiPayment.items.show_seller('item_id')
+
+# List transactions
+response = ZaiPayment.items.list_transactions('item_id')
+```
+
+**📚 Documentation:**
+- 📖 [Item Management Guide](docs/items.md) - Complete guide for creating and managing items
+- 💡 [Item Examples](examples/items.md) - Real-world usage patterns and complete workflows
+- 🔗 [Zai: Items API Reference](https://developer.hellozai.com/reference/listitems)
 
 ### Webhooks
 
@@ -163,9 +206,9 @@ ZaiPayment.webhooks.create_secret_key(secret_key: secret_key)
 
 **📚 Documentation:**
 - 📖 [Webhook Examples & Complete Guide](examples/webhooks.md) - Full CRUD operations and patterns
-- 🔒 [Security Quick Start](docs/WEBHOOK_SECURITY_QUICKSTART.md) - 5-minute webhook security setup
-- 🏗️ [Architecture & Implementation](docs/WEBHOOKS.md) - Detailed technical documentation
-- 🔐 [Signature Verification Details](docs/WEBHOOK_SIGNATURE.md) - Security implementation specs
+- 🔒 [Security Quick Start](docs/webhook_security_quickstart.md) - 5-minute webhook security setup
+- 🏗️ [Architecture & Implementation](docs/webhooks.md) - Detailed technical documentation
+- 🔐 [Signature Verification Details](docs/webhook_signature.md) - Security implementation specs
 
 ### Error Handling
 
@@ -199,6 +242,7 @@ end
 | ✅ Authentication                | OAuth2 Client Credentials flow    | Done           |
 | ✅ Webhooks                     | CRUD for webhook endpoints        | Done           |
 | ✅ Users                        | Manage PayIn / PayOut users       | Done           |
+| ✅ Items                        | Transactions/payments (CRUD)      | Done           |
 | 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
 | 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
 | 💼 Wallets                      | Create and manage wallet accounts | ⏳ Planned      |
@@ -236,12 +280,12 @@ This will load the gem and all its dependencies, allowing you to experiment with
 ## 🧾 Versioning
 This gem follows [Semantic Versioning](https://semver.org).
 
-See [CHANGELOG.md](./CHANGELOG.md) for release history.
+See [changelog.md](./changelog.md) for release history.
 
 
 ## 🤝 Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/Sentia/zai-payment. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/Sentia/zai-payment/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/Sentia/zai-payment. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/Sentia/zai-payment/blob/main/code_of_conduct.md).
 
 ## 🪪 License
 
@@ -249,27 +293,29 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Code of Conduct
 
-Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/Sentia/zai-payment/blob/main/CODE_OF_CONDUCT.md).
+Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/Sentia/zai-payment/blob/main/code_of_conduct.md).
 
 ## 📚 Documentation
 
 ### Getting Started
-- [**Authentication Guide**](docs/AUTHENTICATION.md) - Two approaches to getting tokens, automatic management
-- [**User Management Guide**](docs/USERS.md) - Managing payin and payout users
+- [**Authentication Guide**](docs/authentication.md) - Two approaches to getting tokens, automatic management
+- [**User Management Guide**](docs/users.md) - Managing payin and payout users
+- [**Item Management Guide**](docs/items.md) - Creating and managing transactions/payments
 - [**Webhook Examples**](examples/webhooks.md) - Complete webhook usage guide
-- [**Documentation Index**](docs/README.md) - Full documentation navigation
+- [**Documentation Index**](docs/readme.md) - Full documentation navigation
 
 ### Examples & Patterns
 - [User Examples](examples/users.md) - Real-world user management patterns
+- [Item Examples](examples/items.md) - Transaction and payment workflows
 - [Webhook Examples](examples/webhooks.md) - Webhook integration patterns
 
 ### Technical Guides
-- [Webhook Architecture](docs/WEBHOOKS.md) - Technical implementation details
-- [Architecture Overview](docs/ARCHITECTURE.md) - System architecture and design
+- [Webhook Architecture](docs/webhooks.md) - Technical implementation details
+- [Architecture Overview](docs/architecture.md) - System architecture and design
 
 ### Security
-- [Webhook Security Quick Start](docs/WEBHOOK_SECURITY_QUICKSTART.md) - 5-minute setup guide
-- [Signature Verification](docs/WEBHOOK_SIGNATURE.md) - Implementation details
+- [Webhook Security Quick Start](docs/webhook_security_quickstart.md) - 5-minute setup guide
+- [Signature Verification](docs/webhook_signature.md) - Implementation details
 
 ### External Resources
 - [Zai Developer Portal](https://developer.hellozai.com/)

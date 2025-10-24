@@ -542,8 +542,11 @@ RSpec.describe ZaiPayment::Resources::User do
       end
 
       it 'accepts payout user type' do
-        params = base_params.merge(user_type: 'payout')
-        expect { user_resource.create(**params) }.not_to raise_error
+        payout_params = base_params.merge(
+          user_type: 'payout', address_line1: '123 Main St', city: 'Sydney',
+          state: 'NSW', zip: '2000', dob: '01/01/1990'
+        )
+        expect { user_resource.create(**payout_params) }.not_to raise_error
       end
 
       it 'accepts uppercase user type' do

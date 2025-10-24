@@ -83,7 +83,7 @@ response = ZaiPayment.users.update(
 | first_name | String | ✓ |
 | last_name | String | ✓ |
 | country | String (ISO 3166-1 alpha-3) | ✓ |
-| dob | String (YYYYMMDD) | ✓ |
+| dob | String (DD/MM/YYYY) | ✓ |
 | address_line1 | String | ✓ |
 | city | String | ✓ |
 | state | String | ✓ |
@@ -106,7 +106,7 @@ country: 'GBR'  # United Kingdom
 country: 'CAN'  # Canada
 ```
 
-### Date of Birth (YYYYMMDD)
+### Date of Birth (DD/MM/YYYY)
 ```ruby
 dob: '19900101'  # January 1, 1990
 ```
