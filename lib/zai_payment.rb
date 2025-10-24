@@ -13,6 +13,7 @@ require_relative 'zai_payment/response'
 require_relative 'zai_payment/resources/webhook'
 require_relative 'zai_payment/resources/user'
 require_relative 'zai_payment/resources/item'
+require_relative 'zai_payment/resources/token_auth'
 
 module ZaiPayment
   class << self
@@ -50,6 +51,11 @@ module ZaiPayment
     # @return [ZaiPayment::Resources::Item] item resource instance
     def items
       @items ||= Resources::Item.new(client: Client.new(base_endpoint: :core_base))
+    end
+
+    # @return [ZaiPayment::Resources::TokenAuth] token_auth resource instance
+    def token_auths
+      @token_auths ||= Resources::TokenAuth.new(client: Client.new(base_endpoint: :core_base))
     end
   end
 end
