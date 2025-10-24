@@ -12,6 +12,7 @@ This guide demonstrates how to implement a complete card payment workflow in a R
 6. [Making a Payment](#making-a-payment)
 7. [Webhook Handling](#webhook-handling)
 8. [Complete Flow Example](#complete-flow-example)
+9. [Reference](#reference)
 
 ## Setup
 
@@ -129,6 +130,7 @@ end
 
 ### View with Hosted Form
 
+
 ```erb
 <!-- app/views/card_accounts/new.html.erb -->
 <div class="card-form-container">
@@ -171,6 +173,8 @@ end
   </script>
 </div>
 ```
+
+> **Note:** For more details on the Hosted Form integration, including PCI compliance, supported browsers, and error handling, see the [Zai Hosted Form Documentation](https://developer.hellozai.com/docs/integrating-drop-in-ui-for-capturing-a-credit-card).
 
 ### Storing Card Account ID
 
@@ -706,3 +710,6 @@ This example demonstrates:
 - Verify webhook signatures for security
 - Handle PCI compliance requirements (the hosted form helps with this)
 
+
+## Reference
+- [Zai Cards Payin Workflow](https://developer.hellozai.com/docs/cards-payin-workflow)
