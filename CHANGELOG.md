@@ -1,5 +1,32 @@
 ## [Released]
 
+## [1.4.0] - 2025-10-24
+### Added
+- **Items Management API**: Full CRUD operations for managing Zai items (transactions/payments) 🛒
+  - `ZaiPayment.items.list(limit:, offset:)` - List all items with pagination
+  - `ZaiPayment.items.show(item_id)` - Get item details by ID
+  - `ZaiPayment.items.create(**attributes)` - Create new item/transaction
+  - `ZaiPayment.items.update(item_id, **attributes)` - Update item information
+  - `ZaiPayment.items.delete(item_id)` - Delete an item
+  - `ZaiPayment.items.show_seller(item_id)` - Get seller details for an item
+  - `ZaiPayment.items.show_buyer(item_id)` - Get buyer details for an item
+  - `ZaiPayment.items.show_fees(item_id)` - Get fees associated with an item
+  - `ZaiPayment.items.show_wire_details(item_id)` - Get wire transfer details for an item
+  - `ZaiPayment.items.list_transactions(item_id, limit:, offset:)` - List transactions for an item
+  - `ZaiPayment.items.list_batch_transactions(item_id, limit:, offset:)` - List batch transactions for an item
+  - `ZaiPayment.items.show_status(item_id)` - Get current status of an item
+- Comprehensive validation for item attributes (name, amount, payment_type, buyer_id, seller_id)
+- Support for optional item fields (description, currency, fee_ids, custom_descriptor, deposit_reference, etc.)
+- Full RSpec test suite for Items resource with 100% coverage
+- Comprehensive examples documentation in `examples/items.md`
+
+### Documentation
+- Added detailed Items API examples with complete workflow demonstrations
+- Payment types documentation (1-7: Direct Debit, Credit Card, Bank Transfer, Wallet, BPay, PayPal, Other)
+- Error handling examples for Items operations
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v1.3.2...v1.4.0
+
 ## [1.3.2] - 2025-10-23
 ### Added
 - YARD documentation generation support with `.yardopts` configuration
