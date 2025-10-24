@@ -123,7 +123,7 @@ end
 
 ## 📚 Full Documentation
 
-- [Complete Setup Guide](WEBHOOKS.md#webhook-security-signature-verification)
+- [Complete Setup Guide](webhooks.md#webhook-security-signature-verification)
 - [More Examples](../examples/webhooks.md#webhook-security-complete-setup-guide)
 - [Zai Official Docs](https://developer.hellozai.com/docs/verify-webhook-signatures)
 

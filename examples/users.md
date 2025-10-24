@@ -739,7 +739,7 @@ puts "AMEX-ready merchant created: #{response.data['id']}"
 
 ## See Also
 
-- [User Management Documentation](../docs/USERS.md)
+- [User Management Documentation](../docs/users.md)
 - [Webhook Examples](webhooks.md)
 - [Zai API Reference](https://developer.hellozai.com/reference)
 

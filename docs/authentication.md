@@ -641,7 +641,7 @@ Gets or refreshes the bearer token.
 ## Next Steps
 
 - ✅ Authentication configured and working
-- 📖 Read [Webhook Guide](WEBHOOKS.md) to start using webhooks
+- 📖 Read [Webhook Guide](webhooks.md) to start using webhooks
 - 💡 Check [Examples](../examples/webhooks.md) for complete code samples
-- 🔒 Set up [Webhook Security](WEBHOOK_SECURITY_QUICKSTART.md)
+- 🔒 Set up [Webhook Security](webhook_security_quickstart.md)
 

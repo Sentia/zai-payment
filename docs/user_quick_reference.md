@@ -216,7 +216,7 @@ ruby examples/user_demo.rb
 
 ## Documentation Links
 
-- [Full User Guide](USERS.md)
+- [Full User Guide](users.md)
 - [Usage Examples](../examples/users.md)
 - [Zai: Payin User](https://developer.hellozai.com/docs/onboarding-a-pay-in-user)
 - [Zai: Payout User](https://developer.hellozai.com/docs/onboarding-a-pay-out-user)
@@ -224,7 +224,7 @@ ruby examples/user_demo.rb
 ## Support
 
 For issues or questions:
-1. Check the [User Management Guide](USERS.md)
+1. Check the [User Management Guide](users.md)
 2. Review [Examples](../examples/users.md)
 3. Visit [Zai Developer Portal](https://developer.hellozai.com/)
 

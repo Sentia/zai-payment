@@ -23,7 +23,7 @@ First off, thank you for considering contributing to Zai Payment! 🎉 It's peop
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [contact@sentia.com.au](mailto:contact@sentia.com.au).
+This project and everyone participating in it is governed by our [Code of Conduct](code_of_conduct.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [contact@sentia.com.au](mailto:contact@sentia.com.au).
 
 ---
 
@@ -86,7 +86,7 @@ Please follow these steps to have your contribution considered by the maintainer
 **Pull Request Guidelines:**
 - Keep changes focused - one feature/fix per PR
 - Link any relevant issues in the PR description
-- Update CHANGELOG.md if appropriate
+- Update changelog.md if appropriate
 - Maintain backward compatibility when possible
 - Include tests for new functionality
 - Follow the existing code style
@@ -268,9 +268,9 @@ bundle exec rubocop -a
 
 - **Public APIs must be documented** using YARD syntax
 - **Include examples** in documentation when helpful
-- **Update README.md** when adding new features
+- **Update readme.md** when adding new features
 - **Update relevant docs/** files for architectural changes
-- **Keep CHANGELOG.md** updated with notable changes
+- **Keep changelog.md** updated with notable changes
 
 **YARD Documentation Example:**
 ```ruby
