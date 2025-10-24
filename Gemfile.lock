@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    zai_payment (2.0.1)
+    zai_payment (2.0.2)
       base64 (~> 0.3.0)
       faraday (~> 2.0)
       openssl (~> 3.3)

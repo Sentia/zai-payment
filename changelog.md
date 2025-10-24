@@ -1,7 +1,14 @@
 ## [Released]
+## [2.0.2] - 2025-10-24
+### Fixed
+- **Items API**: Fixed endpoint configuration to use `core_base` instead of `va_base`
+  - Items resource now correctly uses the `https://test.api.promisepay.com` endpoint (prelive) 
+  - Resolves CloudFront 403 error when creating items via POST requests
+  - Ensures Items API uses the same endpoint as Users API for consistency
+
 ## [2.0.1] - 2025-10-24
 ### Changes
-  - Updated markdown files 
+  - Updated markdown files
 
 ## [2.0.0] - 2025-10-24
 ### Added

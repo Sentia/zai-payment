@@ -49,7 +49,7 @@ module ZaiPayment
 
     # @return [ZaiPayment::Resources::Item] item resource instance
     def items
-      @items ||= Resources::Item.new
+      @items ||= Resources::Item.new(client: Client.new(base_endpoint: :core_base))
     end
   end
 end
