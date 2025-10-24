@@ -88,6 +88,7 @@ Manage payin (buyer) and payout (seller/merchant) users:
 ```ruby
 # Create a payin user (buyer)
 response = ZaiPayment.users.create(
+  user_type: 'payin',
   email: 'buyer@example.com',
   first_name: 'John',
   last_name: 'Doe',
@@ -97,6 +98,7 @@ response = ZaiPayment.users.create(
 
 # Create a payout user (seller/merchant)
 response = ZaiPayment.users.create(
+  user_type: 'payout',
   email: 'seller@example.com',
   first_name: 'Jane',
   last_name: 'Smith',
@@ -110,6 +112,7 @@ response = ZaiPayment.users.create(
 
 # Create a business user with company details
 response = ZaiPayment.users.create(
+  user_type: 'payout',
   email: 'director@company.com',
   first_name: 'John',
   last_name: 'Director',

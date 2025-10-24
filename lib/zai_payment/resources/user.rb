@@ -107,7 +107,7 @@ module ZaiPayment
       # @option attributes [String] :id Optional unique ID for the user. If not provided,
       #   Zai will generate one automatically. Cannot contain '.' character.
       #   Useful for mapping to your existing system's user IDs.
-      # @option attributes [String] :user_type User type ('payin' or 'payout').
+      # @option attributes [String] :user_type (Required) User type ('payin' or 'payout').
       #   This determines which fields are required.
       # @option attributes [String] :email (Required) user's email address
       # @option attributes [String] :first_name (Required) user's first name
@@ -408,7 +408,7 @@ module ZaiPayment
 
       def validate_create_attributes!(attributes) # rubocop:disable Metrics/AbcSize
         validate_required_attributes!(attributes)
-        validate_user_type!(attributes[:user_type]) if attributes[:user_type]
+        validate_user_type!(attributes[:user_type])
         validate_email!(attributes[:email])
         validate_country!(attributes[:country])
         validate_dob!(attributes[:dob]) if attributes[:dob]
@@ -418,7 +418,7 @@ module ZaiPayment
 
       def validate_required_attributes!(attributes)
         # Base required fields for all users
-        required_fields = %i[email first_name last_name country]
+        required_fields = %i[email first_name last_name country user_type]
 
         # Additional required fields for payout users
         user_type = attributes[:user_type]&.to_s&.downcase

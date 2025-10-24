@@ -65,6 +65,7 @@ Create a new payin user who will make payments on your platform.
 
 #### Required Fields for Payin Users
 
+- `user_type` - User type (must be 'payin')
 - `email` - User's email address
 - `first_name` - User's first name
 - `last_name` - User's last name
@@ -85,6 +86,7 @@ Create a new payin user who will make payments on your platform.
 
 ```ruby
 response = ZaiPayment.users.create(
+  user_type: 'payin',
   email: 'buyer@example.com',
   first_name: 'John',
   last_name: 'Doe',
@@ -108,6 +110,7 @@ Create a new payout user who will receive payments. Payout users must undergo ve
 
 #### Required Fields for Payout Users (Individuals)
 
+- `user_type` - User type (must be 'payout')
 - `email` - User's email address
 - `first_name` - User's first name
 - `last_name` - User's last name
@@ -122,6 +125,7 @@ Create a new payout user who will receive payments. Payout users must undergo ve
 
 ```ruby
 response = ZaiPayment.users.create(
+  user_type: 'payout',
   email: 'seller@example.com',
   first_name: 'Jane',
   last_name: 'Smith',
@@ -466,6 +470,7 @@ When the `company` parameter is provided, the following fields are required:
 ```ruby
 response = ZaiPayment.users.create(
   # Personal details (authorized signer)
+  user_type: 'payout',
   email: 'john.director@example.com',
   first_name: 'John',
   last_name: 'Smith',
@@ -505,6 +510,7 @@ puts "Company: #{user['company']['name']}"
 
 | Field | Type | Description | Payin Required | Payout Required |
 |-------|------|-------------|----------------|-----------------|
+| `user_type` | String | User type ('payin' or 'payout') | ✓ | ✓ |
 | `email` | String | User's email address | ✓ | ✓ |
 | `first_name` | String | User's first name | ✓ | ✓ |
 | `last_name` | String | User's last name | ✓ | ✓ |
@@ -528,7 +534,6 @@ puts "Company: #{user['company']['name']}"
 | `company` | Object | Company details (see below) | Optional | Optional |
 | `device_id` | String | Device ID for fraud prevention | When charging* | N/A |
 | `ip_address` | String | IP address for fraud prevention | When charging* | N/A |
-| `user_type` | String | 'payin' or 'payout' | Optional | Optional |
 
 \* Required when an item is created and a card is charged
 
@@ -630,6 +635,7 @@ response.meta     # => Pagination metadata (for list)
 ```ruby
 # Step 1: Create a payin user with minimal info
 response = ZaiPayment.users.create(
+  user_type: 'payin',
   email: 'buyer@example.com',
   first_name: 'John',
   last_name: 'Doe',
@@ -654,6 +660,7 @@ ZaiPayment.users.update(
 ```ruby
 response = ZaiPayment.users.create(
   # Required fields
+  user_type: 'payout',
   email: 'seller@example.com',
   first_name: 'Jane',
   last_name: 'Smith',
@@ -666,8 +673,7 @@ response = ZaiPayment.users.create(
   
   # Additional recommended fields
   mobile: '+61412345678',
-  government_number: 'TFN123456789',
-  user_type: 'payout'
+  government_number: 'TFN123456789'
 )
 
 user = response.data
