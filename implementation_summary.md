@@ -169,8 +169,8 @@ The following documentation files have been updated:
 
 1. **`lib/zai_payment/resources/user.rb`** - Implementation
 2. **`examples/users.md`** - Usage examples and patterns
-3. **`docs/USERS.md`** - Field reference and comprehensive guide
-4. **`README.md`** - Quick start example
+3. **`docs/users.md`** - Field reference and comprehensive guide
+4. **`readme.md`** - Quick start example
 
 ## Testing
 
@@ -190,6 +190,6 @@ These changes are **backward compatible**. All new parameters are optional and e
 
 - `/lib/zai_payment/resources/user.rb` - Main implementation
 - `/examples/users.md` - Usage examples
-- `/docs/USERS.md` - Field reference
-- `/README.md` - Quick start guide
+- `/docs/users.md` - Field reference
+- `/readme.md` - Quick start guide
 

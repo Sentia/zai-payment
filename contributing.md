@@ -231,7 +231,7 @@ feat(webhooks): add support for webhook signature verification
 
 fix(auth): prevent token refresh race condition
 
-docs: update README with webhook examples
+docs: update readme with webhook examples
 
 test(client): add specs for error handling
 ```
@@ -364,7 +364,7 @@ end
 ### Recognition
 
 Contributors will be recognized in:
-- The project's README (if significant contribution)
+- The project's readme (if significant contribution)
 - The CHANGELOG for their specific contributions
 - Release notes
 

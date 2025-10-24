@@ -110,7 +110,7 @@ Practical examples including:
 - RSpec integration tests
 - Common patterns with retry logic
 
-#### README Updates (`readme.md`)
+#### readme Updates (`readme.md`)
 - Added Users section with quick examples
 - Updated roadmap to mark Users as "Done"
 - Added documentation links
@@ -149,7 +149,7 @@ response = ZaiPayment.users.create(
   first_name: 'Jane',
   last_name: 'Smith',
   country: 'AUS',
-  dob: '19900101',
+  dob: '01/01/1990',
   address_line1: '456 Market St',
   city: 'Sydney',
   state: 'NSW',
@@ -208,7 +208,7 @@ response = ZaiPayment.users.update(
 
 1. **Email**: Must be valid email format
 2. **Country**: Must be 3-letter ISO 3166-1 alpha-3 code (e.g., USA, AUS, GBR)
-3. **Date of Birth**: Must be DD/MM/YYYY format (e.g., 19900101)
+3. **Date of Birth**: Must be DD/MM/YYYY format (e.g., 01/01/1990)
 4. **User Type**: Must be 'payin' or 'payout' (optional field)
 
 ## Error Handling

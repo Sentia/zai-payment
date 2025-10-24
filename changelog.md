@@ -1,4 +1,7 @@
 ## [Released]
+## [2.0.1] - 2025-10-24
+### Changes
+  - Updated markdown files 
 
 ## [2.0.0] - 2025-10-24
 ### Added
@@ -20,10 +23,25 @@
 - Full RSpec test suite for Items resource with 100% coverage
 - Comprehensive examples documentation in `examples/items.md`
 
+### Changed
+- **User Management Enhancement**: Updated user creation validation to support user type-specific required fields
+  - `user_type` parameter now determines which fields are required during user creation
+  - Payin users require: `email`, `first_name`, `last_name`, `country`
+  - Payout users require additional fields: `address_line1`, `city`, `state`, `zip`, `dob`
+  - Company validation now enforces required fields based on user type
+  - For payout companies, additional fields required: `address_line1`, `city`, `state`, `zip`, `phone`, `country`
+  - All companies require: `name`, `legal_name`, `tax_number`, `business_email`, `country`
+- **Clarified device_id and ip_address requirements**: These fields are NOT required when creating a payin user, but become required when creating an item and charging a card
+- Refactored company validation logic for better maintainability and reduced cyclomatic complexity
+
 ### Documentation
 - Added detailed Items API examples with complete workflow demonstrations
 - Payment types documentation (1-7: Direct Debit, Credit Card, Bank Transfer, Wallet, BPay, PayPal, Other)
 - Error handling examples for Items operations
+- Updated User Management documentation (`docs/users.md`) with correct required fields for each user type
+- Updated all user examples in `examples/users.md` to reflect proper user type usage
+- Added clear notes about when `device_id` and `ip_address` are required
+- Updated company field requirements in all documentation
 
 **Full Changelog**: https://github.com/Sentia/zai-payment/compare/v1.3.2...v2.0.0
 
@@ -33,7 +51,7 @@
 - Added `yard` gem as development dependency for API documentation
 
 ### Fixed
-- Fixed YARD link resolution warning in README.md by converting markdown link to HTML format
+- Fixed YARD link resolution warning in readme.md by converting markdown link to HTML format
 
 ### Documentation
 - Configured YARD to generate comprehensive API documentation
