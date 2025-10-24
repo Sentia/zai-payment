@@ -6,7 +6,7 @@ module ZaiPayment
     #
     # @see https://developer.hellozai.com/docs/onboarding-a-pay-in-user
     # @see https://developer.hellozai.com/docs/onboarding-a-pay-out-user
-    class User # rubocop:disable Metrics/ClassLength
+    class User
       attr_reader :client
 
       # User types

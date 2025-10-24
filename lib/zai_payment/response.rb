@@ -5,6 +5,11 @@ module ZaiPayment
   class Response
     attr_reader :status, :body, :headers, :raw_response
 
+    RESPONSE_DATA_KEYS = %w[
+      webhooks users items fees transactions
+      batch_transactions bpay_accounts bank_accounts card_accounts
+    ].freeze
+
     def initialize(faraday_response)
       @raw_response = faraday_response
       @status = faraday_response.status
@@ -30,15 +35,15 @@ module ZaiPayment
     end
 
     # Get the data from the response body
-    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def data
       return body unless body.is_a?(Hash)
 
-      body['webhooks'] || body['users'] || body['items'] || body['fees'] ||
-        body['transactions'] || body['batch_transactions'] || body['bpay_accounts'] ||
-        body['bank_accounts'] || body['card_accounts'] || body
+      RESPONSE_DATA_KEYS.each do |key|
+        return body[key] if body[key]
+      end
+
+      body
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     # Get pagination or metadata info
     def meta
