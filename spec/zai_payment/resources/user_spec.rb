@@ -175,6 +175,7 @@ RSpec.describe ZaiPayment::Resources::User do
   describe '#create' do
     let(:base_params) do
       {
+        user_type: 'payin',
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
@@ -195,6 +196,7 @@ RSpec.describe ZaiPayment::Resources::User do
 
     let(:payout_user_params) do
       base_params.merge(
+        user_type: 'payout',
         email: 'seller@example.com',
         dob: '01/01/1990',
         address_line1: '456 Market St',
@@ -260,45 +262,36 @@ RSpec.describe ZaiPayment::Resources::User do
     end
 
     context 'when required fields are missing' do
+      it 'raises a ValidationError for missing user_type' do
+        params = { email: 'test@example.com', first_name: 'John', last_name: 'Doe', country: 'USA' }
+        expect { user_resource.create(**params) }.to raise_error(
+          ZaiPayment::Errors::ValidationError, /Missing required fields:.*user_type/
+        )
+      end
+
       it 'raises a ValidationError for missing email' do
-        params = {
-          first_name: 'John',
-          last_name: 'Doe',
-          country: 'USA'
-        }
+        params = { user_type: 'payin', first_name: 'John', last_name: 'Doe', country: 'USA' }
         expect { user_resource.create(**params) }.to raise_error(
           ZaiPayment::Errors::ValidationError, /Missing required fields:.*email/
         )
       end
 
       it 'raises a ValidationError for missing first_name' do
-        params = {
-          email: 'test@example.com',
-          last_name: 'Doe',
-          country: 'USA'
-        }
+        params = { user_type: 'payin', email: 'test@example.com', last_name: 'Doe', country: 'USA' }
         expect { user_resource.create(**params) }.to raise_error(
           ZaiPayment::Errors::ValidationError, /Missing required fields:.*first_name/
         )
       end
 
       it 'raises a ValidationError for missing last_name' do
-        params = {
-          email: 'test@example.com',
-          first_name: 'John',
-          country: 'USA'
-        }
+        params = { user_type: 'payin', email: 'test@example.com', first_name: 'John', country: 'USA' }
         expect { user_resource.create(**params) }.to raise_error(
           ZaiPayment::Errors::ValidationError, /Missing required fields:.*last_name/
         )
       end
 
       it 'raises a ValidationError for missing country' do
-        params = {
-          email: 'test@example.com',
-          first_name: 'John',
-          last_name: 'Doe'
-        }
+        params = { user_type: 'payin', email: 'test@example.com', first_name: 'John', last_name: 'Doe' }
         expect { user_resource.create(**params) }.to raise_error(
           ZaiPayment::Errors::ValidationError, /Missing required fields:.*country/
         )
@@ -309,30 +302,20 @@ RSpec.describe ZaiPayment::Resources::User do
           email: 'test@example.com'
         }
         expect { user_resource.create(**params) }.to raise_error(
-          ZaiPayment::Errors::ValidationError, /Missing required fields:.*first_name.*last_name.*country/
+          ZaiPayment::Errors::ValidationError, /Missing required fields:.*first_name.*last_name.*country.*user_type/
         )
       end
     end
 
     context 'when email is invalid' do
       it 'raises a ValidationError' do
-        params = {
-          email: 'invalid-email',
-          first_name: 'John',
-          last_name: 'Doe',
-          country: 'USA'
-        }
+        params = { user_type: 'payin', email: 'invalid-email', first_name: 'John', last_name: 'Doe', country: 'USA' }
         expect { user_resource.create(**params) }
           .to raise_error(ZaiPayment::Errors::ValidationError, /valid email address/)
       end
 
       it 'raises a ValidationError for email without @' do
-        params = {
-          email: 'invalidemail.com',
-          first_name: 'John',
-          last_name: 'Doe',
-          country: 'USA'
-        }
+        params = { user_type: 'payin', email: 'invalidemail.com', first_name: 'John', last_name: 'Doe', country: 'USA' }
         expect { user_resource.create(**params) }
           .to raise_error(ZaiPayment::Errors::ValidationError, /valid email address/)
       end
@@ -340,23 +323,14 @@ RSpec.describe ZaiPayment::Resources::User do
 
     context 'when country is invalid' do
       it 'raises a ValidationError for non-ISO code' do
-        params = {
-          email: 'test@example.com',
-          first_name: 'John',
-          last_name: 'Doe',
-          country: 'US'
-        }
+        params = { user_type: 'payin', email: 'test@example.com', first_name: 'John', last_name: 'Doe', country: 'US' }
         expect { user_resource.create(**params) }
           .to raise_error(ZaiPayment::Errors::ValidationError, /ISO 3166-1 alpha-3 code/)
       end
 
       it 'raises a ValidationError for invalid country code' do
-        params = {
-          email: 'test@example.com',
-          first_name: 'John',
-          last_name: 'Doe',
-          country: 'USAA'
-        }
+        params = { user_type: 'payin', email: 'test@example.com', first_name: 'John', last_name: 'Doe',
+                   country: 'USAA' }
         expect { user_resource.create(**params) }
           .to raise_error(ZaiPayment::Errors::ValidationError, /ISO 3166-1 alpha-3 code/)
       end
@@ -381,43 +355,6 @@ RSpec.describe ZaiPayment::Resources::User do
         params = base_params.merge(user_type: 'invalid_type')
         expect { user_resource.create(**params) }
           .to raise_error(ZaiPayment::Errors::ValidationError, /user_type must be one of/)
-      end
-    end
-
-    context 'when user_type is not present' do
-      before do
-        stubs.post('/users') do |env|
-          body = JSON.parse(env.body)
-          # API will handle default user_type (likely 'payin')
-          [201, { 'Content-Type' => 'application/json' }, created_response] if body['user_type'].nil?
-        end
-      end
-
-      let(:created_response) do
-        base_params.transform_keys(&:to_s).merge(
-          'id' => 'user-123',
-          'user_type' => 'payin' # API default
-        )
-      end
-
-      it 'allows user creation without user_type' do
-        response = user_resource.create(**base_params)
-        expect(response).to be_a(ZaiPayment::Response)
-        expect(response.success?).to be true
-      end
-
-      it 'only validates base required fields' do
-        # Should NOT require payout fields like address_line1, city, state, zip, dob
-        params = base_params # Only has: email, first_name, last_name, country
-        expect { user_resource.create(**params) }.not_to raise_error
-      end
-
-      it 'does not call validate_user_type! when user_type is nil' do
-        # This validates that the conditional check works
-        params = base_params
-        allow(user_resource).to receive(:validate_user_type!).and_call_original
-        user_resource.create(**params)
-        expect(user_resource).not_to have_received(:validate_user_type!)
       end
     end
 
@@ -465,6 +402,7 @@ RSpec.describe ZaiPayment::Resources::User do
 
       it 'raises a ValidationError' do
         params = {
+          user_type: 'payin',
           email: 'duplicate@example.com',
           first_name: 'John',
           last_name: 'Doe',
@@ -602,12 +540,18 @@ RSpec.describe ZaiPayment::Resources::User do
   describe '#create with company attributes' do
     let(:base_user_params) do
       {
+        user_type: 'payout',
         email: 'director@example.com',
         first_name: 'John',
         last_name: 'Director',
         country: 'AUS',
         mobile: '+61412345678',
-        authorized_signer_title: 'Director'
+        authorized_signer_title: 'Director',
+        dob: '15/06/1985',
+        address_line1: '789 Business Ave',
+        city: 'Melbourne',
+        state: 'VIC',
+        zip: '3000'
       }
     end
 
@@ -775,7 +719,12 @@ RSpec.describe ZaiPayment::Resources::User do
           legal_name: 'Minimal Company Pty Ltd',
           tax_number: '987654321',
           business_email: 'info@minimal.com',
-          country: 'AUS'
+          country: 'AUS',
+          address_line1: '123 Minimal St',
+          city: 'Sydney',
+          state: 'NSW',
+          zip: '2000',
+          phone: '+61298765432'
         }
       end
 
@@ -1458,6 +1407,7 @@ RSpec.describe ZaiPayment::Resources::User do
   describe '#create with additional user parameters' do
     let(:base_params) do
       {
+        user_type: 'payin',
         email: 'test@example.com',
         first_name: 'John',
         last_name: 'Doe',
