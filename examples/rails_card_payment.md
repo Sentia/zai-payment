@@ -34,9 +34,10 @@ Configure the gem in an initializer (`config/initializers/zai_payment.rb`):
 
 ```ruby
 ZaiPayment.configure do |config|
-  config.client_id = ENV['ZAI_CLIENT_ID']
-  config.client_secret = ENV['ZAI_CLIENT_SECRET']
   config.environment = Rails.env.production? ? 'production' : 'prelive'
+  config.client_id = ENV.fetch("ZAI_CLIENT_ID")
+  config.client_secret = ENV.fetch("ZAI_CLIENT_SECRET")
+  config.scope = ENV.fetch("ZAI_OAUTH_SCOPE")
 end
 ```
 
