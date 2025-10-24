@@ -134,6 +134,27 @@ response = ZaiPayment.users.show('user_id')
 
 # Update user
 response = ZaiPayment.users.update('user_id', mobile: '+9876543210')
+
+# Show user wallet account
+response = ZaiPayment.users.wallet_account('user_id')
+
+# List user items with pagination
+response = ZaiPayment.users.items('user_id', limit: 50, offset: 10)
+
+# Set user disbursement account
+response = ZaiPayment.users.set_disbursement_account('user_id', 'bank_account_id')
+
+# Show user bank account
+response = ZaiPayment.users.bank_account('user_id')
+
+# Verify user (prelive only)
+response = ZaiPayment.users.verify('user_id')
+
+# Show user card account
+response = ZaiPayment.users.card_account('user_id')
+
+# List user's BPay accounts
+response = ZaiPayment.users.bpay_accounts('user_id')
 ```
 
 **📚 Documentation:**

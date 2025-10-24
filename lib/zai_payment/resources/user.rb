@@ -264,6 +264,134 @@ module ZaiPayment
         client.patch("/users/#{user_id}", body: body)
       end
 
+      # Show the user's wallet account
+      #
+      # @param user_id [String] the user ID
+      # @return [Response] the API response containing wallet account details
+      #
+      # @example
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.wallet_account("user_id")
+      #   response.data # => {"id" => "...", "balance" => ..., ...}
+      #
+      # @see https://developer.hellozai.com/reference/showuserwalletaccounts
+      def wallet_account(user_id)
+        validate_id!(user_id, 'user_id')
+        client.get("/users/#{user_id}/wallet_accounts")
+      end
+
+      # List items associated with the user
+      #
+      # @param user_id [String] the user ID
+      # @param limit [Integer] number of records to return (default: 10, max: 200)
+      # @param offset [Integer] number of records to skip (default: 0)
+      # @return [Response] the API response containing items array
+      #
+      # @example
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.items("user_id")
+      #   response.data # => [{"id" => "...", "name" => "..."}, ...]
+      #
+      # @example with custom pagination
+      #   response = users.items("user_id", limit: 50, offset: 10)
+      #
+      # @see https://developer.hellozai.com/reference/listuseritems
+      def items(user_id, limit: 10, offset: 0)
+        validate_id!(user_id, 'user_id')
+        params = {
+          limit: limit,
+          offset: offset
+        }
+
+        client.get("/users/#{user_id}/items", params: params)
+      end
+
+      # Set the user's disbursement account
+      #
+      # @param user_id [String] the user ID
+      # @param account_id [String] the bank account ID to use for disbursements
+      # @return [Response] the API response
+      #
+      # @example
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.set_disbursement_account("user_id", "account_id")
+      #
+      # @see https://developer.hellozai.com/reference/setuserdisbursementaccount
+      def set_disbursement_account(user_id, account_id)
+        validate_id!(user_id, 'user_id')
+        validate_id!(account_id, 'account_id')
+
+        body = { account_id: account_id }
+        client.patch("/users/#{user_id}/disbursement_account", body: body)
+      end
+
+      # Show the user's bank account
+      #
+      # @param user_id [String] the user ID
+      # @return [Response] the API response containing bank account details
+      #
+      # @example
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.bank_account("user_id")
+      #   response.data # => {"id" => "...", "account_name" => "...", ...}
+      #
+      # @see https://developer.hellozai.com/reference/showuserbankaccount
+      def bank_account(user_id)
+        validate_id!(user_id, 'user_id')
+        client.get("/users/#{user_id}/bank_accounts")
+      end
+
+      # Verify user (Prelive Only)
+      # Sets a user's verification state to approved on pre-live environment
+      #
+      # @param user_id [String] the user ID
+      # @return [Response] the API response
+      #
+      # @example
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.verify("user_id")
+      #
+      # @note This endpoint only works in the pre-live environment.
+      #   The user verification workflow holds for all users in production.
+      #
+      # @see https://developer.hellozai.com/reference/verifyuser
+      def verify(user_id)
+        validate_id!(user_id, 'user_id')
+        client.patch("/users/#{user_id}/identity_verified")
+      end
+
+      # Show the user's card account
+      #
+      # @param user_id [String] the user ID
+      # @return [Response] the API response containing card account details
+      #
+      # @example
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.card_account("user_id")
+      #   response.data # => {"id" => "...", "card" => {...}, ...}
+      #
+      # @see https://developer.hellozai.com/reference/showusercardaccount
+      def card_account(user_id)
+        validate_id!(user_id, 'user_id')
+        client.get("/users/#{user_id}/card_accounts")
+      end
+
+      # List BPay accounts associated with the user
+      #
+      # @param user_id [String] the user ID
+      # @return [Response] the API response containing BPay accounts array
+      #
+      # @example
+      #   users = ZaiPayment::Resources::User.new
+      #   response = users.bpay_accounts("user_id")
+      #   response.data # => [{"id" => "...", "biller_code" => "..."}, ...]
+      #
+      # @see https://developer.hellozai.com/reference/listuserbpayaccounts
+      def bpay_accounts(user_id)
+        validate_id!(user_id, 'user_id')
+        client.get("/users/#{user_id}/bpay_accounts")
+      end
+
       private
 
       def validate_id!(value, field_name)

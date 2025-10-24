@@ -157,6 +157,297 @@ response = ZaiPayment.users.update(
 updated_user = response.data
 ```
 
+### Show User Wallet Account
+
+Show the user's wallet account using a given user ID.
+
+```ruby
+response = ZaiPayment.users.wallet_account('user_id')
+
+wallet = response.data
+puts wallet['id']
+puts wallet['balance']
+puts wallet['currency']
+```
+
+### List User Items
+
+Retrieve an ordered and paginated list of existing items the user is associated with.
+
+```ruby
+# List items with default pagination (limit: 10, offset: 0)
+response = ZaiPayment.users.items('user_id')
+
+# List items with custom pagination
+response = ZaiPayment.users.items('user_id', limit: 50, offset: 10)
+
+# Access the items
+response.data.each do |item|
+  puts "Item ID: #{item['id']}"
+  puts "Name: #{item['name']}"
+  puts "Description: #{item['description']}"
+  puts "Amount: #{item['amount']} #{item['currency']}"
+  puts "State: #{item['state']}"
+  puts "Status: #{item['status']}"
+  puts "Payment Type: #{item['payment_type_id']}"
+  
+  # Buyer information
+  puts "Buyer: #{item['buyer_name']} (#{item['buyer_country']})"
+  puts "Buyer Email: #{item['buyer_email']}"
+  
+  # Seller information
+  puts "Seller: #{item['seller_name']} (#{item['seller_country']})"
+  puts "Seller Email: #{item['seller_email']}"
+  
+  # Access related resource links
+  puts "Transactions URL: #{item['links']['transactions']}"
+  puts "Fees URL: #{item['links']['fees']}"
+end
+
+# Access pagination metadata
+puts "Total items: #{response.meta['total']}"
+puts "Limit: #{response.meta['limit']}"
+puts "Offset: #{response.meta['offset']}"
+```
+
+**Response Structure:**
+
+```ruby
+{
+  "items" => [
+    {
+      "id" => "7139651-1-2046",
+      "name" => "Item 7139651-1-2046",
+      "description" => "Test Item 7139651-1-2046",
+      "created_at" => "2020-05-05T12:26:50.782Z",
+      "updated_at" => "2020-05-05T12:31:03.654Z",
+      "state" => "payment_deposited",
+      "payment_type_id" => 2,
+      "status" => 22200,
+      "amount" => 109,
+      "deposit_reference" => "100014012501482",
+      "buyer_name" => "Buyer Last Name",
+      "buyer_country" => "AUS",
+      "buyer_email" => "assemblybuyer71391895@assemblypayments.com",
+      "seller_name" => "Assembly seller71391950",
+      "seller_country" => "AUS",
+      "seller_email" => "neol_seller71391950@assemblypayments.com",
+      "tds_check_state" => "NA",
+      "currency" => "AUD",
+      "links" => {
+        "self" => "/items/7139651-1-2046",
+        "buyers" => "/items/7139651-1-2046/buyers",
+        "sellers" => "/items/7139651-1-2046/sellers",
+        "status" => "/items/7139651-1-2046/status",
+        "fees" => "/items/7139651-1-2046/fees",
+        "transactions" => "/items/7139651-1-2046/transactions",
+        "batch_transactions" => "/items/7139651-1-2046/batch_transactions",
+        "wire_details" => "/items/7139651-1-2046/wire_details",
+        "bpay_details" => "/items/7139651-1-2046/bpay_details"
+      }
+    }
+  ],
+  "meta" => {
+    "limit" => 10,
+    "offset" => 0,
+    "total" => 1
+  }
+}
+```
+
+### Set User Disbursement Account
+
+Set the user's disbursement account using a given user ID and bank account ID.
+
+```ruby
+response = ZaiPayment.users.set_disbursement_account('user_id', 'bank_account_id')
+
+puts "Disbursement account set: #{response.data['disbursement_account_id']}"
+```
+
+### Show User Bank Account
+
+Show the user's active bank account using a given user ID.
+
+```ruby
+response = ZaiPayment.users.bank_account('user_id')
+
+# Access bank account details
+account = response.data
+puts "Account ID: #{account['id']}"
+puts "Active: #{account['active']}"
+puts "Verification Status: #{account['verification_status']}"
+puts "Currency: #{account['currency']}"
+
+# Access nested bank details
+bank = account['bank']
+puts "Bank Name: #{bank['bank_name']}"
+puts "Country: #{bank['country']}"
+puts "Account Name: #{bank['account_name']}"
+puts "Routing Number: #{bank['routing_number']}"
+puts "Account Number: #{bank['account_number']}"
+puts "Holder Type: #{bank['holder_type']}"
+puts "Account Type: #{bank['account_type']}"
+
+# Access related resource links
+puts "Self URL: #{account['links']['self']}"
+puts "Users URL: #{account['links']['users']}"
+```
+
+**Response Structure:**
+
+```ruby
+{
+  "bank_accounts" => {
+    "id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc",
+    "created_at" => "2016-04-12T09:20:38.540Z",
+    "updated_at" => "2016-04-12T09:20:38.540Z",
+    "active" => true,
+    "verification_status" => "not_verified",
+    "currency" => "AUD",
+    "bank" => {
+      "bank_name" => "Bank of Australia",
+      "country" => "AUS",
+      "account_name" => "Samuel Seller",
+      "routing_number" => "XXXXX3",
+      "account_number" => "XXX234",
+      "holder_type" => "personal",
+      "account_type" => "checking",
+      "direct_debit_authority_status" => nil
+    },
+    "links" => {
+      "self" => "/users/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/bank_accounts",
+      "users" => "/bank_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/users",
+      "direct_debit_authorities" => "/bank_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/direct_debit_authorities"
+    }
+  }
+}
+```
+
+### Verify User (Prelive Only)
+
+Sets a user's verification state to approved on pre-live environment. This endpoint only works in the pre-live environment. The user verification workflow holds for all users in production.
+
+```ruby
+response = ZaiPayment.users.verify('user_id')
+
+puts "User verified: #{response.data['verification_state']}"
+```
+
+**Note:** This is only available in the pre-live/test environment and will not work in production.
+
+### Show User Card Account
+
+Show the user's active card account using a given user ID.
+
+```ruby
+response = ZaiPayment.users.card_account('user_id')
+
+# Access card account details
+account = response.data
+puts "Account ID: #{account['id']}"
+puts "Active: #{account['active']}"
+puts "Verification Status: #{account['verification_status']}"
+puts "CVV Verified: #{account['cvv_verified']}"
+puts "Currency: #{account['currency']}"
+
+# Access nested card details
+card = account['card']
+puts "Card Type: #{card['type']}"
+puts "Cardholder Name: #{card['full_name']}"
+puts "Card Number: #{card['number']}"
+puts "Expiry: #{card['expiry_month']}/#{card['expiry_year']}"
+
+# Access related resource links
+puts "Self URL: #{account['links']['self']}"
+puts "Users URL: #{account['links']['users']}"
+```
+
+**Response Structure:**
+
+```ruby
+{
+  "card_accounts" => {
+    "active" => true,
+    "created_at" => "2020-05-06T01:38:29.022Z",
+    "updated_at" => "2020-05-06T01:38:29.022Z",
+    "id" => "35977230-7168-0138-0a1d-0a58a9feac07",
+    "verification_status" => "not_verified",
+    "cvv_verified" => true,
+    "currency" => "AUD",
+    "card" => {
+      "type" => "visa",
+      "full_name" => "Neol Test",
+      "number" => "XXXX-XXXX-XXXX-1111",
+      "expiry_month" => "7",
+      "expiry_year" => "2021"
+    },
+    "links" => {
+      "self" => "/users/buyer-71439598/card_accounts",
+      "users" => "/card_accounts/35977230-7168-0138-0a1d-0a58a9feac07/users"
+    }
+  }
+}
+```
+
+### List User's BPay Accounts
+
+List the BPay accounts the user is associated with using a given user ID.
+
+```ruby
+response = ZaiPayment.users.bpay_accounts('user_id')
+
+# Access the BPay accounts
+response.data.each do |account|
+  puts "BPay Account ID: #{account['id']}"
+  puts "Active: #{account['active']}"
+  puts "Verification Status: #{account['verification_status']}"
+  
+  # Access BPay details
+  details = account['bpay_details']
+  puts "Biller Name: #{details['biller_name']}"
+  puts "Biller Code: #{details['biller_code']}"
+  puts "Account Name: #{details['account_name']}"
+  puts "CRN: #{details['crn']}"
+  puts "Currency: #{account['currency']}"
+end
+
+# Access pagination metadata
+puts "Total accounts: #{response.meta['total']}"
+```
+
+**Response Structure:**
+
+```ruby
+{
+  "bpay_accounts" => [
+    {
+      "id" => "b0980390-ac5b-0138-8b2e-0a58a9feac03",
+      "active" => true,
+      "created_at" => "2020-07-20 02:07:33.583000+00:00",
+      "updated_at" => "2020-07-20 02:07:33.583000+00:00",
+      "bpay_details" => {
+        "biller_name" => "APIBCD AV4",
+        "account_name" => "Test Biller",
+        "biller_code" => "93815",
+        "crn" => "613295205"
+      },
+      "currency" => "AUD",
+      "verification_status" => "verified",
+      "links" => {
+        "self" => "/bpay_accounts/b0980390-ac5b-0138-8b2e-0a58a9feac03",
+        "users" => "/bpay_accounts/b0980390-ac5b-0138-8b2e-0a58a9feac03/users"
+      }
+    }
+  ],
+  "meta" => {
+    "limit" => 10,
+    "offset" => 0,
+    "total" => 1
+  }
+}
+```
+
 ### Create Business User with Company
 
 Create a payout user representing a business entity with full company details. This is useful for merchants, marketplace sellers, or any business that needs to receive payments.

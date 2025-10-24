@@ -1,4 +1,47 @@
 ## [Released]
+## [2.2.0] - 2025-10-24
+### Added
+- **Extended User Management API**: 7 new user-related endpoints 🚀
+  - `ZaiPayment.users.wallet_account(user_id)` - Show user's wallet account details
+  - `ZaiPayment.users.items(user_id, limit:, offset:)` - List items associated with user (paginated)
+  - `ZaiPayment.users.set_disbursement_account(user_id, account_id)` - Set user's disbursement account
+  - `ZaiPayment.users.bank_account(user_id)` - Show user's active bank account
+  - `ZaiPayment.users.verify(user_id)` - Verify user (prelive environment only)
+  - `ZaiPayment.users.card_account(user_id)` - Show user's active card account
+  - `ZaiPayment.users.bpay_accounts(user_id)` - List user's BPay accounts
+- All endpoints include comprehensive nested data structures:
+  - Bank accounts with nested `bank` details (account_name, routing_number, account_type, holder_type)
+  - Card accounts with nested `card` details (type, full_name, masked number, expiry)
+  - BPay accounts with nested `bpay_details` (biller_code, biller_name, CRN, account_name)
+  - Items with full transaction details (buyer/seller info, payment_type, status, links to related resources)
+- Validation for all user_id and account_id parameters
+- Links to related resources included in all responses
+
+### Enhanced
+- **Response Class Refactoring**: Improved data extraction logic
+  - Replaced complex conditional chain with iterative approach using `RESPONSE_DATA_KEYS` constant
+  - Added support for new data keys: `bpay_accounts`, `bank_accounts`, `card_accounts`
+  - Reduced complexity metrics (ABC, Cyclomatic, Perceived Complexity)
+  - More maintainable and extensible architecture
+
+### Documentation
+- **Updated User Management Guide** (`docs/users.md`):
+  - Comprehensive examples for all 7 new endpoints
+  - Complete response structures with real API data
+  - Detailed field access patterns for nested objects
+  - Pagination examples for list endpoints
+  - Related resource link usage examples
+- **Updated README.md**:
+  - Added quick reference for all new endpoints
+  - Updated user management section with complete API surface
+- Real API response examples integrated for:
+  - List User Items (with buyer/seller details, transaction links)
+  - List User's BPay Accounts (with biller details, verification status)
+  - Show User Bank Account (with bank details, direct debit authorities)
+  - Show User Card Account (with card details, CVV verification status)
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.1.0...v2.2.0
+
 ## [2.1.0] - 2025-10-24
 ### Added
 - **Token Auth API**: Token generation for bank and card accounts 🔐

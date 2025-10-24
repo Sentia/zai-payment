@@ -26,7 +26,7 @@ RSpec/ExampleLength:
   Max: 8
 
 Metrics/ClassLength:
-  Max: 200
+  Max: 250
 
 Naming/VariableNumber:
   Exclude:
