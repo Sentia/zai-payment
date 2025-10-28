@@ -1,4 +1,13 @@
 ## [Released]
+## [2.3.1] - 2025-10-28
+### Fixed
+- **Token Refresh Bug**: Fixed authentication token not being refreshed after expiration
+  - Previously, the Authorization header was set once when the connection was created
+  - After ~1 hour, tokens would expire and subsequent API calls would fail with `UnauthorizedError`
+  - Now, the Authorization header is set dynamically on each request, ensuring fresh tokens are always used
+  - The `TokenProvider` automatically refreshes expired tokens, preventing authentication errors
+  - Fixes issue where some APIs would work while others failed after token expiration
+
 ## [2.3.0] - 2025-10-28
 ### Added
 - **User Management API Enhancement**: Added search parameter to list users endpoint

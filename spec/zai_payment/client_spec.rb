@@ -378,9 +378,9 @@ RSpec.describe ZaiPayment::Client do
       described_class.new(config: config, token_provider: token_provider)
     end
 
-    it 'sets the authorization header with bearer token' do
+    it 'does not set the authorization header in the connection (set per-request)' do
       connection = actual_client.send(:build_connection)
-      expect(connection.headers['Authorization']).to eq('Bearer test_token')
+      expect(connection.headers['Authorization']).to be_nil
     end
 
     it 'sets the content-type header' do

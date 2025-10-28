@@ -53,6 +53,7 @@ module ZaiPayment
     def request(method, path, params: {}, body: {})
       response = connection.public_send(method) do |req|
         req.url path
+        req.headers['Authorization'] = token_provider.bearer_token
         req.params = params if params.any?
         req.body = body if body.any?
       end
@@ -81,7 +82,7 @@ module ZaiPayment
     end
 
     def apply_headers(faraday)
-      faraday.headers['Authorization'] = token_provider.bearer_token
+      # Authorization header is set per-request to ensure fresh tokens
       faraday.headers['Content-Type'] = 'application/json'
       faraday.headers['Accept'] = 'application/json'
     end
