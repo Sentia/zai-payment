@@ -1,4 +1,16 @@
 ## [Released]
+## [2.3.0] - 2025-10-28
+### Added
+- **User Management API Enhancement**: Added search parameter to list users endpoint
+  - `ZaiPayment.users.list(limit:, offset:, search:)` - Search users by text value
+  - Search parameter is optional and filters users by email, name, or other text fields
+  - Example: `users.list(search: "john@example.com")`
+
+### Changed
+- Coverage badge updated to 97.15%
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.2.0...v2.3.0
+
 ## [2.2.0] - 2025-10-24
 ### Added
 - **Extended User Management API**: 7 new user-related endpoints 🚀

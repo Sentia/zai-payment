@@ -68,6 +68,7 @@ module ZaiPayment
       #
       # @param limit [Integer] number of records to return (default: 10)
       # @param offset [Integer] number of records to skip (default: 0)
+      # @param search [String] text value to be used for searching users
       # @return [Response] the API response containing users array
       #
       # @example
@@ -75,12 +76,16 @@ module ZaiPayment
       #   response = users.list
       #   response.data # => [{"id" => "...", "email" => "..."}, ...]
       #
+      # @example with search
+      #   response = users.list(search: "john@example.com")
+      #
       # @see https://developer.hellozai.com/reference/getallusers
-      def list(limit: 10, offset: 0)
+      def list(limit: 10, offset: 0, search: nil)
         params = {
           limit: limit,
           offset: offset
         }
+        params[:search] = search if search
 
         client.get('/users', params: params)
       end
