@@ -53,6 +53,11 @@ ZaiPayment.configure do |c|
   c.client_id     = ENV.fetch("ZAI_CLIENT_ID")
   c.client_secret = ENV.fetch("ZAI_CLIENT_SECRET")
   c.scope         = ENV.fetch("ZAI_OAUTH_SCOPE")
+  
+  # Optional: Configure timeout settings (defaults shown)
+  c.timeout       = 30  # General request timeout in seconds
+  c.open_timeout  = 10  # Connection open timeout in seconds
+  c.read_timeout  = 30  # Read timeout in seconds
 end
 ```
 

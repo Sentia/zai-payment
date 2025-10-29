@@ -61,6 +61,8 @@ module ZaiPayment
       Response.new(response)
     rescue Faraday::Error => e
       handle_faraday_error(e)
+    rescue Net::ReadTimeout, Net::OpenTimeout => e
+      handle_net_timeout_error(e)
     end
 
     def connection
@@ -93,8 +95,13 @@ module ZaiPayment
     end
 
     def apply_timeouts(faraday)
-      faraday.options.timeout = config.timeout if config.timeout
-      faraday.options.open_timeout = config.open_timeout if config.open_timeout
+      set_timeout_option(faraday, :timeout, config.timeout)
+      set_timeout_option(faraday, :open_timeout, config.open_timeout)
+      set_timeout_option(faraday, :read_timeout, config.read_timeout)
+    end
+
+    def set_timeout_option(faraday, option, value)
+      faraday.options.public_send("#{option}=", value) if value
     end
 
     def base_url
@@ -119,6 +126,10 @@ module ZaiPayment
       else
         raise Errors::ApiError, "Request failed: #{error.message}"
       end
+    end
+
+    def handle_net_timeout_error(error)
+      raise Errors::TimeoutError, "Request timed out: #{error.class.name} with #{error.message}"
     end
   end
 end

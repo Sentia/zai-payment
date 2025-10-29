@@ -1,4 +1,26 @@
 ## [Released]
+## [2.3.2] - 2025-10-29
+### Fixed
+- **Timeout Error Handling**: Improved handling of timeout errors to prevent crashes
+  - Added explicit rescue for `Net::ReadTimeout` and `Net::OpenTimeout` errors
+  - Previously, these errors could sometimes bypass Faraday's error handling and crash the application
+  - Now properly converts all timeout errors to `Errors::TimeoutError` with descriptive messages
+  - Fixes issue: "Request timed out: Net::ReadTimeout with #<TCPSocket:(closed)>"
+  
+### Changed
+- **Increased Default Timeouts**: Adjusted default timeout values for better reliability
+  - Default `timeout` increased from 10 to 30 seconds (general request timeout)
+  - Added separate `read_timeout` configuration (default: 30 seconds)
+  - `open_timeout` remains at 10 seconds (connection establishment)
+  - Users can still customize timeouts via configuration:
+    ```ruby
+    ZaiPayment.configure do |config|
+      config.timeout = 60        # Custom general timeout
+      config.read_timeout = 60   # Custom read timeout
+      config.open_timeout = 15   # Custom open timeout
+    end
+    ```
+
 ## [2.3.1] - 2025-10-28
 ### Fixed
 - **Token Refresh Bug**: Fixed authentication token not being refreshed after expiration
