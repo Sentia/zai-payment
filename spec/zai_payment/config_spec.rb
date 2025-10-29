@@ -215,5 +215,24 @@ RSpec.describe ZaiPayment::Config do
       config.open_timeout = 10
       expect(config.open_timeout).to eq(10)
     end
+
+    it 'allows setting and getting read_timeout' do
+      config.read_timeout = 60
+      expect(config.read_timeout).to eq(60)
+    end
+  end
+
+  describe 'default values' do
+    it 'sets default timeout to 30' do
+      expect(config.timeout).to eq(30)
+    end
+
+    it 'sets default open_timeout to 10' do
+      expect(config.open_timeout).to eq(10)
+    end
+
+    it 'sets default read_timeout to 30' do
+      expect(config.read_timeout).to eq(30)
+    end
   end
 end

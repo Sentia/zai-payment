@@ -3,15 +3,16 @@
 module ZaiPayment
   class Config
     attr_accessor :environment, :client_id, :client_secret, :scope,
-                  :timeout, :open_timeout
+                  :timeout, :open_timeout, :read_timeout
 
     def initialize
       @environment  = :prelive # or :production
       @client_id    = nil
       @client_secret = nil
       @scope = nil
-      @timeout = 10
-      @open_timeout = 10
+      @timeout = 30      # General timeout - increased from 10 to 30 seconds
+      @open_timeout = 10 # Connection open timeout
+      @read_timeout = 30 # Read timeout - new separate configuration
     end
 
     def validate!

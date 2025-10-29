@@ -342,6 +342,30 @@ RSpec.describe ZaiPayment::Client do
       end
     end
 
+    context 'when Net::ReadTimeout occurs' do
+      before do
+        allow(faraday_connection).to receive(:get).and_raise(Net::ReadTimeout.new('Read timeout'))
+      end
+
+      it 'raises TimeoutError with descriptive message' do
+        expect do
+          client.get('/test-endpoint')
+        end.to raise_error(ZaiPayment::Errors::TimeoutError, /Request timed out: Net::ReadTimeout/)
+      end
+    end
+
+    context 'when Net::OpenTimeout occurs' do
+      before do
+        allow(faraday_connection).to receive(:get).and_raise(Net::OpenTimeout.new('Open timeout'))
+      end
+
+      it 'raises TimeoutError with descriptive message' do
+        expect do
+          client.get('/test-endpoint')
+        end.to raise_error(ZaiPayment::Errors::TimeoutError, /Request timed out: Net::OpenTimeout/)
+      end
+    end
+
     context 'when connection fails' do
       before do
         allow(faraday_connection).to receive(:get).and_raise(Faraday::ConnectionFailed.new('connection failed'))
@@ -401,6 +425,12 @@ RSpec.describe ZaiPayment::Client do
     it 'sets the open_timeout from config' do
       connection = actual_client.send(:build_connection)
       expect(connection.options.open_timeout).to eq(10)
+    end
+
+    it 'sets the read_timeout from config' do
+      config.read_timeout = 25
+      connection = actual_client.send(:build_connection)
+      expect(connection.options.read_timeout).to eq(25)
     end
 
     context 'when timeouts are not configured' do
