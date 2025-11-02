@@ -1845,6 +1845,37 @@ RSpec.describe ZaiPayment::Resources::Item do
         expect(response.success?).to be true
         expect(response.body['payment_token']).to include('challenge')
       end
+
+      it 'accepts automatic value' do
+        response = item_resource.make_payment_async(
+          'item_123',
+          account_id: 'account_456',
+          request_three_d_secure: 'automatic'
+        )
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'accepts any value' do
+        response = item_resource.make_payment_async(
+          'item_123',
+          account_id: 'account_456',
+          request_three_d_secure: 'any'
+        )
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+    end
+
+    context 'when request_three_d_secure has invalid value' do
+      it 'raises ValidationError for invalid values' do
+        %w[invalid force_challenge].each do |invalid_value|
+          expect do
+            item_resource.make_payment_async('item_123', account_id: 'account_456',
+                                                         request_three_d_secure: invalid_value)
+          end.to raise_error(ZaiPayment::Errors::ValidationError, /request_three_d_secure must be one of/)
+        end
+      end
     end
 
     context 'when account_id is missing' do

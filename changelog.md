@@ -2,13 +2,13 @@
 ## [2.4.0] - 2025-11-02
 ### Added
 - **Item Payment Actions API**: Advanced payment operations for managing item transactions 💳
-  - `ZaiPayment.items.make_payment(item_id, account_id:, user_id:)` - Process a payment for an item
-  - `ZaiPayment.items.cancel_item(item_id)` - Cancel an item/transaction
-  - `ZaiPayment.items.refund_item(item_id, refund_amount:, refund_message:)` - Refund a payment
-  - `ZaiPayment.items.authorize_payment(item_id, account_id:, user_id:, pre_auth:)` - Authorize a payment without capturing
-  - `ZaiPayment.items.capture_payment(item_id)` - Capture a previously authorized payment
+  - `ZaiPayment.items.make_payment(item_id, account_id:, device_id:, ip_address:, cvv:, merchant_phone:)` - Process a payment for an item
+  - `ZaiPayment.items.cancel(item_id)` - Cancel an item/transaction
+  - `ZaiPayment.items.refund(item_id, refund_amount:, refund_message:, account_id:)` - Refund a payment
+  - `ZaiPayment.items.authorize_payment(item_id, account_id:, cvv:, merchant_phone:)` - Authorize a payment without capturing
+  - `ZaiPayment.items.capture_payment(item_id, amount:)` - Capture a previously authorized payment
   - `ZaiPayment.items.void_payment(item_id)` - Void an authorized payment
-  - `ZaiPayment.items.make_async_payment(item_id, account_id:, user_id:)` - Process an asynchronous payment (e.g., direct debit, PayPal)
+  - `ZaiPayment.items.make_payment_async(item_id, account_id:, request_three_d_secure:)` - Process an async payment with 3D Secure 2.0 support
 - Support for pre-authorization workflows (authorize then capture)
 - Support for async payment methods (direct debit, bank transfers, PayPal)
 - Comprehensive validation for payment parameters

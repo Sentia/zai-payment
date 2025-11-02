@@ -38,6 +38,9 @@ module ZaiPayment
         request_three_d_secure: :request_three_d_secure
       }.freeze
 
+      # Valid values for request_three_d_secure parameter
+      REQUEST_THREE_D_SECURE_VALUES = %w[automatic challenge any].freeze
+
       def initialize(client: nil)
         @client = client || Client.new
       end
@@ -315,7 +318,7 @@ module ZaiPayment
       # Make a payment
       #
       # @param item_id [String] the item ID
-      # @param account_id [String] the account ID
+      # @option attributes [String] :account_id Required account ID
       # @option attributes [String] :device_id Optional device ID
       # @option attributes [String] :ip_address Optional IP address
       # @option attributes [String] :cvv Optional CVV
@@ -324,13 +327,13 @@ module ZaiPayment
       #
       # @example Make a payment with required parameters
       #   items = ZaiPayment::Resources::Item.new
-      #   response = items.make_payment("item_id", "account_id")
+      #   response = items.make_payment("item_id", account_id: "account_id")
       #   response.data # => {"items" => {"id" => "...", "amount" => "...", ...}}
       #
       # @example Make a payment with optional parameters
       #   response = items.make_payment(
       #     "item_id",
-      #     "account_id",
+      #     account_id: "account_id",
       #     device_id: "device_789",
       #     ip_address: "192.168.1.1",
       #     cvv: "123",
@@ -399,20 +402,20 @@ module ZaiPayment
       # Authorize Payment
       #
       # @param item_id [String] the item ID
-      # @param account_id [String] the account ID
+      # @option attributes [String] :account_id Required account ID
       # @option attributes [String] :cvv Optional CVV
       # @option attributes [String] :merchant_phone Optional merchant phone number
       # @return [Response] the API response containing authorization details
       #
       # @example Authorize a payment
       #   items = ZaiPayment::Resources::Item.new
-      #   response = items.authorize_payment("item_id", "account_id")
+      #   response = items.authorize_payment("item_id", account_id: "account_id")
       #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
       #
       # @example Authorize a payment with optional parameters
       #   response = items.authorize_payment(
       #     "item_id",
-      #     "account_id",
+      #     account_id: "account_id",
       #     cvv: "123",
       #     merchant_phone: "+1234567890"
       #   )
@@ -550,6 +553,13 @@ module ZaiPayment
         raise Errors::ValidationError, 'payment_type must be between 1 and 7'
       end
 
+      def validate_request_three_d_secure!(value)
+        return if REQUEST_THREE_D_SECURE_VALUES.include?(value.to_s)
+
+        raise Errors::ValidationError,
+              "request_three_d_secure must be one of: #{REQUEST_THREE_D_SECURE_VALUES.join(', ')}"
+      end
+
       def build_item_payment_body(attributes)
         validate_presence!(attributes[:account_id], 'account_id')
 
@@ -590,6 +600,9 @@ module ZaiPayment
 
       def build_async_payment_body(attributes)
         validate_presence!(attributes[:account_id], 'account_id')
+
+        # Validate request_three_d_secure if provided
+        validate_request_three_d_secure!(attributes[:request_three_d_secure]) if attributes[:request_three_d_secure]
 
         body = {}
 
