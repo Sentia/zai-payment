@@ -33,6 +33,11 @@ module ZaiPayment
         merchant_phone: :merchant_phone
       }.freeze
 
+      ITEM_ASYNC_PAYMENT_ATTRIBUTES = {
+        account_id: :account_id,
+        request_three_d_secure: :request_three_d_secure
+      }.freeze
+
       def initialize(client: nil)
         @client = client || Client.new
       end
@@ -462,6 +467,42 @@ module ZaiPayment
         client.patch("/items/#{item_id}/void_payment")
       end
 
+      # Make an async Payment
+      #
+      # Initiate a card payment with 3D Secure 2.0 authentication support. This endpoint
+      # initiates the payment process and returns a payment_token required for 3DS2
+      # component initialisation.
+      #
+      # @param item_id [String] the item ID
+      # @param account_id [String] Account id of the bank account/credit card, etc making payment (not user id)
+      # @option attributes [String] :request_three_d_secure Customise the 3DS (3D Secure) preference for this payment.
+      #   Allowed values: 'automatic', 'challenge', 'any'. Defaults to 'automatic'.
+      #   - 'automatic': 3DS preference is determined automatically by the system
+      #   - 'challenge': Request a 3DS challenge is presented to the user
+      #   - 'any': Request a 3DS challenge regardless of the challenge flow
+      # @return [Response] the API response containing payment details with payment_token
+      #
+      # @example Make an async payment with required parameters
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.make_payment_async("item_id", account_id: "account_id")
+      #   response.data # => {"payment_id" => "...", "payment_token" => "...", "items" => {...}}
+      #
+      # @example Make an async payment with 3DS challenge
+      #   response = items.make_payment_async(
+      #     "item_id",
+      #     account_id: "account_id",
+      #     request_three_d_secure: "challenge"
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/makepaymentasync
+      def make_payment_async(item_id, **attributes)
+        validate_id!(item_id, 'item_id')
+
+        body = build_async_payment_body(attributes)
+
+        client.patch("/items/#{item_id}/make_payment_async", body: body)
+      end
+
       private
 
       def validate_id!(value, field_name)
@@ -543,6 +584,21 @@ module ZaiPayment
         body[:refund_amount] = refund_amount if refund_amount
         body[:refund_message] = refund_message if refund_message
         body[:account_id] = account_id if account_id
+
+        body
+      end
+
+      def build_async_payment_body(attributes)
+        validate_presence!(attributes[:account_id], 'account_id')
+
+        body = {}
+
+        attributes.each do |key, value|
+          next if value.nil? || (value.respond_to?(:empty?) && value.empty?)
+
+          api_field = ITEM_ASYNC_PAYMENT_ATTRIBUTES[key]
+          body[api_field] = value if api_field
+        end
 
         body
       end

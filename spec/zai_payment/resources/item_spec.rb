@@ -1716,6 +1716,214 @@ RSpec.describe ZaiPayment::Resources::Item do
     end
   end
 
+  describe '#make_payment_async' do
+    context 'when successful' do
+      before do
+        stubs.patch('/items/item_123/make_payment_async') do
+          [200, { 'Content-Type' => 'application/json' }, async_payment_response]
+        end
+      end
+
+      let(:async_payment_response) do
+        {
+          'payment_id' => '1000014012533486',
+          'account_id' => '86991380-90a5-013a-57cc-5e50adfe91ad',
+          'payment_token' => 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+          'items' => {
+            'id' => '7190770-1-2908',
+            'name' => 'Item #001',
+            'description' => 'My first Item.',
+            'created_at' => '2025-11-02T22:13:13.840Z',
+            'updated_at' => '2025-11-02T22:13:13.840Z',
+            'state' => 'pending',
+            'status' => 22_000,
+            'amount' => 20_000,
+            'payment_type_id' => 2,
+            'currency' => 'AUD',
+            'buyer_name' => 'Sample Buyer',
+            'buyer_email' => 'sample.buyer@assemblypayments.com',
+            'buyer_country' => 'AUS',
+            'seller_name' => 'Sample Seller',
+            'seller_email' => 'sample.seller@assemblypayments.com',
+            'seller_country' => 'AUS',
+            'tds_check_state' => 'NA',
+            'batch_state' => 'string',
+            'invoice_url' => 'string',
+            'payout_descriptor' => 'string',
+            'remaining_amount' => 0,
+            'requested_release_amount' => 0,
+            'custom_descriptor' => 'string',
+            'net_amount' => 20_000,
+            'chargedback_amount' => 0,
+            'refunded_amount' => 0,
+            'released_amount' => 0,
+            'buyer_fees' => 0,
+            'seller_fees' => 400,
+            'credit_card_fee' => 0,
+            'paypal_fee' => 0,
+            'seller_url' => 'string',
+            'buyer_url' => 'string',
+            'direct_debit_fee' => 0,
+            'due_date' => '2025-11-02',
+            'pending_release_amount' => 0,
+            'dynamic_descriptor' => 'string',
+            'deposit_reference' => '100014013961629',
+            'promisepay_fee' => 350,
+            'total_outstanding' => 20_000,
+            'total_amount' => 20_000,
+            'payment_method' => 'pending',
+            'payment_credit_card_enabled' => true,
+            'payment_direct_debit_enabled' => true,
+            'related' => {
+              'buyers' => '064d6800-fff3-11e5-86aa-5e5517507c66',
+              'sellers' => '5830def0-ffe8-11e5-86aa-5e5517507c66'
+            },
+            'links' => {
+              'self' => 'string',
+              'buyers' => 'string',
+              'sellers' => 'string',
+              'status' => 'string',
+              'fees' => 'string',
+              'transactions' => 'string',
+              'batch_transactions' => 'string',
+              'wire_details' => 'string',
+              'bpay_details' => 'string',
+              'tds_checks' => 'string'
+            }
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = item_resource.make_payment_async('item_123', account_id: 'account_456')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the payment data with payment_token' do
+        response = item_resource.make_payment_async('item_123', account_id: 'account_456')
+        expect(response.body['payment_id']).to eq('1000014012533486')
+        expect(response.body['payment_token']).to eq('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9')
+        expect(response.body['account_id']).to eq('86991380-90a5-013a-57cc-5e50adfe91ad')
+      end
+
+      it 'returns the items data' do
+        response = item_resource.make_payment_async('item_123', account_id: 'account_456')
+        expect(response.data['id']).to eq('7190770-1-2908')
+        expect(response.data['state']).to eq('pending')
+        expect(response.data['amount']).to eq(20_000)
+      end
+    end
+
+    context 'with request_three_d_secure parameter' do
+      before do
+        stubs.patch('/items/item_123/make_payment_async') do
+          [200, { 'Content-Type' => 'application/json' }, async_payment_response_with_challenge]
+        end
+      end
+
+      let(:async_payment_response_with_challenge) do
+        {
+          'payment_id' => '1000014012533487',
+          'account_id' => '86991380-90a5-013a-57cc-5e50adfe91ad',
+          'payment_token' => 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.challenge',
+          'items' => {
+            'id' => '7190770-1-2908',
+            'state' => 'pending',
+            'amount' => 20_000
+          }
+        }
+      end
+
+      it 'sends request_three_d_secure parameter' do
+        response = item_resource.make_payment_async(
+          'item_123',
+          account_id: 'account_456',
+          request_three_d_secure: 'challenge'
+        )
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+        expect(response.body['payment_token']).to include('challenge')
+      end
+    end
+
+    context 'when account_id is missing' do
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.make_payment_async('item_123')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
+      end
+
+      it 'raises a ValidationError for nil account_id' do
+        expect do
+          item_resource.make_payment_async('item_123', account_id: nil)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
+      end
+
+      it 'raises a ValidationError for empty string account_id' do
+        expect do
+          item_resource.make_payment_async('item_123', account_id: '')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
+      end
+    end
+
+    context 'when item_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect do
+          item_resource.make_payment_async('', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect do
+          item_resource.make_payment_async(nil, account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+    end
+
+    context 'when item not found' do
+      before do
+        stubs.patch('/items/item_123/make_payment_async') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Item not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect do
+          item_resource.make_payment_async('item_123', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when payment fails' do
+      before do
+        stubs.patch('/items/item_123/make_payment_async') do
+          [400, { 'Content-Type' => 'application/json' }, { 'error' => 'Payment processing failed' }]
+        end
+      end
+
+      it 'raises a BadRequestError' do
+        expect do
+          item_resource.make_payment_async('item_123', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::BadRequestError)
+      end
+    end
+
+    context 'when unauthorized' do
+      before do
+        stubs.patch('/items/item_123/make_payment_async') do
+          [401, { 'Content-Type' => 'application/json' }, { 'error' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect do
+          item_resource.make_payment_async('item_123', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+  end
+
   describe 'integration with ZaiPayment module' do
     it 'is accessible through ZaiPayment.items' do
       expect(ZaiPayment.items).to be_a(described_class)

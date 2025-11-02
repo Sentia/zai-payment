@@ -365,6 +365,107 @@ if response.success?
 end
 ```
 
+### Make Async Payment
+
+Initiate a card payment with 3D Secure 2.0 (3DS2) authentication support. This endpoint initiates the payment process and returns a `payment_token` that is required for 3DS2 component initialisation on the client side.
+
+This method is specifically designed for payments that require 3D Secure verification, providing enhanced security for card transactions.
+
+#### Required Parameters
+
+- `account_id` - The card account ID to charge (Required). Note: This is the account ID, not the user ID.
+
+#### Optional Parameters
+
+- `request_three_d_secure` - Customise the 3DS preference for this payment. Allowed values:
+  - `'automatic'` (default) - 3DS preference is determined automatically by the system
+  - `'challenge'` - Request a 3DS challenge is presented to the user
+  - `'any'` - Request a 3DS challenge regardless of the challenge flow
+
+#### Response
+
+The response includes:
+- `payment_id` - Unique identifier for the payment
+- `payment_token` - Token required for 3DS2 component initialisation
+- `account_id` - The account ID used for the payment
+- `items` - Complete item details including state, amount, and related information
+
+```ruby
+# Make an async payment with required parameters
+response = ZaiPayment.items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456"  # Required
+)
+
+if response.success?
+  payment_id = response.data['payment_id']
+  payment_token = response.data['payment_token']
+  item = response.data['items']
+  
+  puts "Payment initiated: #{payment_id}"
+  puts "Payment token for 3DS2: #{payment_token}"
+  puts "Item state: #{item['state']}"
+  puts "Amount: $#{item['amount'] / 100.0}"
+end
+```
+
+#### With 3DS Challenge
+
+To explicitly request a 3D Secure challenge:
+
+```ruby
+response = ZaiPayment.items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456",
+  request_three_d_secure: "challenge"
+)
+
+if response.success?
+  payment_token = response.data['payment_token']
+  
+  # Use the payment_token to initialise the 3DS2 web component
+  puts "Payment token: #{payment_token}"
+  puts "Initialise 3DS2 component on client side with this token"
+end
+```
+
+#### Automatic 3DS Determination
+
+When using the default 'automatic' mode, the system determines whether 3DS is required:
+
+```ruby
+response = ZaiPayment.items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456",
+  request_three_d_secure: "automatic"
+)
+
+if response.success?
+  item = response.data['items']
+  payment_token = response.data['payment_token']
+  
+  puts "3DS handled automatically"
+  puts "Item state: #{item['state']}"
+  
+  # The payment_token will be provided if 3DS is required
+  if payment_token
+    puts "3DS verification required - use token: #{payment_token}"
+  else
+    puts "3DS verification not required - payment processed"
+  end
+end
+```
+
+#### Important Notes
+
+- The `payment_token` returned must be used to initialise the 3DS2 web component on the client side
+- After 3DS authentication is complete, the payment will automatically be processed
+- If 3DS verification fails or is abandoned, the payment will be cancelled
+- This endpoint supports 3D Secure 2.0, providing a better user experience than legacy 3DS 1.0
+- Always handle the response appropriately and provide clear instructions to users if 3DS verification is required
+
+**See also:** For more information on implementing 3D Secure on the client side, refer to the [Zai 3DS Integration Guide](https://developer.hellozai.com).
+
 ### Authorize Payment
 
 Authorize a payment without immediately capturing funds. This is useful for pre-authorization scenarios where you want to verify the card and hold funds before completing the transaction.

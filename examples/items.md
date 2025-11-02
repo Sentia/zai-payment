@@ -18,6 +18,7 @@ This document provides examples of how to use the Items resource in the Zai Paym
 - [List Item Batch Transactions](#list-item-batch-transactions)
 - [Show Item Status](#show-item-status)
 - [Make Payment](#make-payment)
+- [Make Async Payment](#make-async-payment)
 - [Cancel Item](#cancel-item)
 - [Refund Item](#refund-item)
 
@@ -1400,6 +1401,433 @@ class CapturePaymentJob < ApplicationJob
       # Retry if appropriate
       raise "Capture failed" if response.status >= 500
     end
+  end
+end
+```
+
+## Make Async Payment
+
+Initiate a card payment with 3D Secure 2.0 (3DS2) authentication support. This endpoint initiates the payment process and returns a `payment_token` that is required for initialising the 3DS2 web component on the client side.
+
+This method is specifically designed for payments that require 3D Secure verification, providing enhanced security for card transactions.
+
+### Basic Async Payment
+
+```ruby
+# Make an async payment with just the required parameters
+response = items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456"  # Required
+)
+
+if response.success?
+  payment_id = response.data['payment_id']
+  payment_token = response.data['payment_token']
+  item = response.data['items']
+  
+  puts "Payment initiated: #{payment_id}"
+  puts "Payment token for 3DS2: #{payment_token}"
+  puts "Item state: #{item['state']}"
+  puts "Amount: $#{item['amount'] / 100.0}"
+  
+  # Use the payment_token to initialise the 3DS2 web component
+  # on the client side (JavaScript)
+else
+  puts "Payment failed: #{response.error_message}"
+end
+```
+
+### Async Payment with 3DS Challenge
+
+To explicitly request a 3D Secure challenge:
+
+```ruby
+response = items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456",
+  request_three_d_secure: "challenge"
+)
+
+if response.success?
+  payment_token = response.data['payment_token']
+  payment_id = response.data['payment_id']
+  
+  puts "Payment initiated with 3DS challenge: #{payment_id}"
+  puts "Payment token: #{payment_token}"
+  
+  # Send the payment_token to the client to initialise 3DS2 component
+  # The component will display the 3DS challenge to the user
+else
+  puts "Payment initiation failed: #{response.error_message}"
+end
+```
+
+### Automatic 3DS Determination
+
+When using the default 'automatic' mode, the system determines whether 3DS is required:
+
+```ruby
+response = items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456",
+  request_three_d_secure: "automatic"  # This is the default
+)
+
+if response.success?
+  item = response.data['items']
+  payment_token = response.data['payment_token']
+  
+  puts "3DS handled automatically"
+  puts "Item state: #{item['state']}"
+  
+  # The payment_token will be provided if 3DS is required
+  if payment_token && !payment_token.empty?
+    puts "3DS verification required - use token: #{payment_token}"
+    # Send token to client for 3DS2 component initialisation
+  else
+    puts "3DS verification not required - payment processed"
+  end
+end
+```
+
+### Complete Rails Example with 3DS2
+
+Complete example showing how to implement async payment in a Rails application:
+
+```ruby
+# app/controllers/payments_controller.rb
+class PaymentsController < ApplicationController
+  def create_async_payment
+    items = ZaiPayment.items
+    
+    # Step 1: Initiate async payment
+    response = items.make_payment_async(
+      params[:item_id],
+      account_id: params[:account_id],
+      request_three_d_secure: "automatic"
+    )
+    
+    if response.success?
+      payment_id = response.data['payment_id']
+      payment_token = response.data['payment_token']
+      item_data = response.data['items']
+      
+      # Store payment_id for tracking
+      @payment = Payment.create!(
+        zai_payment_id: payment_id,
+        zai_item_id: item_data['id'],
+        amount: item_data['amount'],
+        state: item_data['state'],
+        payment_token: payment_token
+      )
+      
+      # Return payment_token to client for 3DS2 initialisation
+      render json: {
+        success: true,
+        payment_id: payment_id,
+        payment_token: payment_token,
+        requires_3ds: payment_token.present?
+      }
+    else
+      render json: {
+        success: false,
+        error: response.error_message
+      }, status: :unprocessable_entity
+    end
+  end
+end
+```
+
+```javascript
+// app/javascript/payments/three_d_secure.js
+// Client-side 3DS2 component initialisation
+
+async function initiateAsyncPayment(itemId, accountId) {
+  try {
+    // Call your Rails backend to initiate the payment
+    const response = await fetch('/payments/create_async', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({
+        item_id: itemId,
+        account_id: accountId
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.requires_3ds) {
+      // Initialize 3DS2 component with the payment_token
+      await initialize3DS2Component(data.payment_token);
+    } else if (data.success) {
+      // Payment completed without 3DS
+      window.location.href = '/payments/success';
+    } else {
+      alert('Payment failed: ' + data.error);
+    }
+  } catch (error) {
+    console.error('Payment error:', error);
+    alert('Payment failed. Please try again.');
+  }
+}
+
+async function initialize3DS2Component(paymentToken) {
+  // Use Zai's 3DS2 SDK to initialize the component
+  // This is a simplified example - refer to Zai documentation for actual implementation
+  
+  const threeDSComponent = new ZaiThreeDSecure({
+    paymentToken: paymentToken,
+    onSuccess: function(result) {
+      console.log('3DS verification successful', result);
+      window.location.href = '/payments/success';
+    },
+    onError: function(error) {
+      console.error('3DS verification failed', error);
+      alert('Payment verification failed. Please try again.');
+    }
+  });
+  
+  threeDSComponent.mount('#three-ds-container');
+}
+```
+
+### Error Handling for Async Payments
+
+```ruby
+begin
+  response = items.make_payment_async(
+    "item-123",
+    account_id: "card_account-456"
+  )
+  
+  if response.success?
+    payment_id = response.data['payment_id']
+    payment_token = response.data['payment_token']
+    
+    puts "✓ Payment initiated: #{payment_id}"
+    
+    if payment_token
+      puts "  3DS verification required"
+      puts "  Token: #{payment_token}"
+    else
+      puts "  3DS not required, payment processing"
+    end
+  else
+    # Handle API errors
+    case response.status
+    when 422
+      puts "Validation error: #{response.error_message}"
+      # Common: Invalid account, insufficient funds
+    when 404
+      puts "Item or account not found"
+    when 401
+      puts "Authentication failed"
+    else
+      puts "Payment error: #{response.error_message}"
+    end
+  end
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+  # Example: "account_id is required and cannot be blank"
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Resource not found: #{e.message}"
+rescue ZaiPayment::Errors::BadRequestError => e
+  puts "Bad request: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API error: #{e.message}"
+end
+```
+
+### Full E-commerce Flow with Async Payment
+
+Complete example showing item creation through async payment with 3DS:
+
+```ruby
+require 'zai_payment'
+
+# Configure
+ZaiPayment.configure do |config|
+  config.client_id = ENV['ZAI_CLIENT_ID']
+  config.client_secret = ENV['ZAI_CLIENT_SECRET']
+  config.scope = ENV['ZAI_SCOPE']
+  config.environment = :prelive
+end
+
+items = ZaiPayment.items
+
+# Step 1: Create an item
+create_response = items.create(
+  name: "Premium Product with 3DS",
+  amount: 25000,  # $250.00
+  payment_type: 2,
+  buyer_id: "buyer-123",
+  seller_id: "seller-456",
+  description: "High-value product requiring 3DS verification"
+)
+
+if create_response.success?
+  item_id = create_response.data['id']
+  puts "✓ Item created: #{item_id}"
+  
+  # Step 2: Initiate async payment with 3DS
+  payment_response = items.make_payment_async(
+    item_id,
+    account_id: "card_account-789",
+    request_three_d_secure: "automatic"
+  )
+  
+  if payment_response.success?
+    payment_id = payment_response.data['payment_id']
+    payment_token = payment_response.data['payment_token']
+    item_data = payment_response.data['items']
+    
+    puts "✓ Async payment initiated: #{payment_id}"
+    puts "  Item state: #{item_data['state']}"
+    puts "  Amount: $#{item_data['amount'] / 100.0}"
+    
+    if payment_token && !payment_token.empty?
+      puts "  3DS verification required"
+      puts "  Payment token: #{payment_token}"
+      puts "  → Send this token to client for 3DS2 component"
+      
+      # In a real application:
+      # 1. Send payment_token to the client
+      # 2. Client initializes 3DS2 component
+      # 3. User completes 3DS challenge
+      # 4. Listen for webhook to confirm payment status
+    else
+      puts "  3DS not required - payment processing automatically"
+      
+      # Step 3: Monitor payment via webhook or polling
+      # In production, use webhooks for real-time updates
+    end
+  else
+    puts "✗ Payment failed: #{payment_response.error_message}"
+  end
+else
+  puts "✗ Item creation failed: #{create_response.error_message}"
+end
+```
+
+### Understanding the Response
+
+The `make_payment_async` response includes several important fields:
+
+```ruby
+response = items.make_payment_async("item-123", account_id: "account-456")
+
+if response.success?
+  # Top-level payment information
+  payment_id = response.data['payment_id']           # Unique payment identifier
+  account_id = response.data['account_id']           # Account used for payment
+  payment_token = response.data['payment_token']     # Token for 3DS2 initialization
+  
+  # Item details
+  item = response.data['items']
+  item_id = item['id']                               # Item/transaction ID
+  state = item['state']                              # Current state (e.g., 'pending')
+  amount = item['amount']                            # Amount in cents
+  currency = item['currency']                        # Currency code (e.g., 'AUD')
+  payment_method = item['payment_method']            # Payment method used
+  
+  # Related resources
+  related = item['related']
+  buyer_id = related['buyers']                       # Buyer user ID
+  seller_id = related['sellers']                     # Seller user ID
+  
+  # Useful links
+  links = item['links']
+  status_url = links['status']                       # URL to check status
+  transactions_url = links['transactions']           # URL for transactions
+end
+```
+
+### 3DS Preference Options
+
+The `request_three_d_secure` parameter accepts three values:
+
+| Value | Description | Use Case |
+|-------|-------------|----------|
+| `'automatic'` | System determines if 3DS is required (default) | Recommended for most cases - balances security and UX |
+| `'challenge'` | Always request 3DS challenge | High-value transactions, compliance requirements |
+| `'any'` | Request 3DS regardless of challenge flow | Maximum security, regulatory requirements |
+
+```ruby
+# Automatic (recommended)
+items.make_payment_async("item-123", 
+  account_id: "account-456",
+  request_three_d_secure: "automatic"
+)
+
+# Force challenge for high-value transactions
+items.make_payment_async("item-123", 
+  account_id: "account-456",
+  request_three_d_secure: "challenge"
+)
+
+# Maximum security
+items.make_payment_async("item-123", 
+  account_id: "account-456",
+  request_three_d_secure: "any"
+)
+```
+
+### Important Notes
+
+1. **Payment Token**: The `payment_token` must be sent to the client to initialize the 3DS2 web component
+2. **Webhooks**: After 3DS authentication completes, listen for webhooks to get the final payment status
+3. **Timeout**: 3DS challenges typically expire after 10-15 minutes of inactivity
+4. **Failed Authentication**: If 3DS verification fails, the payment will be automatically cancelled
+5. **Testing**: Use Zai test cards to simulate different 3DS scenarios in prelive environment
+
+### Webhook Integration
+
+After initiating an async payment, monitor webhooks for status updates:
+
+```ruby
+# In your webhook handler (e.g., Rails controller)
+def handle_payment_webhook
+  # Verify webhook signature first
+  webhooks = ZaiPayment.webhooks
+  
+  begin
+    if webhooks.verify_signature(request.body.read, request.headers['X-Signature'])
+      payload = JSON.parse(request.body.read)
+      
+      case payload['type']
+      when 'transaction'
+        if payload['status'] == 'successful'
+          payment_id = payload['payment_id']
+          item_id = payload['item_id']
+          
+          # Update your database
+          payment = Payment.find_by(zai_payment_id: payment_id)
+          payment.update!(status: 'completed', completed_at: Time.current)
+          
+          # Send confirmation email, fulfill order, etc.
+          OrderFulfillmentJob.perform_later(payment.order_id)
+          
+          puts "✓ Payment completed: #{payment_id}"
+        elsif payload['status'] == 'failed'
+          # Handle failed payment
+          payment = Payment.find_by(zai_payment_id: payload['payment_id'])
+          payment.update!(status: 'failed', failure_reason: payload['message'])
+          
+          # Notify customer
+          PaymentFailureMailer.notify(payment.user).deliver_later
+        end
+      end
+      
+      head :ok
+    else
+      head :unauthorized
+    end
+  rescue => e
+    Rails.logger.error "Webhook error: #{e.message}"
+    head :internal_server_error
   end
 end
 ```
