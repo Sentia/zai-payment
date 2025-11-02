@@ -25,6 +25,22 @@ module ZaiPayment
         tax_invoice: :tax_invoice
       }.freeze
 
+      ITEM_PAYMENT_ATTRIBUTES = {
+        account_id: :account_id,
+        device_id: :device_id,
+        ip_address: :ip_address,
+        cvv: :cvv,
+        merchant_phone: :merchant_phone
+      }.freeze
+
+      ITEM_ASYNC_PAYMENT_ATTRIBUTES = {
+        account_id: :account_id,
+        request_three_d_secure: :request_three_d_secure
+      }.freeze
+
+      # Valid values for request_three_d_secure parameter
+      REQUEST_THREE_D_SECURE_VALUES = %w[automatic challenge any].freeze
+
       def initialize(client: nil)
         @client = client || Client.new
       end
@@ -299,6 +315,197 @@ module ZaiPayment
         client.get("/items/#{item_id}/status")
       end
 
+      # Make a payment
+      #
+      # @param item_id [String] the item ID
+      # @option attributes [String] :account_id Required account ID
+      # @option attributes [String] :device_id Optional device ID
+      # @option attributes [String] :ip_address Optional IP address
+      # @option attributes [String] :cvv Optional CVV
+      # @option attributes [String] :merchant_phone Optional merchant phone number
+      # @return [Response] the API response containing payment details
+      #
+      # @example Make a payment with required parameters
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.make_payment("item_id", account_id: "account_id")
+      #   response.data # => {"items" => {"id" => "...", "amount" => "...", ...}}
+      #
+      # @example Make a payment with optional parameters
+      #   response = items.make_payment(
+      #     "item_id",
+      #     account_id: "account_id",
+      #     device_id: "device_789",
+      #     ip_address: "192.168.1.1",
+      #     cvv: "123",
+      #     merchant_phone: "+1234567890"
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/makepayment
+      def make_payment(item_id, **attributes)
+        validate_id!(item_id, 'item_id')
+
+        body = build_item_payment_body(attributes)
+
+        client.patch("/items/#{item_id}/make_payment", body: body)
+      end
+
+      # Cancel an item
+
+      # @param item_id [String] the item ID
+      # @return [Response] the API response containing cancellation details
+      #
+      # @example Cancel a payment
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.cancel("item_id")
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @see https://developer.hellozai.com/reference/cancelitem
+      def cancel(item_id)
+        validate_id!(item_id, 'item_id')
+        client.patch("/items/#{item_id}/cancel")
+      end
+
+      # Refund an item
+      #
+      # @param item_id [String] the item ID
+      # @option attributes [String] :refund_amount Optional refund amount
+      # @option attributes [String] :refund_message Optional refund message
+      # @option attributes [String] :account_id Optional account ID
+      # @return [Response] the API response containing refund details
+      #
+      # @example Refund an item
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.refund("item_id")
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @example Refund an item with optional parameters
+      #   response = items.refund(
+      #     "item_id",
+      #     refund_amount: 10000,
+      #     refund_message: "Refund for product XYZ",
+      #     account_id: "account_789"
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/refund
+      def refund(item_id, refund_amount: nil, refund_message: nil, account_id: nil)
+        validate_id!(item_id, 'item_id')
+
+        body = build_refund_body(
+          refund_amount: refund_amount,
+          refund_message: refund_message,
+          account_id: account_id
+        )
+
+        client.patch("/items/#{item_id}/refund", body: body)
+      end
+
+      # Authorize Payment
+      #
+      # @param item_id [String] the item ID
+      # @option attributes [String] :account_id Required account ID
+      # @option attributes [String] :cvv Optional CVV
+      # @option attributes [String] :merchant_phone Optional merchant phone number
+      # @return [Response] the API response containing authorization details
+      #
+      # @example Authorize a payment
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.authorize_payment("item_id", account_id: "account_id")
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @example Authorize a payment with optional parameters
+      #   response = items.authorize_payment(
+      #     "item_id",
+      #     account_id: "account_id",
+      #     cvv: "123",
+      #     merchant_phone: "+1234567890"
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/authorizepayment
+      def authorize_payment(item_id, **attributes)
+        validate_id!(item_id, 'item_id')
+
+        client.patch("/items/#{item_id}/authorize_payment", body: build_item_payment_body(attributes))
+      end
+
+      # Capture Payment
+      #
+      # @param item_id [String] the item ID
+      # @option attributes [String] :amount Optional amount to capture
+      # @return [Response] the API response containing capture details
+      #
+      # @example Capture a payment
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.capture_payment("item_id", amount: 10000)
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @example Capture a payment with optional parameters
+      #   response = items.capture_payment(
+      #     "item_id",
+      #     amount: 10000
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/capturepayment
+      def capture_payment(item_id, **attributes)
+        validate_id!(item_id, 'item_id')
+
+        body = {}
+        body[:amount] = attributes[:amount] if attributes[:amount]
+
+        client.patch("/items/#{item_id}/capture_payment", body: body)
+      end
+
+      # Void Payment
+      #
+      # @param item_id [String] the item ID
+      # @return [Response] the API response containing void details
+      #
+      # @example Void a payment
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.void_payment("item_id")
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @see https://developer.hellozai.com/reference/voidpayment
+      def void_payment(item_id)
+        validate_id!(item_id, 'item_id')
+        client.patch("/items/#{item_id}/void_payment")
+      end
+
+      # Make an async Payment
+      #
+      # Initiate a card payment with 3D Secure 2.0 authentication support. This endpoint
+      # initiates the payment process and returns a payment_token required for 3DS2
+      # component initialisation.
+      #
+      # @param item_id [String] the item ID
+      # @param account_id [String] Account id of the bank account/credit card, etc making payment (not user id)
+      # @option attributes [String] :request_three_d_secure Customise the 3DS (3D Secure) preference for this payment.
+      #   Allowed values: 'automatic', 'challenge', 'any'. Defaults to 'automatic'.
+      #   - 'automatic': 3DS preference is determined automatically by the system
+      #   - 'challenge': Request a 3DS challenge is presented to the user
+      #   - 'any': Request a 3DS challenge regardless of the challenge flow
+      # @return [Response] the API response containing payment details with payment_token
+      #
+      # @example Make an async payment with required parameters
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.make_payment_async("item_id", account_id: "account_id")
+      #   response.data # => {"payment_id" => "...", "payment_token" => "...", "items" => {...}}
+      #
+      # @example Make an async payment with 3DS challenge
+      #   response = items.make_payment_async(
+      #     "item_id",
+      #     account_id: "account_id",
+      #     request_three_d_secure: "challenge"
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/makepaymentasync
+      def make_payment_async(item_id, **attributes)
+        validate_id!(item_id, 'item_id')
+
+        body = build_async_payment_body(attributes)
+
+        client.patch("/items/#{item_id}/make_payment_async", body: body)
+      end
+
       private
 
       def validate_id!(value, field_name)
@@ -346,6 +553,28 @@ module ZaiPayment
         raise Errors::ValidationError, 'payment_type must be between 1 and 7'
       end
 
+      def validate_request_three_d_secure!(value)
+        return if REQUEST_THREE_D_SECURE_VALUES.include?(value.to_s)
+
+        raise Errors::ValidationError,
+              "request_three_d_secure must be one of: #{REQUEST_THREE_D_SECURE_VALUES.join(', ')}"
+      end
+
+      def build_item_payment_body(attributes)
+        validate_presence!(attributes[:account_id], 'account_id')
+
+        body = {}
+
+        attributes.each do |key, value|
+          next if value.nil? || (value.respond_to?(:empty?) && value.empty?)
+
+          api_field = ITEM_PAYMENT_ATTRIBUTES[key]
+          body[api_field] = value if api_field
+        end
+
+        body
+      end
+
       def build_item_body(attributes)
         body = {}
 
@@ -353,6 +582,34 @@ module ZaiPayment
           next if value.nil? || (value.respond_to?(:empty?) && value.empty?)
 
           api_field = FIELD_MAPPING[key]
+          body[api_field] = value if api_field
+        end
+
+        body
+      end
+
+      def build_refund_body(refund_amount: nil, refund_message: nil, account_id: nil)
+        body = {}
+
+        body[:refund_amount] = refund_amount if refund_amount
+        body[:refund_message] = refund_message if refund_message
+        body[:account_id] = account_id if account_id
+
+        body
+      end
+
+      def build_async_payment_body(attributes)
+        validate_presence!(attributes[:account_id], 'account_id')
+
+        # Validate request_three_d_secure if provided
+        validate_request_three_d_secure!(attributes[:request_three_d_secure]) if attributes[:request_three_d_secure]
+
+        body = {}
+
+        attributes.each do |key, value|
+          next if value.nil? || (value.respond_to?(:empty?) && value.empty?)
+
+          api_field = ITEM_ASYNC_PAYMENT_ATTRIBUTES[key]
           body[api_field] = value if api_field
         end
 

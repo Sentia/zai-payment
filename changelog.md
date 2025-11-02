@@ -1,4 +1,36 @@
 ## [Released]
+## [2.4.0] - 2025-11-02
+### Added
+- **Item Payment Actions API**: Advanced payment operations for managing item transactions 💳
+  - `ZaiPayment.items.make_payment(item_id, account_id:, device_id:, ip_address:, cvv:, merchant_phone:)` - Process a payment for an item
+  - `ZaiPayment.items.cancel(item_id)` - Cancel an item/transaction
+  - `ZaiPayment.items.refund(item_id, refund_amount:, refund_message:, account_id:)` - Refund a payment
+  - `ZaiPayment.items.authorize_payment(item_id, account_id:, cvv:, merchant_phone:)` - Authorize a payment without capturing
+  - `ZaiPayment.items.capture_payment(item_id, amount:)` - Capture a previously authorized payment
+  - `ZaiPayment.items.void_payment(item_id)` - Void an authorized payment
+  - `ZaiPayment.items.make_payment_async(item_id, account_id:, request_three_d_secure:)` - Process an async payment with 3D Secure 2.0 support
+- Support for pre-authorization workflows (authorize then capture)
+- Support for async payment methods (direct debit, bank transfers, PayPal)
+- Comprehensive validation for payment parameters
+- Full RSpec test suite for all payment actions
+- Comprehensive documentation in `docs/items.md` and `examples/items.md`
+
+### Documentation
+- **Updated Items Guide** (`docs/items.md`):
+  - Complete payment workflow examples
+  - Pre-authorization and capture patterns
+  - Refund and cancellation examples
+  - Async payment handling
+  - Error handling for payment operations
+- **Updated Items Examples** (`examples/items.md`):
+  - Real-world payment scenarios
+  - Card payment workflows
+  - Direct debit examples
+  - PayPal integration patterns
+  - Refund and dispute handling
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.3.2...v2.4.0
+
 ## [2.3.2] - 2025-10-29
 ### Fixed
 - **Timeout Error Handling**: Improved handling of timeout errors to prevent crashes

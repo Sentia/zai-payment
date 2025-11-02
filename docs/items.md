@@ -313,6 +313,581 @@ if response.success?
 end
 ```
 
+### Make Payment
+
+Process a payment for an item using a card account.
+
+#### Required Parameters
+
+- `account_id` - The card account ID to charge (Required)
+
+#### Optional Parameters
+
+- `device_id` - Device identifier for fraud detection
+- `ip_address` - IP address of the customer
+- `cvv` - Card CVV for additional verification
+- `merchant_phone` - Merchant contact phone number
+
+```ruby
+# Make a payment with required parameters
+response = ZaiPayment.items.make_payment(
+  "item-123",
+  account_id: "card_account-456"    # Required
+)
+
+if response.success?
+  item = response.data
+  puts "Payment initiated for item: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+#### With Optional Parameters
+
+For enhanced fraud protection, include device and IP address information:
+
+```ruby
+response = ZaiPayment.items.make_payment(
+  "item-123",
+  account_id: "card_account-456",  # Required
+  device_id: "device_789",
+  ip_address: "192.168.1.1",
+  cvv: "123",
+  merchant_phone: "+61412345678"
+)
+
+if response.success?
+  item = response.data
+  puts "Payment initiated successfully"
+  puts "Item State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+### Make Async Payment
+
+Initiate a card payment with 3D Secure 2.0 (3DS2) authentication support. This endpoint initiates the payment process and returns a `payment_token` that is required for 3DS2 component initialisation on the client side.
+
+This method is specifically designed for payments that require 3D Secure verification, providing enhanced security for card transactions.
+
+#### Required Parameters
+
+- `account_id` - The card account ID to charge (Required). Note: This is the account ID, not the user ID.
+
+#### Optional Parameters
+
+- `request_three_d_secure` - Customise the 3DS preference for this payment. Allowed values:
+  - `'automatic'` (default) - 3DS preference is determined automatically by the system
+  - `'challenge'` - Request a 3DS challenge is presented to the user
+  - `'any'` - Request a 3DS challenge regardless of the challenge flow
+
+#### Response
+
+The response includes:
+- `payment_id` - Unique identifier for the payment
+- `payment_token` - Token required for 3DS2 component initialisation
+- `account_id` - The account ID used for the payment
+- `items` - Complete item details including state, amount, and related information
+
+```ruby
+# Make an async payment with required parameters
+response = ZaiPayment.items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456"  # Required
+)
+
+if response.success?
+  payment_id = response.data['payment_id']
+  payment_token = response.data['payment_token']
+  item = response.data['items']
+  
+  puts "Payment initiated: #{payment_id}"
+  puts "Payment token for 3DS2: #{payment_token}"
+  puts "Item state: #{item['state']}"
+  puts "Amount: $#{item['amount'] / 100.0}"
+end
+```
+
+#### With 3DS Challenge
+
+To explicitly request a 3D Secure challenge:
+
+```ruby
+response = ZaiPayment.items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456",
+  request_three_d_secure: "challenge"
+)
+
+if response.success?
+  payment_token = response.data['payment_token']
+  
+  # Use the payment_token to initialise the 3DS2 web component
+  puts "Payment token: #{payment_token}"
+  puts "Initialise 3DS2 component on client side with this token"
+end
+```
+
+#### Automatic 3DS Determination
+
+When using the default 'automatic' mode, the system determines whether 3DS is required:
+
+```ruby
+response = ZaiPayment.items.make_payment_async(
+  "item-123",
+  account_id: "card_account-456",
+  request_three_d_secure: "automatic"
+)
+
+if response.success?
+  item = response.data['items']
+  payment_token = response.data['payment_token']
+  
+  puts "3DS handled automatically"
+  puts "Item state: #{item['state']}"
+  
+  # The payment_token will be provided if 3DS is required
+  if payment_token
+    puts "3DS verification required - use token: #{payment_token}"
+  else
+    puts "3DS verification not required - payment processed"
+  end
+end
+```
+
+#### Important Notes
+
+- The `payment_token` returned must be used to initialise the 3DS2 web component on the client side
+- After 3DS authentication is complete, the payment will automatically be processed
+- If 3DS verification fails or is abandoned, the payment will be cancelled
+- This endpoint supports 3D Secure 2.0, providing a better user experience than legacy 3DS 1.0
+- Always handle the response appropriately and provide clear instructions to users if 3DS verification is required
+
+**See also:** For more information on implementing 3D Secure on the client side, refer to the [Zai 3DS Integration Guide](https://developer.hellozai.com).
+
+### Authorize Payment
+
+Authorize a payment without immediately capturing funds. This is useful for pre-authorization scenarios where you want to verify the card and hold funds before completing the transaction.
+
+#### Required Parameters
+
+- `account_id` - The card account ID to authorize (Required)
+
+#### Optional Parameters
+
+- `cvv` - Card CVV for additional verification
+- `merchant_phone` - Merchant contact phone number
+
+```ruby
+# Authorize a payment
+response = ZaiPayment.items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456"    # Required
+)
+
+if response.success?
+  item = response.data
+  puts "Payment authorized for item: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+#### Authorize with Optional Parameters
+
+```ruby
+response = ZaiPayment.items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",  # Required
+  cvv: "123",
+  merchant_phone: "+61412345678"
+)
+
+if response.success?
+  item = response.data
+  puts "Payment authorized with CVV verification"
+  puts "Item State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+**Note:** After authorizing a payment, you'll need to capture it separately to complete the transaction. Authorized funds are typically held for 7 days before being automatically released.
+
+### Capture Payment
+
+Capture a previously authorized payment to complete the transaction and transfer funds. This is the second step in a two-step payment process (authorize → capture).
+
+#### Optional Parameters
+
+- `amount` - Amount to capture in cents (Optional). If not provided, captures the full authorized amount.
+
+```ruby
+# Capture the full authorized amount
+response = ZaiPayment.items.capture_payment("item-123")
+
+if response.success?
+  item = response.data
+  puts "Payment captured for item: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+#### Capture with Specific Amount (Partial Capture)
+
+You can capture a partial amount of the authorized funds:
+
+```ruby
+# Capture only $50 of a $100 authorized payment
+response = ZaiPayment.items.capture_payment(
+  "item-123",
+  amount: 5000  # $50.00 in cents
+)
+
+if response.success?
+  item = response.data
+  puts "Partial payment captured: $#{item['amount'] / 100.0}"
+  puts "Item State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+#### Capture with Status Check
+
+Check authorization status before attempting to capture:
+
+```ruby
+# Check current status
+status_response = ZaiPayment.items.show_status("item-123")
+
+if status_response.success?
+  payment_state = status_response.data['payment_state']
+  
+  # Only capture if payment is authorized
+  if payment_state == 'authorized' || payment_state == 'payment_authorized'
+    capture_response = ZaiPayment.items.capture_payment("item-123")
+    
+    if capture_response.success?
+      puts "✓ Payment captured successfully"
+    else
+      puts "✗ Capture failed: #{capture_response.error_message}"
+    end
+  else
+    puts "Payment cannot be captured - current state: #{payment_state}"
+  end
+end
+```
+
+#### Authorization and Capture Workflow
+
+Complete example of the authorize → capture workflow:
+
+```ruby
+# Step 1: Authorize the payment
+auth_response = ZaiPayment.items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",
+  cvv: "123"
+)
+
+if auth_response.success?
+  puts "✓ Payment authorized"
+  
+  # Step 2: Verify authorization
+  status = ZaiPayment.items.show_status("item-123")
+  puts "Payment State: #{status.data['payment_state']}"
+  
+  # Step 3: Capture the payment (can be done immediately or later)
+  capture_response = ZaiPayment.items.capture_payment("item-123")
+  
+  if capture_response.success?
+    puts "✓ Payment captured and completed"
+    puts "Final State: #{capture_response.data['payment_state']}"
+  else
+    puts "✗ Capture failed: #{capture_response.error_message}"
+  end
+end
+```
+
+#### Capture States and Conditions
+
+Payments can be captured when in these states:
+
+| State | Can Capture? | Description |
+|-------|-------------|-------------|
+| `authorized` | ✓ Yes | Payment authorized and ready to capture |
+| `payment_authorized` | ✓ Yes | Payment authorized and ready to capture |
+| `pending` | ✗ No | Payment not authorized yet |
+| `payment_pending` | ✗ No | Payment processing, not authorized |
+| `completed` | ✗ No | Already captured |
+| `payment_deposited` | ✗ No | Already captured and deposited |
+| `cancelled` | ✗ No | Authorization cancelled |
+| `refunded` | ✗ No | Payment refunded |
+
+**Important Notes:**
+- Authorizations typically expire after 7 days if not captured
+- Partial captures are supported (capturing less than the authorized amount)
+- Once captured, the payment cannot be un-captured (but can be refunded)
+- Some card networks may support multiple partial captures, check with Zai support
+- The remaining authorized amount (if any) is automatically released after capture
+
+### Void Payment
+
+Void a previously authorized payment to immediately release the held funds without capturing them. This is typically used when you need to cancel an authorized payment before capturing it.
+
+```ruby
+# Void an authorized payment
+response = ZaiPayment.items.void_payment("item-123")
+
+if response.success?
+  item = response.data
+  puts "Payment voided successfully"
+  puts "Item ID: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Void failed: #{response.error_message}"
+end
+```
+
+#### Void with Status Check
+
+Check authorization status before attempting to void:
+
+```ruby
+# Check current status
+status_response = ZaiPayment.items.show_status("item-123")
+
+if status_response.success?
+  payment_state = status_response.data['payment_state']
+  
+  # Only void if payment is authorized
+  if payment_state == 'authorized' || payment_state == 'payment_authorized'
+    void_response = ZaiPayment.items.void_payment("item-123")
+    
+    if void_response.success?
+      puts "✓ Payment voided successfully"
+    else
+      puts "✗ Void failed: #{void_response.error_message}"
+    end
+  else
+    puts "Payment cannot be voided - current state: #{payment_state}"
+  end
+end
+```
+
+#### Authorization Management Workflow
+
+Complete example showing authorize → void workflow:
+
+```ruby
+# Step 1: Authorize the payment
+auth_response = ZaiPayment.items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",
+  cvv: "123"
+)
+
+if auth_response.success?
+  puts "✓ Payment authorized"
+  
+  # Step 2: Verify authorization
+  status = ZaiPayment.items.show_status("item-123")
+  puts "Payment State: #{status.data['payment_state']}"
+  
+  # Step 3: Void the payment (cancel the authorization)
+  void_response = ZaiPayment.items.void_payment("item-123")
+  
+  if void_response.success?
+    puts "✓ Payment voided - funds released"
+    puts "Final State: #{void_response.data['payment_state']}"
+  else
+    puts "✗ Void failed: #{void_response.error_message}"
+  end
+end
+```
+
+#### Void vs Cancel vs Refund
+
+Understanding when to use each operation:
+
+| Operation | Use When | Payment State | Funds Status |
+|-----------|----------|---------------|--------------|
+| **Void** | Payment is authorized but not captured | `authorized`, `payment_authorized` | Funds held but not transferred |
+| **Cancel** | Item created but payment not yet authorized | `pending`, `payment_pending` | No funds involved |
+| **Refund** | Payment captured and completed | `completed`, `payment_deposited` | Funds already transferred |
+
+**Key Differences:**
+- **Void**: Releases authorized (held) funds immediately without any transfer
+- **Cancel**: Cancels the entire transaction before any payment authorization
+- **Refund**: Returns funds after they've been captured and transferred
+
+#### Void States and Conditions
+
+Payments can be voided when in these states:
+
+| State | Can Void? | Description |
+|-------|-----------|-------------|
+| `authorized` | ✓ Yes | Payment authorized and ready to void |
+| `payment_authorized` | ✓ Yes | Payment authorized and ready to void |
+| `pending` | ✗ No | Payment not authorized yet, use cancel |
+| `payment_pending` | ✗ No | Payment processing, use cancel |
+| `completed` | ✗ No | Already captured, use refund |
+| `payment_deposited` | ✗ No | Already captured, use refund |
+| `cancelled` | ✗ No | Already cancelled |
+| `refunded` | ✗ No | Already refunded |
+| `voided` | ✗ No | Already voided |
+
+**Important Notes:**
+- Voiding a payment immediately releases the held funds to the cardholder
+- Once voided, the authorization cannot be reversed or captured
+- Void is instant - no settlement period required
+- No fees are charged for voiding an authorization
+- Voided authorizations do not appear on cardholder statements
+
+### Cancel Item
+
+Cancel a pending item/payment. This operation is typically used to cancel an item before payment has been processed or completed.
+
+```ruby
+response = ZaiPayment.items.cancel("item-123")
+
+if response.success?
+  item = response.data
+  puts "Item cancelled successfully"
+  puts "Item ID: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Cancel failed: #{response.error_message}"
+end
+```
+
+#### Cancel with Status Check
+
+Check item status before attempting to cancel:
+
+```ruby
+# Check current status
+status_response = ZaiPayment.items.show_status("item-123")
+
+if status_response.success?
+  current_state = status_response.data['state']
+  
+  # Only cancel if in a cancellable state
+  if ['pending', 'payment_pending'].include?(current_state)
+    cancel_response = ZaiPayment.items.cancel("item-123")
+    
+    if cancel_response.success?
+      puts "✓ Item cancelled successfully"
+    else
+      puts "✗ Cancel failed: #{cancel_response.error_message}"
+    end
+  else
+    puts "Item cannot be cancelled - current state: #{current_state}"
+  end
+end
+```
+
+#### Cancel States and Conditions
+
+Items can typically be cancelled when in these states:
+
+| State | Can Cancel? | Description |
+|-------|-------------|-------------|
+| `pending` | ✓ Yes | Item created but no payment initiated |
+| `payment_pending` | ✓ Yes | Payment initiated but not yet processed |
+| `payment_processing` | Maybe | Depends on payment processor |
+| `completed` | ✗ No | Payment completed, must refund instead |
+| `payment_held` | Maybe | May require admin approval |
+| `cancelled` | ✗ No | Already cancelled |
+| `refunded` | ✗ No | Already refunded |
+
+**Note:** If an item is already completed or funds have been disbursed, you cannot cancel it. In those cases, you may need to process a refund instead (contact Zai support for refund procedures).
+
+### Refund Item
+
+Process a refund for a completed payment. This operation returns funds to the buyer and is typically used for customer returns, disputes, or service issues.
+
+```ruby
+response = ZaiPayment.items.refund("item-123")
+
+if response.success?
+  item = response.data
+  puts "Item refunded successfully"
+  puts "Item ID: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Refund failed: #{response.error_message}"
+end
+```
+
+#### Refund with Optional Parameters
+
+You can optionally specify a refund amount (for partial refunds), a refund message, and the account to refund to:
+
+```ruby
+response = ZaiPayment.items.refund(
+  "item-123",
+  refund_amount: 5000,        # Partial refund of $50.00 (in cents)
+  refund_message: "Refund for damaged product",
+  account_id: "account_789"   # Specific account to refund to
+)
+
+if response.success?
+  item = response.data
+  puts "✓ Partial refund processed: $#{item['refund_amount'] / 100.0}"
+  puts "  State: #{item['state']}"
+  puts "  Payment State: #{item['payment_state']}"
+end
+```
+
+#### Refund with Status Check
+
+Check item status before attempting to refund:
+
+```ruby
+# Check current status
+status_response = ZaiPayment.items.show_status("item-123")
+
+if status_response.success?
+  current_state = status_response.data['state']
+  payment_state = status_response.data['payment_state']
+  
+  # Only refund if in a refundable state
+  if ['completed', 'payment_deposited'].include?(payment_state)
+    refund_response = ZaiPayment.items.refund("item-123")
+    
+    if refund_response.success?
+      puts "✓ Item refunded successfully"
+    else
+      puts "✗ Refund failed: #{refund_response.error_message}"
+    end
+  else
+    puts "Item cannot be refunded - payment state: #{payment_state}"
+  end
+end
+```
+
+#### Refund States and Conditions
+
+Items can typically be refunded when in these states:
+
+| State | Can Refund? | Description |
+|-------|-------------|-------------|
+| `pending` | ✗ No | Item not yet paid, cancel instead |
+| `payment_pending` | ✗ No | Payment not completed, cancel instead |
+| `completed` | ✓ Yes | Payment completed successfully |
+| `payment_deposited` | ✓ Yes | Payment received and deposited |
+| `work_completed` | ✓ Yes | Work completed, funds can be refunded |
+| `cancelled` | ✗ No | Already cancelled |
+| `refunded` | ✗ No | Already refunded |
+| `payment_held` | Maybe | May require admin approval |
+
+**Note:** Full refunds return the entire item amount. Partial refunds return a specified amount less than the total. Multiple partial refunds may be possible depending on your Zai configuration.
+
 ## Field Reference
 
 ### Item Fields
