@@ -25,6 +25,13 @@ module ZaiPayment
         tax_invoice: :tax_invoice
       }.freeze
 
+      ITEM_PAYMENT_ATTRIBUTES = {
+        device_id: :device_id,
+        ip_address: :ip_address,
+        cvv: :cvv,
+        merchant_phone: :merchant_phone
+      }.freeze
+
       def initialize(client: nil)
         @client = client || Client.new
       end
@@ -299,6 +306,40 @@ module ZaiPayment
         client.get("/items/#{item_id}/status")
       end
 
+      # Make a payment
+      #
+      # @param item_id [String] the item ID
+      # @param account_id [String] the account ID
+      # @option attributes [String] :device_id Optional device ID
+      # @option attributes [String] :ip_address Optional IP address
+      # @option attributes [String] :cvv Optional CVV
+      # @option attributes [String] :merchant_phone Optional merchant phone number
+      # @return [Response] the API response containing payment details
+      #
+      # @example Make a payment with required parameters
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.make_payment("item_id", "account_id")
+      #   response.data # => {"items" => {"id" => "...", "amount" => "...", ...}}
+      #
+      # @example Make a payment with optional parameters
+      #   response = items.make_payment(
+      #     "item_id",
+      #     "account_id",
+      #     device_id: "device_789",
+      #     ip_address: "192.168.1.1",
+      #     cvv: "123",
+      #     merchant_phone: "+1234567890"
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/makepayment
+      def make_payment(item_id, account_id, **attributes)
+        validate_id!(item_id, 'item_id')
+        validate_id!(account_id, 'account_id')
+
+        body = { account_id: account_id }.merge(build_item_payment_body(attributes))
+        client.patch("/items/#{item_id}/make_payment", body: body)
+      end
+
       private
 
       def validate_id!(value, field_name)
@@ -344,6 +385,19 @@ module ZaiPayment
         return if valid_types.include?(payment_type.to_s)
 
         raise Errors::ValidationError, 'payment_type must be between 1 and 7'
+      end
+
+      def build_item_payment_body(attributes)
+        body = {}
+
+        attributes.each do |key, value|
+          next if value.nil? || (value.respond_to?(:empty?) && value.empty?)
+
+          api_field = ITEM_PAYMENT_ATTRIBUTES[key]
+          body[api_field] = value if api_field
+        end
+
+        body
       end
 
       def build_item_body(attributes)

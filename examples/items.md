@@ -17,6 +17,7 @@ This document provides examples of how to use the Items resource in the Zai Paym
 - [List Item Transactions](#list-item-transactions)
 - [List Item Batch Transactions](#list-item-batch-transactions)
 - [Show Item Status](#show-item-status)
+- [Make Payment](#make-payment)
 
 ## Setup
 
@@ -445,6 +446,211 @@ else
 end
 ```
 
+## Make Payment
+
+Process a payment for an item using a card account. This method charges the buyer's card and initiates the payment flow.
+
+### Basic Payment
+
+```ruby
+# Make a payment with just the required parameters
+response = items.make_payment(
+  "item-123",           # Item ID
+  "card_account-456"    # Card account ID
+)
+
+if response.success?
+  item = response.data
+  puts "Payment initiated for item: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Payment failed: #{response.error_message}"
+end
+```
+
+### Payment with Device Information
+
+For enhanced fraud protection, include device and IP address information:
+
+```ruby
+response = items.make_payment(
+  "item-123",
+  "card_account-456",
+  device_id: "device_789",
+  ip_address: request.remote_ip  # In a Rails controller
+)
+
+if response.success?
+  puts "Payment processed with device tracking"
+end
+```
+
+### Payment with CVV
+
+Some card payments may require CVV verification:
+
+```ruby
+response = items.make_payment(
+  "item-123",
+  "card_account-456",
+  cvv: "123"  # CVV from secure form
+)
+
+if response.success?
+  puts "Payment processed with CVV verification"
+end
+```
+
+### Payment with All Optional Parameters
+
+Maximum fraud protection with all available parameters:
+
+```ruby
+response = items.make_payment(
+  "item-123",
+  "card_account-456",
+  device_id: "device_789",
+  ip_address: "192.168.1.1",
+  cvv: "123",
+  merchant_phone: "+61412345678"
+)
+
+if response.success?
+  item = response.data
+  puts "Payment initiated successfully"
+  puts "Item State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+  puts "Amount: #{item['amount']}"
+else
+  puts "Payment failed: #{response.error_message}"
+end
+```
+
+### Error Handling for Payments
+
+```ruby
+begin
+  response = items.make_payment("item-123", "card_account-456")
+  
+  if response.success?
+    puts "Payment successful"
+  else
+    # Handle API errors
+    case response.status
+    when 422
+      puts "Validation error: #{response.error_message}"
+      # Common: Insufficient funds, card declined, etc.
+    when 404
+      puts "Item or card account not found"
+    when 401
+      puts "Authentication failed"
+    else
+      puts "Payment error: #{response.error_message}"
+    end
+  end
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Resource not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API error: #{e.message}"
+end
+```
+
+### Real-World Payment Flow Example
+
+Complete example showing item creation through payment:
+
+```ruby
+require 'zai_payment'
+
+# Configure
+ZaiPayment.configure do |config|
+  config.client_id = ENV['ZAI_CLIENT_ID']
+  config.client_secret = ENV['ZAI_CLIENT_SECRET']
+  config.scope = ENV['ZAI_SCOPE']
+  config.environment = :prelive
+end
+
+items = ZaiPayment.items
+
+# Step 1: Create an item
+create_response = items.create(
+  name: "Product Purchase",
+  amount: 10000,  # $100.00
+  payment_type: 2,
+  buyer_id: "buyer-123",
+  seller_id: "seller-456",
+  description: "Purchase of premium widget"
+)
+
+if create_response.success?
+  item_id = create_response.data['id']
+  puts "✓ Item created: #{item_id}"
+  
+  # Step 2: Make the payment
+  payment_response = items.make_payment(
+    item_id,
+    "card_account-789",  # Buyer's card account
+    ip_address: "192.168.1.1",
+    device_id: "device_abc123"
+  )
+  
+  if payment_response.success?
+    puts "✓ Payment initiated"
+    puts "  State: #{payment_response.data['state']}"
+    puts "  Payment State: #{payment_response.data['payment_state']}"
+    
+    # Step 3: Check payment status
+    sleep 2  # Wait for processing
+    
+    status_response = items.show_status(item_id)
+    if status_response.success?
+      status = status_response.data
+      puts "✓ Current status:"
+      puts "  State: #{status['state']}"
+      puts "  Payment State: #{status['payment_state']}"
+    end
+  else
+    puts "✗ Payment failed: #{payment_response.error_message}"
+  end
+else
+  puts "✗ Item creation failed: #{create_response.error_message}"
+end
+```
+
+### Payment States
+
+After calling `make_payment`, the item will go through several states:
+
+| State | Description |
+|-------|-------------|
+| `payment_pending` | Payment has been initiated |
+| `payment_processing` | Card is being charged |
+| `completed` | Payment successful, funds held in escrow |
+| `payment_held` | Payment succeeded but held for review |
+| `payment_failed` | Payment failed (card declined, insufficient funds, etc.) |
+
+### Webhook Integration
+
+After making a payment, listen for webhook events to track the payment status:
+
+```ruby
+# In your webhook handler
+def handle_transaction_webhook(payload)
+  if payload['type'] == 'payment' && payload['status'] == 'successful'
+    item_id = payload['related_items'].first
+    puts "Payment successful for item: #{item_id}"
+    
+    # Update your database
+    Order.find_by(zai_item_id: item_id).update(status: 'paid')
+  elsif payload['status'] == 'failed'
+    puts "Payment failed: #{payload['failure_reason']}"
+  end
+end
+```
+
 ## Complete Workflow Example
 
 Here's a complete example of creating an item and performing various operations on it:
@@ -595,4 +801,5 @@ For more information about the Zai Items API, see:
 - [List Item Transactions](https://developer.hellozai.com/reference/listitemtransactions)
 - [List Item Batch Transactions](https://developer.hellozai.com/reference/listitembatchtransactions)
 - [Show Item Status](https://developer.hellozai.com/reference/showitemstatus)
+- [Make Payment](https://developer.hellozai.com/reference/makepayment)
 

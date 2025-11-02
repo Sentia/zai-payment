@@ -243,43 +243,297 @@ end
 
 ## Making a Payment
 
-### Payment Controller
+Once you have an item created and the buyer has a card account, you can process the payment.
+
+### Basic Payment
 
 ```ruby
 # app/controllers/payments_controller.rb
 class PaymentsController < ApplicationController
-  def show
-    @transaction = current_user.transactions.find(params[:id])
-    @card_accounts = fetch_card_accounts
-  end
-  
   def create
     transaction = current_user.transactions.find(params[:transaction_id])
     client = ZaiPayment::Client.new
     
     # Make payment using card account
     response = client.items.make_payment(
-      id: transaction.zai_item_id,
-      account_id: params[:card_account_id] # The card account ID
+      transaction.zai_item_id,
+      params[:card_account_id]
     )
     
+    if response.success?
+      transaction.update(
+        status: 'processing',
+        payment_state: response.data['payment_state']
+      )
+      
+      redirect_to transaction_path(transaction), 
+                  notice: 'Payment initiated successfully!'
+    else
+      redirect_to payment_path(transaction), 
+                  alert: "Payment failed: #{response.error_message}"
+    end
+  rescue ZaiPayment::Errors::ApiError => e
+    redirect_to payment_path(transaction), alert: "Error: #{e.message}"
+  end
+end
+```
+
+### Payment with Fraud Protection
+
+Include device information and IP address for enhanced fraud protection:
+
+```ruby
+def create
+  transaction = current_user.transactions.find(params[:transaction_id])
+  client = ZaiPayment::Client.new
+  
+  response = client.items.make_payment(
+    transaction.zai_item_id,
+    params[:card_account_id],
+    device_id: session[:device_id],       # Track device
+    ip_address: request.remote_ip,        # Client IP address
+    merchant_phone: current_user.phone    # Merchant contact
+  )
+  
+  if response.success?
     transaction.update(
       status: 'processing',
-      zai_transaction_id: response.data.dig('transactions', 0, 'id')
+      payment_state: response.data['payment_state'],
+      zai_state: response.data['state']
     )
     
+    # Log the payment for tracking
+    Rails.logger.info "Payment initiated: Item #{transaction.zai_item_id}, IP: #{request.remote_ip}"
+    
+    flash[:notice] = 'Payment is being processed. You will receive confirmation shortly.'
+    redirect_to transaction_path(transaction)
+  else
+    handle_payment_error(transaction, response)
+  end
+rescue ZaiPayment::Errors::ApiError => e
+  handle_payment_exception(transaction, e)
+end
+
+private
+
+def handle_payment_error(transaction, response)
+  case response.status
+  when 422
+    # Validation error - likely card declined or insufficient funds
+    flash[:alert] = "Payment declined: #{response.error_message}"
+  when 404
+    flash[:alert] = "Item or card account not found. Please try again."
+  else
+    flash[:alert] = "Payment error: #{response.error_message}"
+  end
+  
+  transaction.update(status: 'failed', error_message: response.error_message)
+  redirect_to payment_path(transaction)
+end
+
+def handle_payment_exception(transaction, error)
+  Rails.logger.error "Payment exception: #{error.class} - #{error.message}"
+  
+  transaction.update(status: 'error', error_message: error.message)
+  redirect_to payment_path(transaction), alert: "An error occurred: #{error.message}"
+end
+```
+
+### Payment with CVV Verification
+
+For additional security, collect and pass CVV:
+
+```ruby
+def create
+  transaction = current_user.transactions.find(params[:transaction_id])
+  client = ZaiPayment::Client.new
+  
+  response = client.items.make_payment(
+    transaction.zai_item_id,
+    params[:card_account_id],
+    cvv: params[:cvv],  # From secure form input
+    ip_address: request.remote_ip
+  )
+  
+  if response.success?
+    transaction.update(status: 'processing')
     redirect_to transaction_path(transaction), 
-                notice: 'Payment initiated successfully. You will be notified once completed.'
-  rescue ZaiPayment::Errors::ApiError => e
-    redirect_to payment_path(transaction), alert: "Payment failed: #{e.message}"
+                notice: 'Payment processed with CVV verification.'
+  else
+    redirect_to payment_path(transaction), 
+                alert: "CVV verification failed: #{response.error_message}"
+  end
+end
+```
+
+### Complete Payment Service
+
+A comprehensive service object for handling payments:
+
+```ruby
+# app/services/payment_processor.rb
+class PaymentProcessor
+  attr_reader :transaction, :errors
+  
+  def initialize(transaction)
+    @transaction = transaction
+    @client = ZaiPayment::Client.new
+    @errors = []
+  end
+  
+  def process(card_account_id:, ip_address:, device_id: nil, cvv: nil)
+    validate_payment_readiness
+    return false if @errors.any?
+    
+    make_payment(card_account_id, ip_address, device_id, cvv)
   end
   
   private
   
+  def validate_payment_readiness
+    @errors << "Transaction already processed" if transaction.paid?
+    @errors << "Item ID missing" unless transaction.zai_item_id.present?
+    @errors << "Buyer missing" unless transaction.buyer.zai_user_id.present?
+  end
+  
+  def make_payment(card_account_id, ip_address, device_id, cvv)
+    payment_params = {
+      ip_address: ip_address
+    }
+    payment_params[:device_id] = device_id if device_id.present?
+    payment_params[:cvv] = cvv if cvv.present?
+    
+    response = @client.items.make_payment(
+      transaction.zai_item_id,
+      card_account_id,
+      **payment_params
+    )
+    
+    if response.success?
+      update_transaction_success(response)
+      notify_success
+      true
+    else
+      update_transaction_failure(response)
+      @errors << response.error_message
+      false
+    end
+  rescue ZaiPayment::Errors::ApiError => e
+    handle_api_error(e)
+    false
+  end
+  
+  def update_transaction_success(response)
+    transaction.update!(
+      status: 'processing',
+      payment_state: response.data['payment_state'],
+      zai_state: response.data['state'],
+      paid_at: Time.current
+    )
+  end
+  
+  def update_transaction_failure(response)
+    transaction.update!(
+      status: 'failed',
+      error_message: response.error_message,
+      failed_at: Time.current
+    )
+  end
+  
+  def handle_api_error(error)
+    transaction.update!(
+      status: 'error',
+      error_message: error.message
+    )
+    @errors << error.message
+    
+    # Log for monitoring
+    Rails.logger.error "Payment API Error: #{error.class} - #{error.message}"
+    
+    # Send to error tracking (e.g., Sentry)
+    Sentry.capture_exception(error) if defined?(Sentry)
+  end
+  
+  def notify_success
+    # Send success notification
+    PaymentMailer.payment_initiated(transaction).deliver_later
+  end
+end
+
+# Usage in controller:
+def create
+  transaction = current_user.transactions.find(params[:transaction_id])
+  processor = PaymentProcessor.new(transaction)
+  
+  if processor.process(
+    card_account_id: params[:card_account_id],
+    ip_address: request.remote_ip,
+    device_id: session[:device_id],
+    cvv: params[:cvv]
+  )
+    redirect_to transaction_path(transaction), notice: 'Payment processing!'
+  else
+    flash[:alert] = processor.errors.join(', ')
+    redirect_to payment_path(transaction)
+  end
+end
+```
+
+### Payment Controller (Complete)
+
+```ruby
+# app/controllers/payments_controller.rb
+class PaymentsController < ApplicationController
+  before_action :authenticate_user!
+  before_action :set_transaction, only: [:show, :create]
+  
+  def show
+    @card_accounts = fetch_card_accounts
+    
+    unless @card_accounts.any?
+      redirect_to new_card_account_path, 
+                  alert: 'Please add a payment method first.'
+    end
+  end
+  
+  def create
+    processor = PaymentProcessor.new(@transaction)
+    
+    if processor.process(
+      card_account_id: params[:card_account_id],
+      ip_address: request.remote_ip,
+      device_id: session[:device_id],
+      cvv: params[:cvv]
+    )
+      flash[:success] = 'Payment initiated! Check your email for confirmation.'
+      redirect_to transaction_path(@transaction)
+    else
+      flash.now[:alert] = processor.errors.join(', ')
+      @card_accounts = fetch_card_accounts
+      render :show
+    end
+  end
+  
+  private
+  
+  def set_transaction
+    @transaction = current_user.transactions.find(params[:id] || params[:transaction_id])
+  rescue ActiveRecord::RecordNotFound
+    redirect_to transactions_path, alert: 'Transaction not found.'
+  end
+  
   def fetch_card_accounts
     client = ZaiPayment::Client.new
     response = client.card_accounts.list(user_id: current_user.zai_user_id)
-    response.data['card_accounts'] || []
+    
+    if response.success?
+      response.data['card_accounts'] || []
+    else
+      []
+    end
+  rescue ZaiPayment::Errors::ApiError => e
+    Rails.logger.error "Failed to fetch card accounts: #{e.message}"
+    []
   end
 end
 ```
@@ -543,8 +797,8 @@ class CardPaymentFlow
   
   def make_payment(item_id:, card_account_id:)
     response = @client.items.make_payment(
-      id: item_id,
-      account_id: card_account_id
+      item_id,
+      card_account_id
     )
     
     response.success?
