@@ -414,6 +414,88 @@ Items can typically be cancelled when in these states:
 
 **Note:** If an item is already completed or funds have been disbursed, you cannot cancel it. In those cases, you may need to process a refund instead (contact Zai support for refund procedures).
 
+### Refund Item
+
+Process a refund for a completed payment. This operation returns funds to the buyer and is typically used for customer returns, disputes, or service issues.
+
+```ruby
+response = ZaiPayment.items.refund("item-123")
+
+if response.success?
+  item = response.data
+  puts "Item refunded successfully"
+  puts "Item ID: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Refund failed: #{response.error_message}"
+end
+```
+
+#### Refund with Optional Parameters
+
+You can optionally specify a refund amount (for partial refunds), a refund message, and the account to refund to:
+
+```ruby
+response = ZaiPayment.items.refund(
+  "item-123",
+  refund_amount: 5000,        # Partial refund of $50.00 (in cents)
+  refund_message: "Refund for damaged product",
+  account_id: "account_789"   # Specific account to refund to
+)
+
+if response.success?
+  item = response.data
+  puts "✓ Partial refund processed: $#{item['refund_amount'] / 100.0}"
+  puts "  State: #{item['state']}"
+  puts "  Payment State: #{item['payment_state']}"
+end
+```
+
+#### Refund with Status Check
+
+Check item status before attempting to refund:
+
+```ruby
+# Check current status
+status_response = ZaiPayment.items.show_status("item-123")
+
+if status_response.success?
+  current_state = status_response.data['state']
+  payment_state = status_response.data['payment_state']
+  
+  # Only refund if in a refundable state
+  if ['completed', 'payment_deposited'].include?(payment_state)
+    refund_response = ZaiPayment.items.refund("item-123")
+    
+    if refund_response.success?
+      puts "✓ Item refunded successfully"
+    else
+      puts "✗ Refund failed: #{refund_response.error_message}"
+    end
+  else
+    puts "Item cannot be refunded - payment state: #{payment_state}"
+  end
+end
+```
+
+#### Refund States and Conditions
+
+Items can typically be refunded when in these states:
+
+| State | Can Refund? | Description |
+|-------|-------------|-------------|
+| `pending` | ✗ No | Item not yet paid, cancel instead |
+| `payment_pending` | ✗ No | Payment not completed, cancel instead |
+| `completed` | ✓ Yes | Payment completed successfully |
+| `payment_deposited` | ✓ Yes | Payment received and deposited |
+| `work_completed` | ✓ Yes | Work completed, funds can be refunded |
+| `cancelled` | ✗ No | Already cancelled |
+| `refunded` | ✗ No | Already refunded |
+| `payment_held` | Maybe | May require admin approval |
+
+**Note:** Full refunds return the entire item amount. Partial refunds return a specified amount less than the total. Multiple partial refunds may be possible depending on your Zai configuration.
+
 ## Field Reference
 
 ### Item Fields

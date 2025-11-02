@@ -356,6 +356,40 @@ module ZaiPayment
         client.patch("/items/#{item_id}/cancel")
       end
 
+      # Refund an item
+      #
+      # @param item_id [String] the item ID
+      # @option attributes [String] :refund_amount Optional refund amount
+      # @option attributes [String] :refund_message Optional refund message
+      # @option attributes [String] :account_id Optional account ID
+      # @return [Response] the API response containing refund details
+      #
+      # @example Refund an item
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.refund("item_id")
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @example Refund an item with optional parameters
+      #   response = items.refund(
+      #     "item_id",
+      #     refund_amount: 10000,
+      #     refund_message: "Refund for product XYZ",
+      #     account_id: "account_789"
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/refund
+      def refund(item_id, refund_amount: nil, refund_message: nil, account_id: nil)
+        validate_id!(item_id, 'item_id')
+
+        body = build_refund_body(
+          refund_amount: refund_amount,
+          refund_message: refund_message,
+          account_id: account_id
+        )
+
+        client.patch("/items/#{item_id}/refund", body: body)
+      end
+
       private
 
       def validate_id!(value, field_name)
@@ -425,6 +459,16 @@ module ZaiPayment
           api_field = FIELD_MAPPING[key]
           body[api_field] = value if api_field
         end
+
+        body
+      end
+
+      def build_refund_body(refund_amount: nil, refund_message: nil, account_id: nil)
+        body = {}
+
+        body[:refund_amount] = refund_amount if refund_amount
+        body[:refund_message] = refund_message if refund_message
+        body[:account_id] = account_id if account_id
 
         body
       end

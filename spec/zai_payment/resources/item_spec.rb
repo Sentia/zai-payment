@@ -999,6 +999,170 @@ RSpec.describe ZaiPayment::Resources::Item do
     end
   end
 
+  describe '#refund' do
+    context 'when successful' do
+      before do
+        stubs.patch('/items/item_123/refund') do
+          [200, { 'Content-Type' => 'application/json' }, refund_response]
+        end
+      end
+
+      let(:refund_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'name' => 'Test Product',
+            'amount' => 10_000,
+            'state' => 'refunded',
+            'payment_state' => 'refunded'
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = item_resource.refund('item_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the refunded item data' do
+        response = item_resource.refund('item_123')
+        expect(response.data['id']).to eq('item_123')
+        expect(response.data['state']).to eq('refunded')
+        expect(response.data['payment_state']).to eq('refunded')
+      end
+    end
+
+    context 'with optional parameters' do
+      before do
+        stubs.patch('/items/item_123/refund') do
+          [200, { 'Content-Type' => 'application/json' }, refund_response]
+        end
+      end
+
+      let(:refund_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'state' => 'refunded',
+            'payment_state' => 'refunded'
+          }
+        }
+      end
+
+      it 'accepts refund_amount parameter' do
+        response = item_resource.refund('item_123', refund_amount: 5000)
+        expect(response.success?).to be true
+      end
+
+      it 'accepts refund_message parameter' do
+        response = item_resource.refund('item_123', refund_message: 'Customer requested refund')
+        expect(response.success?).to be true
+      end
+
+      it 'accepts account_id parameter' do
+        response = item_resource.refund('item_123', account_id: 'account_789')
+        expect(response.success?).to be true
+      end
+
+      it 'accepts all optional parameters' do
+        response = item_resource.refund(
+          'item_123',
+          refund_amount: 5000,
+          refund_message: 'Partial refund for shipping',
+          account_id: 'account_789'
+        )
+        expect(response.success?).to be true
+      end
+    end
+
+    context 'when item_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect do
+          item_resource.refund('')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect do
+          item_resource.refund(nil)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+    end
+
+    context 'when item not found' do
+      before do
+        stubs.patch('/items/item_123/refund') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Item not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect do
+          item_resource.refund('item_123')
+        end.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when item cannot be refunded' do
+      before do
+        stubs.patch('/items/item_123/refund') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'base' => ['Item cannot be refunded in current state']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.refund('item_123')
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+
+    context 'when refund amount is invalid' do
+      before do
+        stubs.patch('/items/item_123/refund') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'refund_amount' => ['Refund amount exceeds item amount']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.refund('item_123', refund_amount: 999_999)
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+
+    context 'when unauthorized' do
+      before do
+        stubs.patch('/items/item_123/refund') do
+          [401, { 'Content-Type' => 'application/json' }, { 'error' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect do
+          item_resource.refund('item_123')
+        end.to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+  end
+
   describe 'integration with ZaiPayment module' do
     it 'is accessible through ZaiPayment.items' do
       expect(ZaiPayment.items).to be_a(described_class)

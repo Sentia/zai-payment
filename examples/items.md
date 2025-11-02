@@ -19,6 +19,7 @@ This document provides examples of how to use the Items resource in the Zai Paym
 - [Show Item Status](#show-item-status)
 - [Make Payment](#make-payment)
 - [Cancel Item](#cancel-item)
+- [Refund Item](#refund-item)
 
 ## Setup
 
@@ -925,9 +926,493 @@ Items can typically be cancelled when in these states:
 | `cancelled` | ✗ No | Already cancelled |
 | `refunded` | ✗ No | Already refunded |
 
-**Note:** If an item is already completed or funds have been disbursed, you cannot cancel it. In those cases, you may need to process a refund instead (contact Zai support for refund procedures).
+**Note:** If an item is already completed or funds have been disbursed, you cannot cancel it. In those cases, you may need to process a refund instead.
 
-### Integration with Rails
+## Refund Item
+
+Process a refund for a completed payment. This operation returns funds to the buyer and is typically used for customer returns, disputes, or service issues.
+
+### Basic Refund
+
+```ruby
+response = items.refund("item-123")
+
+if response.success?
+  item = response.data
+  puts "Item refunded successfully"
+  puts "Item ID: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Refund failed: #{response.error_message}"
+end
+```
+
+### Partial Refund
+
+Process a partial refund for a specific amount:
+
+```ruby
+# Refund $50.00 out of the original $100.00 transaction
+response = items.refund(
+  "item-123",
+  refund_amount: 5000  # Amount in cents
+)
+
+if response.success?
+  item = response.data
+  puts "Partial refund processed"
+  puts "Refund Amount: $50.00"
+  puts "State: #{item['state']}"
+else
+  puts "Partial refund failed: #{response.error_message}"
+end
+```
+
+### Refund with Message
+
+Provide a reason for the refund:
+
+```ruby
+response = items.refund(
+  "item-123",
+  refund_message: "Customer returned defective product"
+)
+
+if response.success?
+  puts "Refund processed with message"
+else
+  puts "Refund failed: #{response.error_message}"
+end
+```
+
+### Refund to Specific Account
+
+Specify which account to refund to:
+
+```ruby
+response = items.refund(
+  "item-123",
+  account_id: "account_789"
+)
+
+if response.success?
+  puts "Refund sent to specified account"
+else
+  puts "Refund failed: #{response.error_message}"
+end
+```
+
+### Refund with All Parameters
+
+Process a partial refund with a message and specific account:
+
+```ruby
+response = items.refund(
+  "item-123",
+  refund_amount: 5000,
+  refund_message: "Partial refund for shipping damage",
+  account_id: "account_789"
+)
+
+if response.success?
+  item = response.data
+  puts "✓ Partial refund processed"
+  puts "  Amount: $50.00"
+  puts "  Message: Partial refund for shipping damage"
+  puts "  State: #{item['state']}"
+  puts "  Payment State: #{item['payment_state']}"
+else
+  puts "✗ Refund failed: #{response.error_message}"
+end
+```
+
+### Refund with Error Handling
+
+```ruby
+begin
+  response = items.refund("item-123")
+  
+  if response.success?
+    item = response.data
+    puts "✓ Item refunded: #{item['id']}"
+    puts "  State: #{item['state']}"
+    puts "  Payment State: #{item['payment_state']}"
+  else
+    # Handle API errors
+    case response.status
+    when 422
+      puts "Cannot refund: #{response.error_message}"
+      # Common: Item already refunded, not in refundable state, etc.
+    when 404
+      puts "Item not found"
+    when 401
+      puts "Authentication failed"
+    else
+      puts "Refund error: #{response.error_message}"
+    end
+  end
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Item not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API error: #{e.message}"
+end
+```
+
+### Refund with Status Check
+
+Check item status before attempting to refund:
+
+```ruby
+# Check current status
+status_response = items.show_status("item-123")
+
+if status_response.success?
+  status = status_response.data
+  current_state = status['state']
+  payment_state = status['payment_state']
+  
+  puts "Current state: #{current_state}"
+  puts "Payment state: #{payment_state}"
+  
+  # Only refund if in a refundable state
+  if ['completed', 'payment_deposited', 'work_completed'].include?(payment_state)
+    refund_response = items.refund("item-123")
+    
+    if refund_response.success?
+      puts "✓ Item refunded successfully"
+    else
+      puts "✗ Refund failed: #{refund_response.error_message}"
+    end
+  else
+    puts "Item cannot be refunded - payment state: #{payment_state}"
+  end
+end
+```
+
+### Real-World Refund Flow Example
+
+Complete example showing item creation, payment, and refund:
+
+```ruby
+require 'zai_payment'
+
+# Configure
+ZaiPayment.configure do |config|
+  config.client_id = ENV['ZAI_CLIENT_ID']
+  config.client_secret = ENV['ZAI_CLIENT_SECRET']
+  config.scope = ENV['ZAI_SCOPE']
+  config.environment = :prelive
+end
+
+items = ZaiPayment.items
+
+# Step 1: Create an item
+create_response = items.create(
+  name: "Product Purchase",
+  amount: 10000,  # $100.00
+  payment_type: 2,
+  buyer_id: "buyer-123",
+  seller_id: "seller-456",
+  description: "Purchase of premium widget"
+)
+
+if create_response.success?
+  item_id = create_response.data['id']
+  puts "✓ Item created: #{item_id}"
+  
+  # Step 2: Make the payment
+  payment_response = items.make_payment(item_id, "card_account-789")
+  
+  if payment_response.success?
+    puts "✓ Payment processed"
+    
+    # Step 3: Customer requests refund
+    puts "\nCustomer requested refund..."
+    
+    # Wait for payment to complete
+    sleep 2
+    
+    # Step 4: Check if item can be refunded
+    status_response = items.show_status(item_id)
+    
+    if status_response.success?
+      payment_state = status_response.data['payment_state']
+      puts "Current payment state: #{payment_state}"
+      
+      # Step 5: Process the refund
+      if ['completed', 'payment_deposited'].include?(payment_state)
+        refund_response = items.refund(
+          item_id,
+          refund_message: "Customer return - changed mind"
+        )
+        
+        if refund_response.success?
+          refunded_item = refund_response.data
+          puts "✓ Refund processed successfully"
+          puts "  Final state: #{refunded_item['state']}"
+          puts "  Payment state: #{refunded_item['payment_state']}"
+          
+          # Notify customer
+          # CustomerMailer.refund_processed(customer_email, item_id).deliver_later
+        else
+          puts "✗ Refund failed: #{refund_response.error_message}"
+        end
+      else
+        puts "✗ Item cannot be refunded - payment state: #{payment_state}"
+      end
+    end
+  else
+    puts "✗ Payment failed: #{payment_response.error_message}"
+  end
+else
+  puts "✗ Item creation failed: #{create_response.error_message}"
+end
+```
+
+### Refund States and Conditions
+
+Items can typically be refunded when in these states:
+
+| State | Can Refund? | Description |
+|-------|-------------|-------------|
+| `pending` | ✗ No | Item not yet paid, cancel instead |
+| `payment_pending` | ✗ No | Payment not completed, cancel instead |
+| `completed` | ✓ Yes | Payment completed successfully |
+| `payment_deposited` | ✓ Yes | Payment received and deposited |
+| `work_completed` | ✓ Yes | Work completed, funds can be refunded |
+| `cancelled` | ✗ No | Already cancelled |
+| `refunded` | ✗ No | Already refunded |
+| `payment_held` | Maybe | May require admin approval |
+
+**Note:** Full refunds return the entire item amount. Partial refunds return a specified amount less than the total. Multiple partial refunds may be possible depending on your Zai configuration.
+
+### Integration with Rails - Refunds
+
+#### In a Controller
+
+```ruby
+class RefundsController < ApplicationController
+  def create
+    @order = Order.find(params[:order_id])
+    
+    # Ensure order belongs to current user or is admin
+    unless @order.user == current_user || current_user.admin?
+      redirect_to root_path, alert: 'Unauthorized'
+      return
+    end
+    
+    # Process refund in Zai
+    response = ZaiPayment.items.refund(
+      @order.zai_item_id,
+      refund_amount: params[:refund_amount]&.to_i,
+      refund_message: params[:refund_message]
+    )
+    
+    if response.success?
+      @order.update(
+        status: 'refunded',
+        refunded_at: Time.current,
+        refund_amount: params[:refund_amount]&.to_i,
+        refund_reason: params[:refund_message]
+      )
+      
+      redirect_to @order, notice: 'Refund processed successfully'
+    else
+      flash[:error] = "Cannot process refund: #{response.error_message}"
+      redirect_to @order
+    end
+  rescue ZaiPayment::Errors::ValidationError => e
+    flash[:error] = "Refund error: #{e.message}"
+    redirect_to @order
+  end
+end
+```
+
+#### In a Service Object
+
+```ruby
+class RefundService
+  def initialize(order, refund_params = {})
+    @order = order
+    @refund_amount = refund_params[:amount]
+    @refund_message = refund_params[:message]
+    @account_id = refund_params[:account_id]
+  end
+  
+  def process_refund
+    # Validate order is refundable
+    unless refundable?
+      return { success: false, error: 'Order cannot be refunded' }
+    end
+    
+    # Validate refund amount
+    if @refund_amount && @refund_amount > @order.total_amount
+      return { success: false, error: 'Refund amount exceeds order total' }
+    end
+    
+    # Process refund in Zai
+    response = ZaiPayment.items.refund(
+      @order.zai_item_id,
+      refund_amount: @refund_amount,
+      refund_message: @refund_message,
+      account_id: @account_id
+    )
+    
+    if response.success?
+      # Update local database
+      @order.update(
+        status: @refund_amount == @order.total_amount ? 'refunded' : 'partially_refunded',
+        zai_state: response.data['state'],
+        zai_payment_state: response.data['payment_state'],
+        refunded_at: Time.current,
+        refund_amount: @refund_amount || @order.total_amount,
+        refund_reason: @refund_message
+      )
+      
+      # Send notification
+      OrderMailer.refund_processed(@order).deliver_later
+      
+      # Log the refund
+      @order.refund_logs.create(
+        amount: @refund_amount || @order.total_amount,
+        reason: @refund_message,
+        processed_at: Time.current
+      )
+      
+      { success: true, order: @order }
+    else
+      { success: false, error: response.error_message }
+    end
+  rescue ZaiPayment::Errors::ApiError => e
+    { success: false, error: e.message }
+  end
+  
+  private
+  
+  def refundable?
+    # Check local status
+    return false unless @order.status.in?(['completed', 'paid'])
+    
+    # Check Zai status
+    status_response = ZaiPayment.items.show_status(@order.zai_item_id)
+    return false unless status_response.success?
+    
+    payment_state = status_response.data['payment_state']
+    payment_state.in?(['completed', 'payment_deposited', 'work_completed'])
+  rescue
+    false
+  end
+end
+
+# Usage:
+# service = RefundService.new(order, amount: 5000, message: 'Customer return')
+# result = service.process_refund
+# if result[:success]
+#   # Handle success
+# else
+#   # Handle error: result[:error]
+# end
+```
+
+### Webhook Integration for Refunds
+
+After processing a refund, you may receive webhook notifications:
+
+```ruby
+# In your webhook handler
+def handle_refund_webhook(payload)
+  if payload['type'] == 'refund' && payload['status'] == 'successful'
+    item_id = payload['related_items'].first
+    puts "Refund successful for item: #{item_id}"
+    
+    # Update your database
+    Order.find_by(zai_item_id: item_id)&.update(
+      status: 'refunded',
+      zai_state: payload['state'],
+      refunded_at: Time.current,
+      refund_amount: payload['amount']
+    )
+    
+    # Notify customer
+    order = Order.find_by(zai_item_id: item_id)
+    OrderMailer.refund_confirmed(order).deliver_later if order
+  elsif payload['status'] == 'failed'
+    puts "Refund failed: #{payload['failure_reason']}"
+  end
+end
+```
+
+### Testing Refund Functionality
+
+```ruby
+# spec/services/refund_service_spec.rb
+RSpec.describe RefundService do
+  let(:order) { create(:order, status: 'completed', zai_item_id: 'item-123', total_amount: 10000) }
+  let(:service) { described_class.new(order, amount: 5000, message: 'Customer return') }
+  
+  describe '#process_refund' do
+    context 'when order can be refunded' do
+      before do
+        allow(ZaiPayment.items).to receive(:show_status).and_return(
+          double(success?: true, data: { 'payment_state' => 'completed' })
+        )
+        
+        allow(ZaiPayment.items).to receive(:refund).and_return(
+          double(
+            success?: true,
+            data: { 'id' => 'item-123', 'state' => 'refunded', 'payment_state' => 'refunded' }
+          )
+        )
+      end
+      
+      it 'successfully processes the refund' do
+        result = service.process_refund
+        
+        expect(result[:success]).to be true
+        expect(order.reload.status).to eq('partially_refunded')
+        expect(order.refund_amount).to eq(5000)
+        expect(order.refunded_at).to be_present
+      end
+      
+      it 'marks as fully refunded when refund amount equals total' do
+        service = described_class.new(order, amount: 10000)
+        result = service.process_refund
+        
+        expect(order.reload.status).to eq('refunded')
+      end
+    end
+    
+    context 'when order cannot be refunded' do
+      before do
+        order.update(status: 'pending')
+      end
+      
+      it 'returns error' do
+        result = service.process_refund
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to include('cannot be refunded')
+      end
+    end
+    
+    context 'when refund amount exceeds order total' do
+      let(:service) { described_class.new(order, amount: 20000) }
+      
+      it 'returns error' do
+        result = service.process_refund
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to include('exceeds order total')
+      end
+    end
+  end
+end
+```
+
+### Cancel Integration with Rails
 
 #### In a Controller
 
@@ -1151,4 +1636,5 @@ For more information about the Zai Items API, see:
 - [Show Item Status](https://developer.hellozai.com/reference/showitemstatus)
 - [Make Payment](https://developer.hellozai.com/reference/makepayment)
 - [Cancel Item](https://developer.hellozai.com/reference/cancelitem)
+- [Refund Item](https://developer.hellozai.com/reference/refund)
 
