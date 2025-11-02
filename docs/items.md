@@ -531,6 +531,120 @@ Payments can be captured when in these states:
 - Some card networks may support multiple partial captures, check with Zai support
 - The remaining authorized amount (if any) is automatically released after capture
 
+### Void Payment
+
+Void a previously authorized payment to immediately release the held funds without capturing them. This is typically used when you need to cancel an authorized payment before capturing it.
+
+```ruby
+# Void an authorized payment
+response = ZaiPayment.items.void_payment("item-123")
+
+if response.success?
+  item = response.data
+  puts "Payment voided successfully"
+  puts "Item ID: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Void failed: #{response.error_message}"
+end
+```
+
+#### Void with Status Check
+
+Check authorization status before attempting to void:
+
+```ruby
+# Check current status
+status_response = ZaiPayment.items.show_status("item-123")
+
+if status_response.success?
+  payment_state = status_response.data['payment_state']
+  
+  # Only void if payment is authorized
+  if payment_state == 'authorized' || payment_state == 'payment_authorized'
+    void_response = ZaiPayment.items.void_payment("item-123")
+    
+    if void_response.success?
+      puts "✓ Payment voided successfully"
+    else
+      puts "✗ Void failed: #{void_response.error_message}"
+    end
+  else
+    puts "Payment cannot be voided - current state: #{payment_state}"
+  end
+end
+```
+
+#### Authorization Management Workflow
+
+Complete example showing authorize → void workflow:
+
+```ruby
+# Step 1: Authorize the payment
+auth_response = ZaiPayment.items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",
+  cvv: "123"
+)
+
+if auth_response.success?
+  puts "✓ Payment authorized"
+  
+  # Step 2: Verify authorization
+  status = ZaiPayment.items.show_status("item-123")
+  puts "Payment State: #{status.data['payment_state']}"
+  
+  # Step 3: Void the payment (cancel the authorization)
+  void_response = ZaiPayment.items.void_payment("item-123")
+  
+  if void_response.success?
+    puts "✓ Payment voided - funds released"
+    puts "Final State: #{void_response.data['payment_state']}"
+  else
+    puts "✗ Void failed: #{void_response.error_message}"
+  end
+end
+```
+
+#### Void vs Cancel vs Refund
+
+Understanding when to use each operation:
+
+| Operation | Use When | Payment State | Funds Status |
+|-----------|----------|---------------|--------------|
+| **Void** | Payment is authorized but not captured | `authorized`, `payment_authorized` | Funds held but not transferred |
+| **Cancel** | Item created but payment not yet authorized | `pending`, `payment_pending` | No funds involved |
+| **Refund** | Payment captured and completed | `completed`, `payment_deposited` | Funds already transferred |
+
+**Key Differences:**
+- **Void**: Releases authorized (held) funds immediately without any transfer
+- **Cancel**: Cancels the entire transaction before any payment authorization
+- **Refund**: Returns funds after they've been captured and transferred
+
+#### Void States and Conditions
+
+Payments can be voided when in these states:
+
+| State | Can Void? | Description |
+|-------|-----------|-------------|
+| `authorized` | ✓ Yes | Payment authorized and ready to void |
+| `payment_authorized` | ✓ Yes | Payment authorized and ready to void |
+| `pending` | ✗ No | Payment not authorized yet, use cancel |
+| `payment_pending` | ✗ No | Payment processing, use cancel |
+| `completed` | ✗ No | Already captured, use refund |
+| `payment_deposited` | ✗ No | Already captured, use refund |
+| `cancelled` | ✗ No | Already cancelled |
+| `refunded` | ✗ No | Already refunded |
+| `voided` | ✗ No | Already voided |
+
+**Important Notes:**
+- Voiding a payment immediately releases the held funds to the cardholder
+- Once voided, the authorization cannot be reversed or captured
+- Void is instant - no settlement period required
+- No fees are charged for voiding an authorization
+- Voided authorizations do not appear on cardholder statements
+
 ### Cancel Item
 
 Cancel a pending item/payment. This operation is typically used to cancel an item before payment has been processed or completed.

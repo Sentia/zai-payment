@@ -446,6 +446,22 @@ module ZaiPayment
         client.patch("/items/#{item_id}/capture_payment", body: body)
       end
 
+      # Void Payment
+      #
+      # @param item_id [String] the item ID
+      # @return [Response] the API response containing void details
+      #
+      # @example Void a payment
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.void_payment("item_id")
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @see https://developer.hellozai.com/reference/voidpayment
+      def void_payment(item_id)
+        validate_id!(item_id, 'item_id')
+        client.patch("/items/#{item_id}/void_payment")
+      end
+
       private
 
       def validate_id!(value, field_name)

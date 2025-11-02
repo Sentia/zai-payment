@@ -1653,6 +1653,69 @@ RSpec.describe ZaiPayment::Resources::Item do
     end
   end
 
+  describe '#void_payment' do
+    context 'when successful' do
+      before do
+        stubs.patch('/items/item_123/void_payment') do
+          [200, { 'Content-Type' => 'application/json' }, void_response]
+        end
+      end
+
+      let(:void_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'name' => 'Test Product',
+            'amount' => 10_000,
+            'state' => 'payment_voided',
+            'payment_state' => 'voided'
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = item_resource.void_payment('item_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the voided item data' do
+        response = item_resource.void_payment('item_123')
+        expect(response.data['id']).to eq('item_123')
+        expect(response.data['state']).to eq('payment_voided')
+        expect(response.data['payment_state']).to eq('voided')
+      end
+    end
+
+    context 'when item_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect do
+          item_resource.void_payment('')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect do
+          item_resource.void_payment(nil)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+    end
+
+    context 'when item not found' do
+      before do
+        stubs.patch('/items/item_123/void_payment') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Item not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect do
+          item_resource.void_payment('item_123')
+        end.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+  end
+
   describe 'integration with ZaiPayment module' do
     it 'is accessible through ZaiPayment.items' do
       expect(ZaiPayment.items).to be_a(described_class)
