@@ -1163,6 +1163,233 @@ RSpec.describe ZaiPayment::Resources::Item do
     end
   end
 
+  describe '#capture_payment' do
+    context 'when successful with amount' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do |env|
+          body = JSON.parse(env.body)
+          [200, { 'Content-Type' => 'application/json' }, capture_response] if body['amount'] == 10_000
+        end
+      end
+
+      let(:capture_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'name' => 'Test Product',
+            'amount' => 10_000,
+            'state' => 'payment_deposited',
+            'payment_state' => 'captured'
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = item_resource.capture_payment('item_123', amount: 10_000)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the capture details' do
+        response = item_resource.capture_payment('item_123', amount: 10_000)
+        expect(response.data['id']).to eq('item_123')
+        expect(response.data['state']).to eq('payment_deposited')
+        expect(response.data['payment_state']).to eq('captured')
+      end
+    end
+
+    context 'when successful without amount (full capture)' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do |env|
+          body = env.body.nil? || env.body.empty? ? {} : JSON.parse(env.body)
+          [200, { 'Content-Type' => 'application/json' }, capture_response] if body.empty?
+        end
+      end
+
+      let(:capture_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'name' => 'Test Product',
+            'amount' => 10_000,
+            'state' => 'payment_deposited',
+            'payment_state' => 'captured'
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = item_resource.capture_payment('item_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'captures the full authorized amount' do
+        response = item_resource.capture_payment('item_123')
+        expect(response.data['id']).to eq('item_123')
+        expect(response.data['state']).to eq('payment_deposited')
+        expect(response.data['payment_state']).to eq('captured')
+      end
+    end
+
+    context 'with partial amount' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do |env|
+          body = JSON.parse(env.body)
+          [200, { 'Content-Type' => 'application/json' }, capture_response] if body['amount'] == 5000
+        end
+      end
+
+      let(:capture_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'name' => 'Test Product',
+            'amount' => 5000,
+            'state' => 'payment_deposited',
+            'payment_state' => 'captured'
+          }
+        }
+      end
+
+      it 'captures the specified amount' do
+        response = item_resource.capture_payment('item_123', amount: 5000)
+        expect(response.success?).to be true
+        expect(response.data['amount']).to eq(5000)
+      end
+    end
+
+    context 'when item_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect do
+          item_resource.capture_payment('')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect do
+          item_resource.capture_payment(nil)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+    end
+
+    context 'when capture fails' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'base' => ['Payment cannot be captured']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.capture_payment('item_123', amount: 10_000)
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+
+    context 'when item not found' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Item not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect do
+          item_resource.capture_payment('item_123')
+        end.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when payment not authorized' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'base' => ['Payment must be authorized before capture']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.capture_payment('item_123')
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+
+    context 'when amount exceeds authorized amount' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'amount' => ['Amount exceeds authorized amount']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.capture_payment('item_123', amount: 999_999)
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+
+    context 'when unauthorized' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do
+          [401, { 'Content-Type' => 'application/json' }, { 'error' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect do
+          item_resource.capture_payment('item_123')
+        end.to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+
+    context 'when authorization has expired' do
+      before do
+        stubs.patch('/items/item_123/capture_payment') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'base' => ['Authorization has expired']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.capture_payment('item_123')
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+  end
+
   describe '#cancel' do
     context 'when successful' do
       before do

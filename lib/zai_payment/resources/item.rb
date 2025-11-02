@@ -337,6 +337,7 @@ module ZaiPayment
         validate_id!(item_id, 'item_id')
 
         body = build_item_payment_body(attributes)
+
         client.patch("/items/#{item_id}/make_payment", body: body)
       end
 
@@ -416,6 +417,33 @@ module ZaiPayment
         validate_id!(item_id, 'item_id')
 
         client.patch("/items/#{item_id}/authorize_payment", body: build_item_payment_body(attributes))
+      end
+
+      # Capture Payment
+      #
+      # @param item_id [String] the item ID
+      # @option attributes [String] :amount Optional amount to capture
+      # @return [Response] the API response containing capture details
+      #
+      # @example Capture a payment
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.capture_payment("item_id", amount: 10000)
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @example Capture a payment with optional parameters
+      #   response = items.capture_payment(
+      #     "item_id",
+      #     amount: 10000
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/capturepayment
+      def capture_payment(item_id, **attributes)
+        validate_id!(item_id, 'item_id')
+
+        body = {}
+        body[:amount] = attributes[:amount] if attributes[:amount]
+
+        client.patch("/items/#{item_id}/capture_payment", body: body)
       end
 
       private

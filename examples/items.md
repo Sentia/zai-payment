@@ -960,6 +960,450 @@ else
 end
 ```
 
+## Capture Payment
+
+Capture a previously authorized payment to complete the transaction. This is the second step in the authorize → capture workflow, allowing you to finalize a payment after authorization.
+
+### Basic Capture (Full Amount)
+
+Capture the full authorized amount:
+
+```ruby
+response = items.capture_payment("item-123")
+
+if response.success?
+  item = response.data
+  puts "Payment captured successfully"
+  puts "Item ID: #{item['id']}"
+  puts "Amount: $#{item['amount'] / 100.0}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Capture failed: #{response.error_message}"
+end
+```
+
+### Partial Capture
+
+Capture only a portion of the authorized amount:
+
+```ruby
+# Capture $50 of a $100 authorization
+response = items.capture_payment("item-123", amount: 5000)
+
+if response.success?
+  item = response.data
+  puts "Partial payment captured: $#{item['amount'] / 100.0}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Capture failed: #{response.error_message}"
+end
+```
+
+### Capture with Error Handling
+
+```ruby
+begin
+  response = items.capture_payment("item-123", amount: 10_000)
+  
+  if response.success?
+    item = response.data
+    puts "✓ Payment captured: #{item['id']}"
+    puts "  Amount: $#{item['amount'] / 100.0}"
+    puts "  State: #{item['state']}"
+    puts "  Payment State: #{item['payment_state']}"
+  else
+    # Handle API errors
+    case response.status
+    when 422
+      puts "Cannot capture: #{response.error_message}"
+      # Common: Payment not authorized, authorization expired, or invalid amount
+    when 404
+      puts "Item not found"
+    when 401
+      puts "Authentication failed"
+    else
+      puts "Capture error: #{response.error_message}"
+    end
+  end
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Item not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API error: #{e.message}"
+end
+```
+
+### Capture with Status Check
+
+Check authorization status before attempting to capture:
+
+```ruby
+# Check current status
+status_response = items.show_status("item-123")
+
+if status_response.success?
+  status = status_response.data
+  payment_state = status['payment_state']
+  
+  puts "Current payment state: #{payment_state}"
+  
+  # Only capture if payment is authorized
+  if payment_state == 'authorized' || payment_state == 'payment_authorized'
+    capture_response = items.capture_payment("item-123")
+    
+    if capture_response.success?
+      puts "✓ Payment captured successfully"
+    else
+      puts "✗ Capture failed: #{capture_response.error_message}"
+    end
+  else
+    puts "Payment cannot be captured - current state: #{payment_state}"
+  end
+end
+```
+
+### Complete Authorization and Capture Workflow
+
+Full example demonstrating the two-step payment process:
+
+```ruby
+# Step 1: Authorize the payment
+puts "Step 1: Authorizing payment..."
+auth_response = items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",
+  cvv: "123"
+)
+
+if auth_response.success?
+  puts "✓ Payment authorized"
+  auth_data = auth_response.data
+  puts "  Item ID: #{auth_data['id']}"
+  puts "  Amount: $#{auth_data['amount'] / 100.0}"
+  puts "  State: #{auth_data['state']}"
+  
+  # Step 2: Verify authorization status
+  puts "\nStep 2: Verifying authorization..."
+  status_response = items.show_status("item-123")
+  
+  if status_response.success?
+    status = status_response.data
+    puts "✓ Status verified"
+    puts "  Payment State: #{status['payment_state']}"
+    
+    # Step 3: Capture the payment (can be done immediately or later)
+    puts "\nStep 3: Capturing payment..."
+    
+    # Wait a moment (optional - simulate real-world delay)
+    sleep 1
+    
+    capture_response = items.capture_payment("item-123")
+    
+    if capture_response.success?
+      capture_data = capture_response.data
+      puts "✓ Payment captured successfully"
+      puts "  Item ID: #{capture_data['id']}"
+      puts "  Final State: #{capture_data['state']}"
+      puts "  Final Payment State: #{capture_data['payment_state']}"
+    else
+      puts "✗ Capture failed: #{capture_response.error_message}"
+    end
+  else
+    puts "✗ Status check failed: #{status_response.error_message}"
+  end
+else
+  puts "✗ Authorization failed: #{auth_response.error_message}"
+end
+```
+
+### Capture with Retry Logic
+
+Implement retry logic for transient errors:
+
+```ruby
+def capture_payment_with_retry(item_id, amount: nil, max_retries: 3)
+  retries = 0
+  
+  begin
+    response = items.capture_payment(item_id, amount: amount)
+    
+    if response.success?
+      puts "✓ Payment captured successfully"
+      return response
+    elsif response.status == 422
+      # Validation error - don't retry
+      puts "✗ Capture failed: #{response.error_message}"
+      return response
+    else
+      # Other errors - maybe retry
+      raise "Capture error: #{response.error_message}"
+    end
+    
+  rescue => e
+    retries += 1
+    
+    if retries < max_retries
+      puts "⚠ Capture attempt #{retries} failed: #{e.message}"
+      puts "  Retrying in #{retries * 2} seconds..."
+      sleep(retries * 2)
+      retry
+    else
+      puts "✗ Capture failed after #{max_retries} attempts"
+      raise e
+    end
+  end
+end
+
+# Usage
+begin
+  response = capture_payment_with_retry("item-123", amount: 10_000)
+  puts "Final state: #{response.data['payment_state']}" if response.success?
+rescue => e
+  puts "Capture ultimately failed: #{e.message}"
+end
+```
+
+### Real-World Capture Flow Example
+
+A complete example showing how to handle the authorize and capture workflow in a real application:
+
+```ruby
+class PaymentProcessor
+  def initialize
+    @items = ZaiPayment.items
+  end
+  
+  def process_two_step_payment(order)
+    # Step 1: Authorize
+    puts "Processing order ##{order[:id]} - Amount: $#{order[:amount] / 100.0}"
+    
+    auth_response = authorize_payment(order)
+    return { success: false, error: "Authorization failed" } unless auth_response
+    
+    # Step 2: Perform additional checks (inventory, fraud, etc.)
+    return { success: false, error: "Fraud check failed" } unless verify_order(order)
+    
+    # Step 3: Capture
+    capture_response = capture_payment(order[:item_id], order[:capture_amount])
+    return { success: false, error: "Capture failed" } unless capture_response
+    
+    # Step 4: Update order and notify
+    finalize_order(order, capture_response)
+    
+    { success: true, data: capture_response.data }
+  end
+  
+  private
+  
+  def authorize_payment(order)
+    puts "→ Authorizing payment..."
+    
+    response = @items.authorize_payment(
+      order[:item_id],
+      account_id: order[:account_id],
+      cvv: order[:cvv]
+    )
+    
+    if response.success?
+      puts "✓ Payment authorized: #{order[:item_id]}"
+      response
+    else
+      puts "✗ Authorization failed: #{response.error_message}"
+      nil
+    end
+  end
+  
+  def verify_order(order)
+    puts "→ Verifying order..."
+    
+    # Check inventory
+    return false unless check_inventory(order[:items])
+    
+    # Check fraud score
+    return false unless check_fraud_score(order[:buyer_id])
+    
+    puts "✓ Order verified"
+    true
+  end
+  
+  def capture_payment(item_id, amount = nil)
+    puts "→ Capturing payment..."
+    
+    response = @items.capture_payment(item_id, amount: amount)
+    
+    if response.success?
+      puts "✓ Payment captured: #{item_id}"
+      response
+    else
+      puts "✗ Capture failed: #{response.error_message}"
+      nil
+    end
+  end
+  
+  def finalize_order(order, capture_response)
+    puts "→ Finalizing order..."
+    
+    # Update order status in database
+    # update_order_status(order[:id], 'paid')
+    
+    # Send confirmation email
+    # send_confirmation_email(order[:buyer_email])
+    
+    # Update inventory
+    # reduce_inventory(order[:items])
+    
+    puts "✓ Order finalized: ##{order[:id]}"
+  end
+  
+  def check_inventory(items)
+    # Implement inventory check
+    true
+  end
+  
+  def check_fraud_score(buyer_id)
+    # Implement fraud check
+    true
+  end
+end
+
+# Usage
+processor = PaymentProcessor.new
+
+order = {
+  id: 12345,
+  item_id: "item-abc123",
+  account_id: "card_account-456",
+  cvv: "123",
+  amount: 10_000,
+  capture_amount: 10_000, # Can be less for partial capture
+  buyer_id: "buyer-789",
+  buyer_email: "customer@example.com",
+  items: ["product-1", "product-2"]
+}
+
+result = processor.process_two_step_payment(order)
+
+if result[:success]
+  puts "\n✓ Payment completed successfully!"
+  puts "  Item: #{result[:data]['id']}"
+  puts "  State: #{result[:data]['payment_state']}"
+else
+  puts "\n✗ Payment failed: #{result[:error]}"
+end
+```
+
+### Capture States and Conditions
+
+Payments can be captured when in these states:
+
+| State | Can Capture? | Description |
+|-------|-------------|-------------|
+| `authorized` | ✓ Yes | Payment authorized and ready to capture |
+| `payment_authorized` | ✓ Yes | Payment authorized and ready to capture |
+| `pending` | ✗ No | Payment not authorized yet |
+| `payment_pending` | ✗ No | Payment processing, not authorized |
+| `completed` | ✗ No | Already captured |
+| `payment_deposited` | ✗ No | Already captured and deposited |
+| `cancelled` | ✗ No | Authorization cancelled |
+| `refunded` | ✗ No | Payment refunded |
+
+### Best Practices for Capture
+
+1. **Timely Captures**: Capture authorized payments within 7 days (typical authorization expiration)
+2. **Status Verification**: Always check payment state before attempting capture
+3. **Partial Captures**: Use for order adjustments or split fulfillment
+4. **Error Handling**: Implement robust error handling and retry logic
+5. **Logging**: Log all authorization and capture attempts for audit trails
+6. **Notifications**: Notify customers when payment is captured
+7. **Timeouts**: Set appropriate timeout values for capture requests
+
+### Common Capture Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "Payment not authorized" | Trying to capture non-authorized payment | Authorize first, then capture |
+| "Authorization expired" | Authorization older than 7 days | Create new item and authorize again |
+| "Amount exceeds authorized amount" | Capture amount > authorized amount | Reduce capture amount or re-authorize |
+| "Item not found" | Invalid item ID | Verify item ID is correct |
+| "Payment already captured" | Duplicate capture attempt | Check payment state before capture |
+
+### Capture Integration with Rails
+
+#### In a Controller
+
+```ruby
+class PaymentsController < ApplicationController
+  def capture
+    @order = Order.find(params[:order_id])
+    
+    # Verify order can be captured
+    unless @order.payment_state == 'authorized'
+      flash[:error] = "Payment not authorized"
+      redirect_to @order and return
+    end
+    
+    # Capture the payment
+    response = ZaiPayment.items.capture_payment(
+      @order.zai_item_id,
+      amount: params[:amount] # Optional for partial capture
+    )
+    
+    if response.success?
+      @order.update(
+        payment_state: response.data['payment_state'],
+        captured_at: Time.current
+      )
+      
+      flash[:success] = "Payment captured successfully"
+      redirect_to @order
+    else
+      flash[:error] = "Capture failed: #{response.error_message}"
+      render :show
+    end
+  end
+end
+```
+
+#### In a Background Job
+
+```ruby
+class CapturePaymentJob < ApplicationJob
+  queue_as :payments
+  
+  def perform(order_id)
+    order = Order.find(order_id)
+    
+    # Check if order is ready to capture
+    return unless order.ready_to_capture?
+    
+    # Capture the payment
+    response = ZaiPayment.items.capture_payment(order.zai_item_id)
+    
+    if response.success?
+      order.update(
+        payment_state: 'captured',
+        captured_at: Time.current
+      )
+      
+      # Send confirmation email
+      OrderMailer.payment_captured(order).deliver_later
+      
+      # Update inventory
+      order.reduce_inventory!
+    else
+      # Log error and retry or alert
+      Rails.logger.error("Capture failed for order #{order_id}: #{response.error_message}")
+      
+      # Retry if appropriate
+      raise "Capture failed" if response.status >= 500
+    end
+  end
+end
+```
+
 ## Cancel Item
 
 Cancel an existing item/payment. This operation is typically used to cancel a pending payment before it has been processed or completed.

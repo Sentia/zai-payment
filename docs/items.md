@@ -413,6 +413,124 @@ end
 
 **Note:** After authorizing a payment, you'll need to capture it separately to complete the transaction. Authorized funds are typically held for 7 days before being automatically released.
 
+### Capture Payment
+
+Capture a previously authorized payment to complete the transaction and transfer funds. This is the second step in a two-step payment process (authorize → capture).
+
+#### Optional Parameters
+
+- `amount` - Amount to capture in cents (Optional). If not provided, captures the full authorized amount.
+
+```ruby
+# Capture the full authorized amount
+response = ZaiPayment.items.capture_payment("item-123")
+
+if response.success?
+  item = response.data
+  puts "Payment captured for item: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+#### Capture with Specific Amount (Partial Capture)
+
+You can capture a partial amount of the authorized funds:
+
+```ruby
+# Capture only $50 of a $100 authorized payment
+response = ZaiPayment.items.capture_payment(
+  "item-123",
+  amount: 5000  # $50.00 in cents
+)
+
+if response.success?
+  item = response.data
+  puts "Partial payment captured: $#{item['amount'] / 100.0}"
+  puts "Item State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+#### Capture with Status Check
+
+Check authorization status before attempting to capture:
+
+```ruby
+# Check current status
+status_response = ZaiPayment.items.show_status("item-123")
+
+if status_response.success?
+  payment_state = status_response.data['payment_state']
+  
+  # Only capture if payment is authorized
+  if payment_state == 'authorized' || payment_state == 'payment_authorized'
+    capture_response = ZaiPayment.items.capture_payment("item-123")
+    
+    if capture_response.success?
+      puts "✓ Payment captured successfully"
+    else
+      puts "✗ Capture failed: #{capture_response.error_message}"
+    end
+  else
+    puts "Payment cannot be captured - current state: #{payment_state}"
+  end
+end
+```
+
+#### Authorization and Capture Workflow
+
+Complete example of the authorize → capture workflow:
+
+```ruby
+# Step 1: Authorize the payment
+auth_response = ZaiPayment.items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",
+  cvv: "123"
+)
+
+if auth_response.success?
+  puts "✓ Payment authorized"
+  
+  # Step 2: Verify authorization
+  status = ZaiPayment.items.show_status("item-123")
+  puts "Payment State: #{status.data['payment_state']}"
+  
+  # Step 3: Capture the payment (can be done immediately or later)
+  capture_response = ZaiPayment.items.capture_payment("item-123")
+  
+  if capture_response.success?
+    puts "✓ Payment captured and completed"
+    puts "Final State: #{capture_response.data['payment_state']}"
+  else
+    puts "✗ Capture failed: #{capture_response.error_message}"
+  end
+end
+```
+
+#### Capture States and Conditions
+
+Payments can be captured when in these states:
+
+| State | Can Capture? | Description |
+|-------|-------------|-------------|
+| `authorized` | ✓ Yes | Payment authorized and ready to capture |
+| `payment_authorized` | ✓ Yes | Payment authorized and ready to capture |
+| `pending` | ✗ No | Payment not authorized yet |
+| `payment_pending` | ✗ No | Payment processing, not authorized |
+| `completed` | ✗ No | Already captured |
+| `payment_deposited` | ✗ No | Already captured and deposited |
+| `cancelled` | ✗ No | Authorization cancelled |
+| `refunded` | ✗ No | Payment refunded |
+
+**Important Notes:**
+- Authorizations typically expire after 7 days if not captured
+- Partial captures are supported (capturing less than the authorized amount)
+- Once captured, the payment cannot be un-captured (but can be refunded)
+- Some card networks may support multiple partial captures, check with Zai support
+- The remaining authorized amount (if any) is automatically released after capture
+
 ### Cancel Item
 
 Cancel a pending item/payment. This operation is typically used to cancel an item before payment has been processed or completed.
