@@ -340,6 +340,22 @@ module ZaiPayment
         client.patch("/items/#{item_id}/make_payment", body: body)
       end
 
+      # Cancel an item
+
+      # @param item_id [String] the item ID
+      # @return [Response] the API response containing cancellation details
+      #
+      # @example Cancel a payment
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.cancel("item_id")
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @see https://developer.hellozai.com/reference/cancelitem
+      def cancel(item_id)
+        validate_id!(item_id, 'item_id')
+        client.patch("/items/#{item_id}/cancel")
+      end
+
       private
 
       def validate_id!(value, field_name)

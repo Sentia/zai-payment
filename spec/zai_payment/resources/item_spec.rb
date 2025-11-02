@@ -900,6 +900,105 @@ RSpec.describe ZaiPayment::Resources::Item do
     end
   end
 
+  describe '#cancel' do
+    context 'when successful' do
+      before do
+        stubs.patch('/items/item_123/cancel') do
+          [200, { 'Content-Type' => 'application/json' }, cancel_response]
+        end
+      end
+
+      let(:cancel_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'name' => 'Test Product',
+            'amount' => 10_000,
+            'state' => 'cancelled',
+            'payment_state' => 'cancelled'
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = item_resource.cancel('item_123')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the cancelled item data' do
+        response = item_resource.cancel('item_123')
+        expect(response.data['id']).to eq('item_123')
+        expect(response.data['state']).to eq('cancelled')
+        expect(response.data['payment_state']).to eq('cancelled')
+      end
+    end
+
+    context 'when item_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect do
+          item_resource.cancel('')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect do
+          item_resource.cancel(nil)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+    end
+
+    context 'when item not found' do
+      before do
+        stubs.patch('/items/item_123/cancel') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Item not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect do
+          item_resource.cancel('item_123')
+        end.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when item cannot be cancelled' do
+      before do
+        stubs.patch('/items/item_123/cancel') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'base' => ['Item cannot be cancelled in current state']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.cancel('item_123')
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+
+    context 'when unauthorized' do
+      before do
+        stubs.patch('/items/item_123/cancel') do
+          [401, { 'Content-Type' => 'application/json' }, { 'error' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect do
+          item_resource.cancel('item_123')
+        end.to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+  end
+
   describe 'integration with ZaiPayment module' do
     it 'is accessible through ZaiPayment.items' do
       expect(ZaiPayment.items).to be_a(described_class)

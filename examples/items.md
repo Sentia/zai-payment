@@ -18,6 +18,7 @@ This document provides examples of how to use the Items resource in the Zai Paym
 - [List Item Batch Transactions](#list-item-batch-transactions)
 - [Show Item Status](#show-item-status)
 - [Make Payment](#make-payment)
+- [Cancel Item](#cancel-item)
 
 ## Setup
 
@@ -760,6 +761,353 @@ else
 end
 ```
 
+## Cancel Item
+
+Cancel an existing item/payment. This operation is typically used to cancel a pending payment before it has been processed or completed.
+
+### Basic Cancel
+
+```ruby
+response = items.cancel("item-123")
+
+if response.success?
+  item = response.data
+  puts "Item cancelled successfully"
+  puts "Item ID: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Cancel failed: #{response.error_message}"
+end
+```
+
+### Cancel with Error Handling
+
+```ruby
+begin
+  response = items.cancel("item-123")
+  
+  if response.success?
+    item = response.data
+    puts "✓ Item cancelled: #{item['id']}"
+    puts "  State: #{item['state']}"
+    puts "  Payment State: #{item['payment_state']}"
+  else
+    # Handle API errors
+    case response.status
+    when 422
+      puts "Cannot cancel: #{response.error_message}"
+      # Common: Item already completed or in a state that can't be cancelled
+    when 404
+      puts "Item not found"
+    when 401
+      puts "Authentication failed"
+    else
+      puts "Cancellation error: #{response.error_message}"
+    end
+  end
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Item not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API error: #{e.message}"
+end
+```
+
+### Cancel with Status Check
+
+Check item status before attempting to cancel:
+
+```ruby
+# Check current status
+status_response = items.show_status("item-123")
+
+if status_response.success?
+  status = status_response.data
+  current_state = status['state']
+  payment_state = status['payment_state']
+  
+  puts "Current state: #{current_state}"
+  puts "Payment state: #{payment_state}"
+  
+  # Only cancel if in a cancellable state
+  if ['pending', 'payment_pending'].include?(current_state)
+    cancel_response = items.cancel("item-123")
+    
+    if cancel_response.success?
+      puts "✓ Item cancelled successfully"
+    else
+      puts "✗ Cancel failed: #{cancel_response.error_message}"
+    end
+  else
+    puts "Item cannot be cancelled - current state: #{current_state}"
+  end
+end
+```
+
+### Real-World Cancel Flow Example
+
+Complete example showing item creation, payment, and cancellation:
+
+```ruby
+require 'zai_payment'
+
+# Configure
+ZaiPayment.configure do |config|
+  config.client_id = ENV['ZAI_CLIENT_ID']
+  config.client_secret = ENV['ZAI_CLIENT_SECRET']
+  config.scope = ENV['ZAI_SCOPE']
+  config.environment = :prelive
+end
+
+items = ZaiPayment.items
+
+# Step 1: Create an item
+create_response = items.create(
+  name: "Product Purchase",
+  amount: 10000,  # $100.00
+  payment_type: 2,
+  buyer_id: "buyer-123",
+  seller_id: "seller-456",
+  description: "Purchase of premium widget"
+)
+
+if create_response.success?
+  item_id = create_response.data['id']
+  puts "✓ Item created: #{item_id}"
+  
+  # Step 2: Customer decides to cancel before payment
+  puts "\nCustomer requested cancellation..."
+  
+  # Step 3: Check if item can be cancelled
+  status_response = items.show_status(item_id)
+  
+  if status_response.success?
+    current_state = status_response.data['state']
+    puts "Current item state: #{current_state}"
+    
+    # Step 4: Cancel the item
+    if ['pending', 'payment_pending'].include?(current_state)
+      cancel_response = items.cancel(item_id)
+      
+      if cancel_response.success?
+        cancelled_item = cancel_response.data
+        puts "✓ Item cancelled successfully"
+        puts "  Final state: #{cancelled_item['state']}"
+        puts "  Payment state: #{cancelled_item['payment_state']}"
+        
+        # Notify customer
+        # CustomerMailer.order_cancelled(customer_email, item_id).deliver_later
+      else
+        puts "✗ Cancellation failed: #{cancel_response.error_message}"
+      end
+    else
+      puts "✗ Item cannot be cancelled - current state: #{current_state}"
+    end
+  end
+else
+  puts "✗ Item creation failed: #{create_response.error_message}"
+end
+```
+
+### Cancel States and Conditions
+
+Items can typically be cancelled when in these states:
+
+| State | Can Cancel? | Description |
+|-------|-------------|-------------|
+| `pending` | ✓ Yes | Item created but no payment initiated |
+| `payment_pending` | ✓ Yes | Payment initiated but not yet processed |
+| `payment_processing` | Maybe | Depends on payment processor |
+| `completed` | ✗ No | Payment completed, must refund instead |
+| `payment_held` | Maybe | May require admin approval |
+| `cancelled` | ✗ No | Already cancelled |
+| `refunded` | ✗ No | Already refunded |
+
+**Note:** If an item is already completed or funds have been disbursed, you cannot cancel it. In those cases, you may need to process a refund instead (contact Zai support for refund procedures).
+
+### Integration with Rails
+
+#### In a Controller
+
+```ruby
+class OrdersController < ApplicationController
+  def cancel
+    @order = Order.find(params[:id])
+    
+    # Ensure order belongs to current user
+    unless @order.user == current_user
+      redirect_to root_path, alert: 'Unauthorized'
+      return
+    end
+    
+    # Cancel in Zai
+    response = ZaiPayment.items.cancel(@order.zai_item_id)
+    
+    if response.success?
+      @order.update(
+        status: 'cancelled',
+        cancelled_at: Time.current
+      )
+      
+      redirect_to @order, notice: 'Order cancelled successfully'
+    else
+      flash[:error] = "Cannot cancel order: #{response.error_message}"
+      redirect_to @order
+    end
+  rescue ZaiPayment::Errors::ValidationError => e
+    flash[:error] = "Cancellation error: #{e.message}"
+    redirect_to @order
+  end
+end
+```
+
+#### In a Service Object
+
+```ruby
+class OrderCancellationService
+  def initialize(order)
+    @order = order
+  end
+  
+  def cancel
+    # Check if order can be cancelled
+    unless cancellable?
+      return { success: false, error: 'Order cannot be cancelled' }
+    end
+    
+    # Cancel in Zai
+    response = ZaiPayment.items.cancel(@order.zai_item_id)
+    
+    if response.success?
+      # Update local database
+      @order.update(
+        status: 'cancelled',
+        zai_state: response.data['state'],
+        zai_payment_state: response.data['payment_state'],
+        cancelled_at: Time.current,
+        cancelled_by: @order.user_id
+      )
+      
+      # Send notification
+      OrderMailer.order_cancelled(@order).deliver_later
+      
+      # Refund any processing fees if applicable
+      process_fee_refund if @order.processing_fee.present?
+      
+      { success: true, order: @order }
+    else
+      { success: false, error: response.error_message }
+    end
+  rescue ZaiPayment::Errors::ApiError => e
+    { success: false, error: e.message }
+  end
+  
+  private
+  
+  def cancellable?
+    # Check local status
+    return false unless @order.status.in?(['pending', 'payment_pending'])
+    
+    # Check Zai status
+    status_response = ZaiPayment.items.show_status(@order.zai_item_id)
+    return false unless status_response.success?
+    
+    status_response.data['state'].in?(['pending', 'payment_pending'])
+  rescue
+    false
+  end
+  
+  def process_fee_refund
+    # Custom logic for refunding processing fees
+    # ...
+  end
+end
+
+# Usage:
+# service = OrderCancellationService.new(order)
+# result = service.cancel
+# if result[:success]
+#   # Handle success
+# else
+#   # Handle error: result[:error]
+# end
+```
+
+### Webhook Integration
+
+After cancelling an item, you may receive webhook notifications:
+
+```ruby
+# In your webhook handler
+def handle_item_webhook(payload)
+  if payload['type'] == 'item' && payload['status'] == 'cancelled'
+    item_id = payload['id']
+    puts "Item cancelled: #{item_id}"
+    
+    # Update your database
+    Order.find_by(zai_item_id: item_id)&.update(
+      status: 'cancelled',
+      zai_state: payload['state'],
+      cancelled_at: Time.current
+    )
+    
+    # Notify customer
+    order = Order.find_by(zai_item_id: item_id)
+    OrderMailer.cancellation_confirmed(order).deliver_later if order
+  end
+end
+```
+
+### Testing Cancel Functionality
+
+```ruby
+# spec/services/order_cancellation_service_spec.rb
+RSpec.describe OrderCancellationService do
+  let(:order) { create(:order, status: 'pending', zai_item_id: 'item-123') }
+  let(:service) { described_class.new(order) }
+  
+  describe '#cancel' do
+    context 'when order can be cancelled' do
+      before do
+        allow(ZaiPayment.items).to receive(:show_status).and_return(
+          double(success?: true, data: { 'state' => 'pending' })
+        )
+        
+        allow(ZaiPayment.items).to receive(:cancel).and_return(
+          double(
+            success?: true, 
+            data: { 'id' => 'item-123', 'state' => 'cancelled', 'payment_state' => 'cancelled' }
+          )
+        )
+      end
+      
+      it 'successfully cancels the order' do
+        result = service.cancel
+        
+        expect(result[:success]).to be true
+        expect(order.reload.status).to eq('cancelled')
+        expect(order.cancelled_at).to be_present
+      end
+    end
+    
+    context 'when order cannot be cancelled' do
+      before do
+        order.update(status: 'completed')
+      end
+      
+      it 'returns error' do
+        result = service.cancel
+        
+        expect(result[:success]).to be false
+        expect(result[:error]).to include('cannot be cancelled')
+      end
+    end
+  end
+end
+```
+
 ## Payment Types
 
 When creating items, you can specify different payment types:
@@ -802,4 +1150,5 @@ For more information about the Zai Items API, see:
 - [List Item Batch Transactions](https://developer.hellozai.com/reference/listitembatchtransactions)
 - [Show Item Status](https://developer.hellozai.com/reference/showitemstatus)
 - [Make Payment](https://developer.hellozai.com/reference/makepayment)
+- [Cancel Item](https://developer.hellozai.com/reference/cancelitem)
 

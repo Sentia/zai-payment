@@ -313,6 +313,107 @@ if response.success?
 end
 ```
 
+### Make Payment
+
+Process a payment for an item using a card account.
+
+```ruby
+# Make a payment with required parameters
+response = ZaiPayment.items.make_payment(
+  "item-123",           # Item ID
+  "card_account-456"    # Card account ID
+)
+
+if response.success?
+  item = response.data
+  puts "Payment initiated for item: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+#### With Optional Parameters
+
+For enhanced fraud protection, include device and IP address information:
+
+```ruby
+response = ZaiPayment.items.make_payment(
+  "item-123",
+  "card_account-456",
+  device_id: "device_789",
+  ip_address: "192.168.1.1",
+  cvv: "123",
+  merchant_phone: "+61412345678"
+)
+
+if response.success?
+  item = response.data
+  puts "Payment initiated successfully"
+  puts "Item State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+### Cancel Item
+
+Cancel a pending item/payment. This operation is typically used to cancel an item before payment has been processed or completed.
+
+```ruby
+response = ZaiPayment.items.cancel("item-123")
+
+if response.success?
+  item = response.data
+  puts "Item cancelled successfully"
+  puts "Item ID: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Cancel failed: #{response.error_message}"
+end
+```
+
+#### Cancel with Status Check
+
+Check item status before attempting to cancel:
+
+```ruby
+# Check current status
+status_response = ZaiPayment.items.show_status("item-123")
+
+if status_response.success?
+  current_state = status_response.data['state']
+  
+  # Only cancel if in a cancellable state
+  if ['pending', 'payment_pending'].include?(current_state)
+    cancel_response = ZaiPayment.items.cancel("item-123")
+    
+    if cancel_response.success?
+      puts "✓ Item cancelled successfully"
+    else
+      puts "✗ Cancel failed: #{cancel_response.error_message}"
+    end
+  else
+    puts "Item cannot be cancelled - current state: #{current_state}"
+  end
+end
+```
+
+#### Cancel States and Conditions
+
+Items can typically be cancelled when in these states:
+
+| State | Can Cancel? | Description |
+|-------|-------------|-------------|
+| `pending` | ✓ Yes | Item created but no payment initiated |
+| `payment_pending` | ✓ Yes | Payment initiated but not yet processed |
+| `payment_processing` | Maybe | Depends on payment processor |
+| `completed` | ✗ No | Payment completed, must refund instead |
+| `payment_held` | Maybe | May require admin approval |
+| `cancelled` | ✗ No | Already cancelled |
+| `refunded` | ✗ No | Already refunded |
+
+**Note:** If an item is already completed or funds have been disbursed, you cannot cancel it. In those cases, you may need to process a refund instead (contact Zai support for refund procedures).
+
 ## Field Reference
 
 ### Item Fields
