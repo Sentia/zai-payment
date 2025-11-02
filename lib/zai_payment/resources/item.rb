@@ -26,6 +26,7 @@ module ZaiPayment
       }.freeze
 
       ITEM_PAYMENT_ATTRIBUTES = {
+        account_id: :account_id,
         device_id: :device_id,
         ip_address: :ip_address,
         cvv: :cvv,
@@ -332,11 +333,10 @@ module ZaiPayment
       #   )
       #
       # @see https://developer.hellozai.com/reference/makepayment
-      def make_payment(item_id, account_id, **attributes)
+      def make_payment(item_id, **attributes)
         validate_id!(item_id, 'item_id')
-        validate_id!(account_id, 'account_id')
 
-        body = { account_id: account_id }.merge(build_item_payment_body(attributes))
+        body = build_item_payment_body(attributes)
         client.patch("/items/#{item_id}/make_payment", body: body)
       end
 
@@ -390,6 +390,34 @@ module ZaiPayment
         client.patch("/items/#{item_id}/refund", body: body)
       end
 
+      # Authorize Payment
+      #
+      # @param item_id [String] the item ID
+      # @param account_id [String] the account ID
+      # @option attributes [String] :cvv Optional CVV
+      # @option attributes [String] :merchant_phone Optional merchant phone number
+      # @return [Response] the API response containing authorization details
+      #
+      # @example Authorize a payment
+      #   items = ZaiPayment::Resources::Item.new
+      #   response = items.authorize_payment("item_id", "account_id")
+      #   response.data # => {"items" => {"id" => "...", "state" => "...", ...}}
+      #
+      # @example Authorize a payment with optional parameters
+      #   response = items.authorize_payment(
+      #     "item_id",
+      #     "account_id",
+      #     cvv: "123",
+      #     merchant_phone: "+1234567890"
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/authorizepayment
+      def authorize_payment(item_id, **attributes)
+        validate_id!(item_id, 'item_id')
+
+        client.patch("/items/#{item_id}/authorize_payment", body: build_item_payment_body(attributes))
+      end
+
       private
 
       def validate_id!(value, field_name)
@@ -438,6 +466,8 @@ module ZaiPayment
       end
 
       def build_item_payment_body(attributes)
+        validate_presence!(attributes[:account_id], 'account_id')
+
         body = {}
 
         attributes.each do |key, value|

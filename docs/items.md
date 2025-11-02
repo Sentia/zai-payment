@@ -317,11 +317,22 @@ end
 
 Process a payment for an item using a card account.
 
+#### Required Parameters
+
+- `account_id` - The card account ID to charge (Required)
+
+#### Optional Parameters
+
+- `device_id` - Device identifier for fraud detection
+- `ip_address` - IP address of the customer
+- `cvv` - Card CVV for additional verification
+- `merchant_phone` - Merchant contact phone number
+
 ```ruby
 # Make a payment with required parameters
 response = ZaiPayment.items.make_payment(
-  "item-123",           # Item ID
-  "card_account-456"    # Card account ID
+  "item-123",
+  account_id: "card_account-456"    # Required
 )
 
 if response.success?
@@ -339,7 +350,7 @@ For enhanced fraud protection, include device and IP address information:
 ```ruby
 response = ZaiPayment.items.make_payment(
   "item-123",
-  "card_account-456",
+  account_id: "card_account-456",  # Required
   device_id: "device_789",
   ip_address: "192.168.1.1",
   cvv: "123",
@@ -353,6 +364,54 @@ if response.success?
   puts "Payment State: #{item['payment_state']}"
 end
 ```
+
+### Authorize Payment
+
+Authorize a payment without immediately capturing funds. This is useful for pre-authorization scenarios where you want to verify the card and hold funds before completing the transaction.
+
+#### Required Parameters
+
+- `account_id` - The card account ID to authorize (Required)
+
+#### Optional Parameters
+
+- `cvv` - Card CVV for additional verification
+- `merchant_phone` - Merchant contact phone number
+
+```ruby
+# Authorize a payment
+response = ZaiPayment.items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456"    # Required
+)
+
+if response.success?
+  item = response.data
+  puts "Payment authorized for item: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+#### Authorize with Optional Parameters
+
+```ruby
+response = ZaiPayment.items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",  # Required
+  cvv: "123",
+  merchant_phone: "+61412345678"
+)
+
+if response.success?
+  item = response.data
+  puts "Payment authorized with CVV verification"
+  puts "Item State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+end
+```
+
+**Note:** After authorizing a payment, you'll need to capture it separately to complete the transaction. Authorized funds are typically held for 7 days before being automatically released.
 
 ### Cancel Item
 

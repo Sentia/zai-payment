@@ -457,8 +457,8 @@ Process a payment for an item using a card account. This method charges the buye
 ```ruby
 # Make a payment with just the required parameters
 response = items.make_payment(
-  "item-123",           # Item ID
-  "card_account-456"    # Card account ID
+  "item-123",
+  account_id: "card_account-456"    # Required
 )
 
 if response.success?
@@ -478,9 +478,9 @@ For enhanced fraud protection, include device and IP address information:
 ```ruby
 response = items.make_payment(
   "item-123",
-  "card_account-456",
+  account_id: "card_account-456",  # Required
   device_id: "device_789",
-  ip_address: request.remote_ip  # In a Rails controller
+  ip_address: request.remote_ip    # In a Rails controller
 )
 
 if response.success?
@@ -495,8 +495,8 @@ Some card payments may require CVV verification:
 ```ruby
 response = items.make_payment(
   "item-123",
-  "card_account-456",
-  cvv: "123"  # CVV from secure form
+  account_id: "card_account-456",  # Required
+  cvv: "123"                       # CVV from secure form
 )
 
 if response.success?
@@ -511,7 +511,7 @@ Maximum fraud protection with all available parameters:
 ```ruby
 response = items.make_payment(
   "item-123",
-  "card_account-456",
+  account_id: "card_account-456",  # Required
   device_id: "device_789",
   ip_address: "192.168.1.1",
   cvv: "123",
@@ -533,7 +533,10 @@ end
 
 ```ruby
 begin
-  response = items.make_payment("item-123", "card_account-456")
+  response = items.make_payment(
+    "item-123",
+    account_id: "card_account-456"
+  )
   
   if response.success?
     puts "Payment successful"
@@ -553,6 +556,7 @@ begin
   end
 rescue ZaiPayment::Errors::ValidationError => e
   puts "Validation error: #{e.message}"
+  # Example: "account_id is required and cannot be blank"
 rescue ZaiPayment::Errors::NotFoundError => e
   puts "Resource not found: #{e.message}"
 rescue ZaiPayment::Errors::ApiError => e
@@ -594,7 +598,7 @@ if create_response.success?
   # Step 2: Make the payment
   payment_response = items.make_payment(
     item_id,
-    "card_account-789",  # Buyer's card account
+    account_id: "card_account-789",  # Buyer's card account (Required)
     ip_address: "192.168.1.1",
     device_id: "device_abc123"
   )
@@ -649,6 +653,200 @@ def handle_transaction_webhook(payload)
     Order.find_by(zai_item_id: item_id).update(status: 'paid')
   elsif payload['status'] == 'failed'
     puts "Payment failed: #{payload['failure_reason']}"
+  end
+end
+```
+
+## Authorize Payment
+
+Authorize a payment without immediately capturing funds. This is useful for pre-authorization scenarios where you want to verify the card and hold funds before completing the transaction.
+
+### Basic Authorization
+
+```ruby
+# Authorize a payment with required parameters
+response = items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456"    # Required
+)
+
+if response.success?
+  item = response.data
+  puts "Payment authorized for item: #{item['id']}"
+  puts "State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+else
+  puts "Authorization failed: #{response.error_message}"
+end
+```
+
+### Authorization with CVV
+
+For additional security, include CVV verification:
+
+```ruby
+response = items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",  # Required
+  cvv: "123"                       # CVV from secure form
+)
+
+if response.success?
+  puts "Payment authorized with CVV verification"
+end
+```
+
+### Authorization with All Optional Parameters
+
+```ruby
+response = items.authorize_payment(
+  "item-123",
+  account_id: "card_account-456",  # Required
+  cvv: "123",
+  merchant_phone: "+61412345678"
+)
+
+if response.success?
+  item = response.data
+  puts "Payment authorized successfully"
+  puts "Item State: #{item['state']}"
+  puts "Payment State: #{item['payment_state']}"
+  puts "Amount: #{item['amount']}"
+else
+  puts "Authorization failed: #{response.error_message}"
+end
+```
+
+### Error Handling for Authorization
+
+```ruby
+begin
+  response = items.authorize_payment(
+    "item-123",
+    account_id: "card_account-456"
+  )
+  
+  if response.success?
+    puts "Authorization successful"
+  else
+    # Handle API errors
+    case response.status
+    when 422
+      puts "Validation error: #{response.error_message}"
+      # Common: Invalid card, card declined, etc.
+    when 404
+      puts "Item or card account not found"
+    when 401
+      puts "Authentication failed"
+    else
+      puts "Authorization error: #{response.error_message}"
+    end
+  end
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+  # Example: "account_id is required and cannot be blank"
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Resource not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API error: #{e.message}"
+end
+```
+
+### Real-World Authorization Flow Example
+
+Complete example showing item creation through authorization:
+
+```ruby
+require 'zai_payment'
+
+# Configure
+ZaiPayment.configure do |config|
+  config.client_id = ENV['ZAI_CLIENT_ID']
+  config.client_secret = ENV['ZAI_CLIENT_SECRET']
+  config.scope = ENV['ZAI_SCOPE']
+  config.environment = :prelive
+end
+
+items = ZaiPayment.items
+
+# Step 1: Create an item
+create_response = items.create(
+  name: "Hotel Reservation",
+  amount: 50000,  # $500.00
+  payment_type: 2,
+  buyer_id: "buyer-123",
+  seller_id: "seller-456",
+  description: "Hotel booking - Hold authorization"
+)
+
+if create_response.success?
+  item_id = create_response.data['id']
+  puts "✓ Item created: #{item_id}"
+  
+  # Step 2: Authorize the payment (hold funds without capturing)
+  auth_response = items.authorize_payment(
+    item_id,
+    account_id: "card_account-789",
+    cvv: "123",
+    merchant_phone: "+61412345678"
+  )
+  
+  if auth_response.success?
+    puts "✓ Payment authorized (funds on hold)"
+    puts "  State: #{auth_response.data['state']}"
+    puts "  Payment State: #{auth_response.data['payment_state']}"
+    
+    # Step 3: Check authorization status
+    status_response = items.show_status(item_id)
+    if status_response.success?
+      status = status_response.data
+      puts "✓ Current status:"
+      puts "  State: #{status['state']}"
+      puts "  Payment State: #{status['payment_state']}"
+    end
+    
+    # Note: Funds are now held. You would later either:
+    # - Capture the payment (via make_payment or complete the item)
+    # - Cancel the authorization (via cancel)
+  else
+    puts "✗ Authorization failed: #{auth_response.error_message}"
+  end
+else
+  puts "✗ Item creation failed: #{create_response.error_message}"
+end
+```
+
+### Authorization States
+
+After calling `authorize_payment`, the item will go through several states:
+
+| State | Description |
+|-------|-------------|
+| `payment_authorized` | Payment has been authorized, funds are on hold |
+| `payment_held` | Payment authorized but held for review |
+| `authorization_failed` | Authorization failed (card declined, insufficient funds, etc.) |
+
+**Important Notes:**
+- Authorized funds are typically held for 7 days before being automatically released
+- To complete the transaction, you need to capture the payment separately
+- You can cancel an authorization to release the held funds immediately
+- Not all payment processors support separate authorization and capture
+
+### Webhook Integration
+
+After authorizing a payment, listen for webhook events:
+
+```ruby
+# In your webhook handler
+def handle_authorization_webhook(payload)
+  if payload['type'] == 'authorization' && payload['status'] == 'successful'
+    item_id = payload['related_items'].first
+    puts "Payment authorized for item: #{item_id}"
+    
+    # Update your database
+    Order.find_by(zai_item_id: item_id).update(status: 'authorized')
+  elsif payload['status'] == 'failed'
+    puts "Authorization failed: #{payload['failure_reason']}"
   end
 end
 ```
@@ -1124,7 +1322,10 @@ if create_response.success?
   puts "✓ Item created: #{item_id}"
   
   # Step 2: Make the payment
-  payment_response = items.make_payment(item_id, "card_account-789")
+  payment_response = items.make_payment(
+    item_id,
+    account_id: "card_account-789"
+  )
   
   if payment_response.success?
     puts "✓ Payment processed"

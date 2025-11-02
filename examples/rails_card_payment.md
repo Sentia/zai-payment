@@ -257,7 +257,7 @@ class PaymentsController < ApplicationController
     # Make payment using card account
     response = client.items.make_payment(
       transaction.zai_item_id,
-      params[:card_account_id]
+      account_id: params[:card_account_id]  # Required
     )
     
     if response.success?
@@ -272,6 +272,9 @@ class PaymentsController < ApplicationController
       redirect_to payment_path(transaction), 
                   alert: "Payment failed: #{response.error_message}"
     end
+  rescue ZaiPayment::Errors::ValidationError => e
+    # Handles missing account_id or other validation errors
+    redirect_to payment_path(transaction), alert: "Validation error: #{e.message}"
   rescue ZaiPayment::Errors::ApiError => e
     redirect_to payment_path(transaction), alert: "Error: #{e.message}"
   end
@@ -289,10 +292,10 @@ def create
   
   response = client.items.make_payment(
     transaction.zai_item_id,
-    params[:card_account_id],
-    device_id: session[:device_id],       # Track device
-    ip_address: request.remote_ip,        # Client IP address
-    merchant_phone: current_user.phone    # Merchant contact
+    account_id: params[:card_account_id],  # Required
+    device_id: session[:device_id],        # Track device
+    ip_address: request.remote_ip,         # Client IP address
+    merchant_phone: current_user.phone     # Merchant contact
   )
   
   if response.success?
@@ -350,8 +353,8 @@ def create
   
   response = client.items.make_payment(
     transaction.zai_item_id,
-    params[:card_account_id],
-    cvv: params[:cvv],  # From secure form input
+    account_id: params[:card_account_id],  # Required
+    cvv: params[:cvv],                     # From secure form input
     ip_address: request.remote_ip
   )
   
@@ -398,6 +401,7 @@ class PaymentProcessor
   
   def make_payment(card_account_id, ip_address, device_id, cvv)
     payment_params = {
+      account_id: card_account_id,  # Required
       ip_address: ip_address
     }
     payment_params[:device_id] = device_id if device_id.present?
@@ -405,7 +409,6 @@ class PaymentProcessor
     
     response = @client.items.make_payment(
       transaction.zai_item_id,
-      card_account_id,
       **payment_params
     )
     
@@ -798,7 +801,7 @@ class CardPaymentFlow
   def make_payment(item_id:, card_account_id:)
     response = @client.items.make_payment(
       item_id,
-      card_account_id
+      account_id: card_account_id  # Required
     )
     
     response.success?
@@ -849,6 +852,285 @@ class ProcessPaymentJob < ApplicationJob
       PaymentMailer.payment_failed(transaction).deliver_now
     end
   end
+end
+```
+
+## Authorize Payment
+
+Authorize a payment without immediately capturing funds. This is useful for scenarios like hotel bookings or rental deposits where you want to verify the card and hold funds before completing the transaction.
+
+### Basic Authorization
+
+```ruby
+# app/controllers/authorizations_controller.rb
+class AuthorizationsController < ApplicationController
+  def create
+    transaction = current_user.transactions.find(params[:transaction_id])
+    client = ZaiPayment::Client.new
+    
+    # Authorize payment (hold funds without capturing)
+    response = client.items.authorize_payment(
+      transaction.zai_item_id,
+      account_id: params[:card_account_id]  # Required
+    )
+    
+    if response.success?
+      transaction.update(
+        status: 'authorized',
+        payment_state: response.data['payment_state']
+      )
+      
+      redirect_to transaction_path(transaction), 
+                  notice: 'Payment authorized successfully! Funds are on hold.'
+    else
+      redirect_to payment_path(transaction), 
+                  alert: "Authorization failed: #{response.error_message}"
+    end
+  rescue ZaiPayment::Errors::ValidationError => e
+    redirect_to payment_path(transaction), alert: "Validation error: #{e.message}"
+  rescue ZaiPayment::Errors::ApiError => e
+    redirect_to payment_path(transaction), alert: "Error: #{e.message}"
+  end
+end
+```
+
+### Authorization with CVV
+
+For additional security, include CVV verification:
+
+```ruby
+def create
+  transaction = current_user.transactions.find(params[:transaction_id])
+  client = ZaiPayment::Client.new
+  
+  response = client.items.authorize_payment(
+    transaction.zai_item_id,
+    account_id: params[:card_account_id],  # Required
+    cvv: params[:cvv],                     # From secure form input
+    merchant_phone: current_user.phone
+  )
+  
+  if response.success?
+    transaction.update(
+      status: 'authorized',
+      payment_state: response.data['payment_state'],
+      zai_state: response.data['state']
+    )
+    
+    # Log the authorization
+    Rails.logger.info "Payment authorized: Item #{transaction.zai_item_id}"
+    
+    flash[:notice] = 'Payment authorized. Funds are on hold for 7 days.'
+    redirect_to transaction_path(transaction)
+  else
+    handle_authorization_error(transaction, response)
+  end
+rescue ZaiPayment::Errors::ApiError => e
+  handle_authorization_exception(transaction, e)
+end
+
+private
+
+def handle_authorization_error(transaction, response)
+  case response.status
+  when 422
+    flash[:alert] = "Authorization declined: #{response.error_message}"
+  when 404
+    flash[:alert] = "Item or card account not found. Please try again."
+  else
+    flash[:alert] = "Authorization error: #{response.error_message}"
+  end
+  
+  transaction.update(status: 'authorization_failed', error_message: response.error_message)
+  redirect_to payment_path(transaction)
+end
+
+def handle_authorization_exception(transaction, error)
+  Rails.logger.error "Authorization exception: #{error.class} - #{error.message}"
+  
+  transaction.update(status: 'error', error_message: error.message)
+  redirect_to payment_path(transaction), alert: "An error occurred: #{error.message}"
+end
+```
+
+### Complete Authorization Service
+
+A comprehensive service object for handling payment authorizations:
+
+```ruby
+# app/services/payment_authorizer.rb
+class PaymentAuthorizer
+  attr_reader :transaction, :errors
+  
+  def initialize(transaction)
+    @transaction = transaction
+    @client = ZaiPayment::Client.new
+    @errors = []
+  end
+  
+  def authorize(card_account_id:, cvv: nil, merchant_phone: nil)
+    validate_authorization_readiness
+    return false if @errors.any?
+    
+    perform_authorization(card_account_id, cvv, merchant_phone)
+  end
+  
+  private
+  
+  def validate_authorization_readiness
+    @errors << "Transaction already authorized" if transaction.authorized?
+    @errors << "Item ID missing" unless transaction.zai_item_id.present?
+    @errors << "Buyer missing" unless transaction.buyer.zai_user_id.present?
+  end
+  
+  def perform_authorization(card_account_id, cvv, merchant_phone)
+    auth_params = {
+      account_id: card_account_id  # Required
+    }
+    auth_params[:cvv] = cvv if cvv.present?
+    auth_params[:merchant_phone] = merchant_phone if merchant_phone.present?
+    
+    response = @client.items.authorize_payment(
+      transaction.zai_item_id,
+      **auth_params
+    )
+    
+    if response.success?
+      update_transaction_success(response)
+      notify_success
+      true
+    else
+      update_transaction_failure(response)
+      @errors << response.error_message
+      false
+    end
+  rescue ZaiPayment::Errors::ApiError => e
+    handle_api_error(e)
+    false
+  end
+  
+  def update_transaction_success(response)
+    transaction.update!(
+      status: 'authorized',
+      payment_state: response.data['payment_state'],
+      zai_state: response.data['state'],
+      authorized_at: Time.current,
+      authorization_expires_at: 7.days.from_now  # Typical hold period
+    )
+  end
+  
+  def update_transaction_failure(response)
+    transaction.update!(
+      status: 'authorization_failed',
+      error_message: response.error_message,
+      failed_at: Time.current
+    )
+  end
+  
+  def handle_api_error(error)
+    transaction.update!(
+      status: 'error',
+      error_message: error.message
+    )
+    @errors << error.message
+    
+    Rails.logger.error "Authorization API Error: #{error.class} - #{error.message}"
+    Sentry.capture_exception(error) if defined?(Sentry)
+  end
+  
+  def notify_success
+    PaymentMailer.payment_authorized(transaction).deliver_later
+  end
+end
+
+# Usage in controller:
+def create
+  transaction = current_user.transactions.find(params[:transaction_id])
+  authorizer = PaymentAuthorizer.new(transaction)
+  
+  if authorizer.authorize(
+    card_account_id: params[:card_account_id],
+    cvv: params[:cvv],
+    merchant_phone: current_user.phone
+  )
+    redirect_to transaction_path(transaction), 
+                notice: 'Payment authorized! Funds are on hold.'
+  else
+    flash[:alert] = authorizer.errors.join(', ')
+    redirect_to payment_path(transaction)
+  end
+end
+```
+
+### Authorization Flow States
+
+After calling `authorize_payment`, track these states:
+
+| State | Description | Next Action |
+|-------|-------------|-------------|
+| `authorized` | Payment authorized, funds on hold | Capture or cancel |
+| `payment_held` | Authorized but held for review | Wait for review |
+| `authorization_failed` | Authorization failed | Retry or cancel |
+
+### Capturing an Authorized Payment
+
+After authorization, you can capture the payment:
+
+```ruby
+# When ready to complete the transaction (e.g., after service delivery)
+def capture_payment
+  transaction = Transaction.find(params[:id])
+  
+  # Check if authorization is still valid
+  if transaction.authorized? && transaction.authorization_expires_at > Time.current
+    # Use make_payment to capture or complete the item
+    client = ZaiPayment::Client.new
+    response = client.items.make_payment(
+      transaction.zai_item_id,
+      account_id: transaction.card_account_id
+    )
+    
+    if response.success?
+      transaction.update(
+        status: 'captured',
+        captured_at: Time.current
+      )
+      flash[:notice] = 'Payment captured successfully!'
+    else
+      flash[:alert] = "Capture failed: #{response.error_message}"
+    end
+  else
+    flash[:alert] = 'Authorization expired or invalid'
+  end
+  
+  redirect_to transaction_path(transaction)
+end
+```
+
+### Canceling an Authorization
+
+To release held funds:
+
+```ruby
+def cancel_authorization
+  transaction = Transaction.find(params[:id])
+  
+  if transaction.authorized?
+    client = ZaiPayment::Client.new
+    response = client.items.cancel(transaction.zai_item_id)
+    
+    if response.success?
+      transaction.update(
+        status: 'authorization_cancelled',
+        cancelled_at: Time.current
+      )
+      flash[:notice] = 'Authorization cancelled. Funds released.'
+    else
+      flash[:alert] = "Cancellation failed: #{response.error_message}"
+    end
+  end
+  
+  redirect_to transaction_path(transaction)
 end
 ```
 

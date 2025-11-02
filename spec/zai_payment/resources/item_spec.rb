@@ -684,13 +684,13 @@ RSpec.describe ZaiPayment::Resources::Item do
       end
 
       it 'returns the correct response type' do
-        response = item_resource.make_payment('item_123', 'account_456')
+        response = item_resource.make_payment('item_123', account_id: 'account_456')
         expect(response).to be_a(ZaiPayment::Response)
         expect(response.success?).to be true
       end
 
       it 'returns the payment details' do
-        response = item_resource.make_payment('item_123', 'account_456')
+        response = item_resource.make_payment('item_123', account_id: 'account_456')
         expect(response.data['id']).to eq('item_123')
         expect(response.data['payment_state']).to eq('processing')
       end
@@ -717,7 +717,7 @@ RSpec.describe ZaiPayment::Resources::Item do
       end
 
       it 'includes device_id when provided' do
-        response = item_resource.make_payment('item_123', 'account_456', device_id: 'device_789')
+        response = item_resource.make_payment('item_123', account_id: 'account_456', device_id: 'device_789')
         expect(response.success?).to be true
       end
     end
@@ -742,7 +742,7 @@ RSpec.describe ZaiPayment::Resources::Item do
       end
 
       it 'includes ip_address when provided' do
-        response = item_resource.make_payment('item_123', 'account_456', ip_address: '192.168.1.1')
+        response = item_resource.make_payment('item_123', account_id: 'account_456', ip_address: '192.168.1.1')
         expect(response.success?).to be true
       end
     end
@@ -767,7 +767,7 @@ RSpec.describe ZaiPayment::Resources::Item do
       end
 
       it 'includes cvv when provided' do
-        response = item_resource.make_payment('item_123', 'account_456', cvv: '123')
+        response = item_resource.make_payment('item_123', account_id: 'account_456', cvv: '123')
         expect(response.success?).to be true
       end
     end
@@ -792,7 +792,7 @@ RSpec.describe ZaiPayment::Resources::Item do
       end
 
       it 'includes merchant_phone when provided' do
-        response = item_resource.make_payment('item_123', 'account_456', merchant_phone: '+1234567890')
+        response = item_resource.make_payment('item_123', account_id: 'account_456', merchant_phone: '+1234567890')
         expect(response.success?).to be true
       end
     end
@@ -815,7 +815,7 @@ RSpec.describe ZaiPayment::Resources::Item do
       end
 
       it 'includes all optional attributes' do
-        response = item_resource.make_payment('item_123', 'account_456', **payment_params)
+        response = item_resource.make_payment('item_123', account_id: 'account_456', **payment_params)
         expect(response.success?).to be true
         expect(response.data['state']).to eq('payment_pending')
       end
@@ -824,13 +824,13 @@ RSpec.describe ZaiPayment::Resources::Item do
     context 'when item_id is blank' do
       it 'raises a ValidationError for empty string' do
         expect do
-          item_resource.make_payment('', 'account_456')
+          item_resource.make_payment('', account_id: 'account_456')
         end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
       end
 
       it 'raises a ValidationError for nil' do
         expect do
-          item_resource.make_payment(nil, 'account_456')
+          item_resource.make_payment(nil, account_id: 'account_456')
         end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
       end
     end
@@ -838,13 +838,21 @@ RSpec.describe ZaiPayment::Resources::Item do
     context 'when account_id is blank' do
       it 'raises a ValidationError for empty string' do
         expect do
-          item_resource.make_payment('item_123', '')
+          item_resource.make_payment('item_123', account_id: '')
         end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
       end
 
       it 'raises a ValidationError for nil' do
         expect do
-          item_resource.make_payment('item_123', nil)
+          item_resource.make_payment('item_123', account_id: nil)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
+      end
+    end
+
+    context 'when account_id is missing' do
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.make_payment('item_123')
         end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
       end
     end
@@ -866,7 +874,7 @@ RSpec.describe ZaiPayment::Resources::Item do
 
       it 'raises a ValidationError' do
         expect do
-          item_resource.make_payment('item_123', 'account_456')
+          item_resource.make_payment('item_123', account_id: 'account_456')
         end.to raise_error(ZaiPayment::Errors::ValidationError)
       end
     end
@@ -880,7 +888,7 @@ RSpec.describe ZaiPayment::Resources::Item do
 
       it 'raises a NotFoundError' do
         expect do
-          item_resource.make_payment('item_123', 'account_456')
+          item_resource.make_payment('item_123', account_id: 'account_456')
         end.to raise_error(ZaiPayment::Errors::NotFoundError)
       end
     end
@@ -894,8 +902,263 @@ RSpec.describe ZaiPayment::Resources::Item do
 
       it 'raises an UnauthorizedError' do
         expect do
-          item_resource.make_payment('item_123', 'account_456')
+          item_resource.make_payment('item_123', account_id: 'account_456')
         end.to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+  end
+
+  describe '#authorize_payment' do
+    context 'when successful' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do |env|
+          body = JSON.parse(env.body)
+          [200, { 'Content-Type' => 'application/json' }, authorization_response] if body['account_id'] == 'account_456'
+        end
+      end
+
+      let(:authorization_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'name' => 'Test Product',
+            'amount' => 10_000,
+            'state' => 'payment_authorized',
+            'payment_state' => 'authorized'
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = item_resource.authorize_payment('item_123', account_id: 'account_456')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the authorization details' do
+        response = item_resource.authorize_payment('item_123', account_id: 'account_456')
+        expect(response.data['id']).to eq('item_123')
+        expect(response.data['state']).to eq('payment_authorized')
+        expect(response.data['payment_state']).to eq('authorized')
+      end
+    end
+
+    context 'with cvv' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do |env|
+          body = JSON.parse(env.body)
+          if body['account_id'] == 'account_456' && body['cvv'] == '123'
+            [200, { 'Content-Type' => 'application/json' }, authorization_response]
+          end
+        end
+      end
+
+      let(:authorization_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'state' => 'payment_authorized',
+            'payment_state' => 'authorized'
+          }
+        }
+      end
+
+      it 'includes cvv when provided' do
+        response = item_resource.authorize_payment('item_123', account_id: 'account_456', cvv: '123')
+        expect(response.success?).to be true
+      end
+    end
+
+    context 'with merchant_phone' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do |env|
+          body = JSON.parse(env.body)
+          if body['account_id'] == 'account_456' && body['merchant_phone'] == '+1234567890'
+            [200, { 'Content-Type' => 'application/json' }, authorization_response]
+          end
+        end
+      end
+
+      let(:authorization_response) do
+        {
+          'items' => {
+            'id' => 'item_123',
+            'state' => 'payment_authorized'
+          }
+        }
+      end
+
+      it 'includes merchant_phone when provided' do
+        response = item_resource.authorize_payment('item_123', account_id: 'account_456', merchant_phone: '+1234567890')
+        expect(response.success?).to be true
+      end
+    end
+
+    context 'with all optional attributes' do
+      let(:authorization_params) do
+        { cvv: '123', merchant_phone: '+1234567890' }
+      end
+
+      let(:authorization_response) do
+        { 'items' => { 'id' => 'item_123', 'state' => 'payment_authorized', 'payment_state' => 'authorized' } }
+      end
+
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do |env|
+          body = JSON.parse(env.body)
+          valid = body['account_id'] == 'account_456' && authorization_params.all? { |k, v| body[k.to_s] == v }
+          [200, { 'Content-Type' => 'application/json' }, authorization_response] if valid
+        end
+      end
+
+      it 'includes all optional attributes' do
+        response = item_resource.authorize_payment('item_123', account_id: 'account_456', **authorization_params)
+        expect(response.success?).to be true
+        expect(response.data['state']).to eq('payment_authorized')
+      end
+    end
+
+    context 'when item_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect do
+          item_resource.authorize_payment('', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect do
+          item_resource.authorize_payment(nil, account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /item_id/)
+      end
+    end
+
+    context 'when account_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect do
+          item_resource.authorize_payment('item_123', account_id: '')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect do
+          item_resource.authorize_payment('item_123', account_id: nil)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
+      end
+    end
+
+    context 'when account_id is missing' do
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.authorize_payment('item_123')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /account_id/)
+      end
+    end
+
+    context 'when authorization fails' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'base' => ['Card declined']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.authorize_payment('item_123', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+
+    context 'when account not found' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Account not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect do
+          item_resource.authorize_payment('item_123', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when item not found' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Item not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect do
+          item_resource.authorize_payment('item_123', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when unauthorized' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do
+          [401, { 'Content-Type' => 'application/json' }, { 'error' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect do
+          item_resource.authorize_payment('item_123', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+
+    context 'when CVV verification fails' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'cvv' => ['CVV verification failed']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.authorize_payment('item_123', account_id: 'account_456', cvv: '000')
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
+      end
+    end
+
+    context 'when card is expired' do
+      before do
+        stubs.patch('/items/item_123/authorize_payment') do
+          [422, { 'Content-Type' => 'application/json' }, error_response]
+        end
+      end
+
+      let(:error_response) do
+        {
+          'errors' => {
+            'card' => ['Card has expired']
+          }
+        }
+      end
+
+      it 'raises a ValidationError' do
+        expect do
+          item_resource.authorize_payment('item_123', account_id: 'account_456')
+        end.to raise_error(ZaiPayment::Errors::ValidationError)
       end
     end
   end
