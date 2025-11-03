@@ -1,5 +1,65 @@
 ## [Released]
 
+## [2.6.0] - 2025-11-03
+
+### Added
+- **BPay Account Resource**: Complete BPay account management for Australian bill payments 💰
+  - `ZaiPayment.bpay_accounts.show(bpay_account_id)` - Get BPay account details including biller information
+  - `ZaiPayment.bpay_accounts.create(user_id:, account_name:, biller_code:, bpay_crn:)` - Create BPay account for disbursement destinations
+  - `ZaiPayment.bpay_accounts.redact(bpay_account_id)` - Redact (deactivate) a BPay account
+  - `ZaiPayment.bpay_accounts.show_user(bpay_account_id)` - Get user associated with a BPay account
+  - Validation for biller code (3-10 digits)
+  - Validation for BPay CRN (Customer Reference Number, 2-20 digits)
+  - Support for Australian bill payment disbursements
+  - Full RSpec test suite with 12 test examples across 4 describe blocks
+  - Comprehensive documentation in `docs/bpay_accounts.md`
+  - Practical examples in `examples/bpay_accounts.md`
+
+### Documentation
+- **BPay Accounts Guide** (`docs/bpay_accounts.md`):
+  - Complete guide for showing, creating, redacting BPay accounts, and retrieving associated users
+  - Detailed API reference for all four endpoints
+  - Response structure documentation with example payloads
+  - Validation rules for biller codes and BPay CRN formats
+  - Error handling documentation (ValidationError, NotFoundError)
+  - Four comprehensive use cases:
+    - Disbursement account setup for bill payments
+    - User verification before disbursement
+    - Deactivating old BPay accounts
+    - Managing multiple utility BPay accounts
+  - Important notes about BPay account usage and restrictions
+- **BPay Accounts Examples** (`examples/bpay_accounts.md`):
+  - Show BPay account examples (3 examples):
+    - Basic account retrieval with full details
+    - Error handling and status verification
+    - Pre-disbursement verification workflow
+  - Show BPay account user examples (3 examples):
+    - User information retrieval
+    - User verification before disbursement
+    - Contact information extraction for notifications
+  - Redact BPay account examples (3 examples):
+    - Basic redaction with response handling
+    - Comprehensive error handling
+    - Verification before redacting workflow
+  - Create BPay account examples (3 examples):
+    - Basic account creation
+    - Error handling patterns
+    - Multiple utility account setup
+  - Four common patterns:
+    - Retrieve and verify before disbursement
+    - Complete onboarding workflow with user creation
+    - BPay account form handler for Rails applications
+    - BPay details validation helper
+
+### Features
+- BPay accounts work as disbursement destinations for Australian bill payments
+- Supports all major Australian billers (utilities, telecommunications, financial services, government)
+- Automatic biller name lookup based on biller code
+- Full lifecycle management (create, show, show_user, redact)
+- Secure validation of BPay-specific formats
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.5.0...v2.6.0
+
 ## [2.5.0] - 2025-11-03
 
 ### Added
