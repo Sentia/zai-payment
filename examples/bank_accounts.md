@@ -5,6 +5,8 @@ This document provides practical examples for managing bank accounts in Zai Paym
 ## Table of Contents
 
 - [Setup](#setup)
+- [Show Bank Account Example](#show-bank-account-example)
+- [Redact Bank Account Example](#redact-bank-account-example)
 - [Australian Bank Account Examples](#australian-bank-account-examples)
 - [UK Bank Account Examples](#uk-bank-account-examples)
 - [Common Patterns](#common-patterns)
@@ -91,6 +93,60 @@ if response.success?
   # - Use for immediate processing only
 else
   puts "Failed to retrieve bank account"
+end
+```
+
+## Redact Bank Account Example
+
+### Example 9: Redact a Bank Account
+
+Redact (deactivate) a bank account so it can no longer be used.
+
+```ruby
+# Redact a bank account
+bank_accounts = ZaiPayment::Resources::BankAccount.new
+
+response = bank_accounts.redact('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+
+if response.success?
+  puts "Bank account successfully redacted"
+  puts "Response: #{response.data}"
+  # => {"bank_account"=>"Successfully redacted"}
+  
+  # The bank account can no longer be used for:
+  # - Funding source for payments
+  # - Disbursement destination
+else
+  puts "Failed to redact bank account"
+  puts "Error: #{response.error}"
+end
+```
+
+### Example 10: Redact with Error Handling
+
+Handle edge cases when redacting a bank account.
+
+```ruby
+bank_accounts = ZaiPayment::Resources::BankAccount.new
+
+begin
+  # Attempt to redact the bank account
+  response = bank_accounts.redact('bank_account_id_here')
+  
+  if response.success?
+    puts "Bank account redacted successfully"
+    
+    # Log the action for audit purposes
+    Rails.logger.info("Bank account #{bank_account_id} was redacted at #{Time.now}")
+  else
+    puts "Redaction failed: #{response.error}"
+  end
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Bank account not found: #{e.message}"
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Invalid bank account ID: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API error occurred: #{e.message}"
 end
 ```
 

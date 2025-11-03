@@ -160,6 +160,24 @@ module ZaiPayment
         client.post('/bank_accounts', body: body)
       end
 
+      # Redact a bank account
+      #
+      # Redacts a bank account using the given bank_account_id. Redacted bank accounts
+      # can no longer be used as a funding source or a disbursement destination.
+      #
+      # @param bank_account_id [String] the bank account ID
+      # @return [Response] the API response
+      #
+      # @example
+      #   bank_accounts = ZaiPayment::Resources::BankAccount.new
+      #   response = bank_accounts.redact("bank_account_id")
+      #
+      # @see https://developer.hellozai.com/reference/redactbankaccount
+      def redact(bank_account_id)
+        validate_id!(bank_account_id, 'bank_account_id')
+        client.delete("/bank_accounts/#{bank_account_id}")
+      end
+
       private
 
       def validate_id!(value, field_name)

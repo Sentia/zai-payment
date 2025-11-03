@@ -70,6 +70,39 @@ puts bank['account_number']  # => "12345678" (full number)
 puts bank['routing_number']  # => "111123" (full number)
 ```
 
+### Redact Bank Account
+
+Redact a bank account using the given bank_account_id. Redacted bank accounts can no longer be used as a funding source or a disbursement destination.
+
+#### Parameters
+
+- `bank_account_id` (required) - The bank account ID
+
+#### Example
+
+```ruby
+response = bank_accounts.redact('bank_account_id')
+
+if response.success?
+  puts "Bank account successfully redacted"
+else
+  puts "Failed to redact bank account"
+end
+```
+
+#### Response
+
+```ruby
+{
+  "bank_account" => "Successfully redacted"
+}
+```
+
+**Important Notes:**
+- Once redacted, the bank account cannot be used for payments or disbursements
+- This action cannot be undone
+- Use with caution
+
 ### Create Australian Bank Account
 
 Create a new bank account for an Australian user.

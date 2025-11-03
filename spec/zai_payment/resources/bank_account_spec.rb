@@ -136,6 +136,48 @@ RSpec.describe ZaiPayment::Resources::BankAccount do
     end
   end
 
+  describe '#redact' do
+    context 'when successful' do
+      before do
+        stubs.delete('/bank_accounts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee') do
+          [200, { 'Content-Type' => 'application/json' }, { 'bank_account' => 'Successfully redacted' }]
+        end
+      end
+
+      it 'returns the correct response type' do
+        response = bank_account_resource.redact('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+    end
+
+    context 'when bank_account_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { bank_account_resource.redact('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /bank_account_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { bank_account_resource.redact(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /bank_account_id/)
+      end
+    end
+
+    context 'when bank account does not exist' do
+      before do
+        stubs.delete('/bank_accounts/invalid_id') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { bank_account_resource.redact('invalid_id') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+  end
+
   describe '#create_au' do
     let(:bank_account_data) do
       {
