@@ -67,7 +67,7 @@ module ZaiPayment
 
     # @return [ZaiPayment::Resources::BpayAccount] bpay_account resource instance
     def bpay_accounts
-      @bpay_accounts ||= Resources::BpayAccount.new(client: Client.new(base_endpoint: :core_base))
+      @bpay_accounts ||= Resources::BpayAccount.new(client: Client.new(base_endpoint: :va_base))
     end
   end
 end
