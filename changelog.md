@@ -1,14 +1,5 @@
 ## [Released]
 
-## [2.6.1] - 2025-11-03
-
-### Fixed
-- **BPay Account Endpoint Configuration**: Fixed 403 CloudFront error when creating BPay accounts
-  - Changed BPay accounts resource to use `:va_base` endpoint instead of `:core_base`
-  - The `:core_base` endpoint only supports GET requests (cacheable), causing POST requests to fail
-  - BPay accounts now correctly use the virtual accounts endpoint that supports all HTTP methods
-  - Resolves issue where `bpay_accounts.create()` returned "The distribution supports only cachable requests" error
-
 ## [2.6.0] - 2025-11-03
 
 ### Added
