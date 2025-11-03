@@ -277,7 +277,13 @@ module ZaiPayment
       # @example
       #   users = ZaiPayment::Resources::User.new
       #   response = users.wallet_account("user_id")
-      #   response.data # => {"id" => "...", "balance" => ..., ...}
+      #   # The response.data method automatically extracts the wallet_accounts object
+      #   wallet = response.data
+      #   wallet["id"] # => "5c1c6b10-4c56-0137-8cd7-0242ac110002"
+      #   wallet["balance"] # => 663337
+      #   wallet["currency"] # => "AUD"
+      #   wallet["active"] # => true
+      #   wallet["links"]["transactions"] # => "/wallet_accounts/.../transactions"
       #
       # @see https://developer.hellozai.com/reference/showuserwalletaccounts
       def wallet_account(user_id)

@@ -8,7 +8,7 @@ module ZaiPayment
     RESPONSE_DATA_KEYS = %w[
       webhooks users items fees transactions
       batch_transactions bpay_accounts bank_accounts card_accounts
-      routing_number
+      wallet_accounts routing_number
     ].freeze
 
     def initialize(faraday_response)
