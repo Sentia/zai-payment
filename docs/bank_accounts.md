@@ -28,6 +28,48 @@ bank_accounts = ZaiPayment::Resources::BankAccount.new(client: client)
 
 ## Methods
 
+### Show Bank Account
+
+Get details of a specific bank account by ID.
+
+#### Parameters
+
+- `bank_account_id` (required) - The bank account ID
+- `include_decrypted_fields` (optional) - Boolean. If true, the API will decrypt and return sensitive bank account fields (for example, the full account number). Defaults to false.
+
+#### Example
+
+```ruby
+# Basic usage (returns masked account numbers)
+response = bank_accounts.show('bank_account_id')
+
+# Access bank account details
+bank_account = response.data
+puts bank_account['id']
+puts bank_account['active']
+puts bank_account['verification_status']
+puts bank_account['currency']
+
+# Access bank details (account numbers are masked)
+bank = bank_account['bank']
+puts bank['bank_name']
+puts bank['account_name']
+puts bank['account_type']
+puts bank['account_number']  # => "XXX234" (masked)
+```
+
+#### Example with Decrypted Fields
+
+```ruby
+# Request with decrypted fields
+response = bank_accounts.show('bank_account_id', include_decrypted_fields: true)
+
+# Access bank details (account numbers are decrypted)
+bank = response.data['bank']
+puts bank['account_number']  # => "12345678" (full number)
+puts bank['routing_number']  # => "111123" (full number)
+```
+
 ### Create Australian Bank Account
 
 Create a new bank account for an Australian user.

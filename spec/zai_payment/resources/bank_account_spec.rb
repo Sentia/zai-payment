@@ -31,6 +31,111 @@ RSpec.describe ZaiPayment::Resources::BankAccount do
     stubs.verify_stubbed_calls
   end
 
+  describe '#show' do
+    let(:bank_account_data) do
+      {
+        'bank_accounts' => {
+          'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+          'active' => true,
+          'created_at' => '2020-04-27T20:28:22.378Z',
+          'updated_at' => '2020-04-27T20:28:22.378Z',
+          'verification_status' => 'not_verified',
+          'currency' => 'AUD',
+          'bank' => {
+            'bank_name' => 'Bank of Australia',
+            'country' => 'AUS',
+            'account_name' => 'Samuel Seller',
+            'routing_number' => 'XXXXX3',
+            'account_number' => 'XXX234',
+            'holder_type' => 'personal',
+            'account_type' => 'checking',
+            'direct_debit_authority_status' => 'approved'
+          },
+          'links' => {
+            'self' => '/bank_accounts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'users' => '/bank_accounts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/users',
+            'direct_debit_authorities' => '/bank_accounts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/direct_debit_authorities'
+          }
+        }
+      }
+    end
+
+    context 'when bank account exists' do
+      before do
+        stubs.get('/bank_accounts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee') do
+          [200, { 'Content-Type' => 'application/json' }, bank_account_data]
+        end
+      end
+
+      it 'returns the correct response type and bank account details' do
+        response = bank_account_resource.show('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+        expect(response.data['id']).to eq('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+      end
+    end
+
+    context 'with include_decrypted_fields parameter' do
+      before do
+        stubs.get('/bank_accounts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee') do |env|
+          if env.params['include_decrypted_fields'] == 'true'
+            decrypted_data = bank_account_data.dup
+            decrypted_data['bank_accounts']['bank']['account_number'] = '12345678'
+            [200, { 'Content-Type' => 'application/json' }, decrypted_data]
+          else
+            [200, { 'Content-Type' => 'application/json' }, bank_account_data]
+          end
+        end
+      end
+
+      it 'includes decrypted fields when true' do
+        response = bank_account_resource.show(
+          'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+          include_decrypted_fields: true
+        )
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'excludes decrypted fields when false' do
+        response = bank_account_resource.show(
+          'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+          include_decrypted_fields: false
+        )
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.data['bank']['account_number']).to eq('XXX234')
+      end
+    end
+
+    context 'when bank account does not exist' do
+      before do
+        stubs.get('/bank_accounts/invalid_id') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { bank_account_resource.show('invalid_id') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when bank_account_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { bank_account_resource.show('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /bank_account_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { bank_account_resource.show(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /bank_account_id/)
+      end
+    end
+  end
+
   describe '#create_au' do
     let(:bank_account_data) do
       {

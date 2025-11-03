@@ -23,6 +23,77 @@ ZaiPayment.configure do |config|
 end
 ```
 
+## Show Bank Account Example
+
+### Example 1: Get Bank Account Details
+
+Retrieve details of a specific bank account.
+
+```ruby
+# Get bank account details
+bank_accounts = ZaiPayment::Resources::BankAccount.new
+
+response = bank_accounts.show('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+
+if response.success?
+  bank_account = response.data
+  puts "Bank Account ID: #{bank_account['id']}"
+  puts "Active: #{bank_account['active']}"
+  puts "Verification Status: #{bank_account['verification_status']}"
+  puts "Currency: #{bank_account['currency']}"
+  
+  # Access bank details (numbers are masked by default)
+  bank = bank_account['bank']
+  puts "\nBank Details:"
+  puts "  Bank Name: #{bank['bank_name']}"
+  puts "  Country: #{bank['country']}"
+  puts "  Account Name: #{bank['account_name']}"
+  puts "  Account Type: #{bank['account_type']}"
+  puts "  Holder Type: #{bank['holder_type']}"
+  puts "  Account Number: #{bank['account_number']}"  # => "XXX234" (masked)
+  puts "  Routing Number: #{bank['routing_number']}"  # => "XXXXX3" (masked)
+  puts "  Direct Debit Status: #{bank['direct_debit_authority_status']}"
+  
+  # Access links
+  links = bank_account['links']
+  puts "\nLinks:"
+  puts "  Self: #{links['self']}"
+  puts "  Users: #{links['users']}"
+else
+  puts "Failed to retrieve bank account"
+  puts "Error: #{response.error}"
+end
+```
+
+### Example 2: Get Bank Account with Decrypted Fields
+
+Retrieve full, unmasked bank account details for secure operations.
+
+```ruby
+# Get bank account details with decrypted fields
+bank_accounts = ZaiPayment::Resources::BankAccount.new
+
+response = bank_accounts.show('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 
+                               include_decrypted_fields: true)
+
+if response.success?
+  bank_account = response.data
+  bank = bank_account['bank']
+  
+  puts "Bank Account Details (Decrypted):"
+  puts "  Account Name: #{bank['account_name']}"
+  puts "  Full Account Number: #{bank['account_number']}"  # => "12345678" (full number)
+  puts "  Full Routing Number: #{bank['routing_number']}"  # => "111123" (full number)
+  
+  # Important: Handle decrypted data securely
+  # - Don't log in production
+  # - Don't store in logs
+  # - Use for immediate processing only
+else
+  puts "Failed to retrieve bank account"
+end
+```
+
 ## Australian Bank Account Examples
 
 ### Example 1: Create Basic Australian Bank Account
@@ -56,7 +127,7 @@ else
 end
 ```
 
-### Example 2: Australian Business Bank Account
+### Example 4: Australian Business Bank Account
 
 Create a business bank account for an Australian company.
 
@@ -83,7 +154,7 @@ if response.success?
 end
 ```
 
-### Example 3: Australian Savings Account
+### Example 5: Australian Savings Account
 
 Create a savings account for disbursements.
 
@@ -112,7 +183,7 @@ end
 
 ## UK Bank Account Examples
 
-### Example 4: Create Basic UK Bank Account
+### Example 6: Create Basic UK Bank Account
 
 Create a bank account for a UK user with IBAN and SWIFT code.
 
@@ -145,7 +216,7 @@ else
 end
 ```
 
-### Example 5: UK Business Bank Account
+### Example 7: UK Business Bank Account
 
 Create a business bank account for a UK company with full details.
 
@@ -175,7 +246,7 @@ if response.success?
 end
 ```
 
-### Example 6: UK Savings Account with Full Details
+### Example 8: UK Savings Account with Full Details
 
 Create a UK savings account with all available information.
 

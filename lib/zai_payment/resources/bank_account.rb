@@ -48,6 +48,32 @@ module ZaiPayment
         @client = client || Client.new
       end
 
+      # Get a specific bank account by ID
+      #
+      # @param bank_account_id [String] the bank account ID
+      # @param include_decrypted_fields [Boolean] if true, the API will decrypt and return
+      #   sensitive bank account fields (for example, the full account number). Defaults to false
+      # @return [Response] the API response containing bank account details
+      #
+      # @example
+      #   bank_accounts = ZaiPayment::Resources::BankAccount.new
+      #   response = bank_accounts.show("bank_account_id")
+      #   response.data # => {"id" => "bank_account_id", "active" => true, ...}
+      #
+      # @example with decrypted fields
+      #   response = bank_accounts.show("bank_account_id", include_decrypted_fields: true)
+      #   # Returns full account number instead of masked version
+      #
+      # @see https://developer.hellozai.com/reference/showbankaccount
+      def show(bank_account_id, include_decrypted_fields: false)
+        validate_id!(bank_account_id, 'bank_account_id')
+
+        params = {}
+        params[:include_decrypted_fields] = include_decrypted_fields if include_decrypted_fields
+
+        client.get("/bank_accounts/#{bank_account_id}", params: params)
+      end
+
       # Create a new bank account for Australia
       #
       # @param attributes [Hash] bank account attributes
