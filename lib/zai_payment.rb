@@ -15,6 +15,7 @@ require_relative 'zai_payment/resources/user'
 require_relative 'zai_payment/resources/item'
 require_relative 'zai_payment/resources/token_auth'
 require_relative 'zai_payment/resources/bank_account'
+require_relative 'zai_payment/resources/bpay_account'
 
 module ZaiPayment
   class << self
@@ -62,6 +63,11 @@ module ZaiPayment
     # @return [ZaiPayment::Resources::BankAccount] bank_account resource instance
     def bank_accounts
       @bank_accounts ||= Resources::BankAccount.new(client: Client.new(base_endpoint: :core_base))
+    end
+
+    # @return [ZaiPayment::Resources::BpayAccount] bpay_account resource instance
+    def bpay_accounts
+      @bpay_accounts ||= Resources::BpayAccount.new(client: Client.new(base_endpoint: :core_base))
     end
   end
 end
