@@ -21,12 +21,13 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 - 🧠 **Smart Token Caching** - Auto-refresh before expiration, thread-safe storage  
 - 👥 **User Management** - Create and manage payin (buyers) & payout (sellers) users  
 - 📦 **Item Management** - Full CRUD for transactions/payments between buyers and sellers  
+- 🏦 **Bank Account Management** - Complete CRUD + validation for AU/UK bank accounts  
 - 🎫 **Token Auth** - Generate secure tokens for bank and card account data collection  
 - 🪝 **Webhooks** - Full CRUD + secure signature verification (HMAC SHA256)  
 - ⚙️ **Environment-Aware** - Seamless Pre-live / Production switching  
 - 🧱 **Modular & Extensible** - Clean resource-based architecture  
 - 🧰 **Zero Heavy Dependencies** - Lightweight, fast, and reliable  
-- 📦 **Production Ready** - 88%+ test coverage, RuboCop compliant  
+- 📦 **Production Ready** - 97%+ test coverage, RuboCop compliant  
 
 ---
 
@@ -88,82 +89,7 @@ The gem handles OAuth2 Client Credentials flow automatically - tokens are cached
 
 ### Users
 
-Manage payin (buyer) and payout (seller/merchant) users:
-
-```ruby
-# Create a payin user (buyer)
-response = ZaiPayment.users.create(
-  user_type: 'payin',
-  email: 'buyer@example.com',
-  first_name: 'John',
-  last_name: 'Doe',
-  country: 'USA',
-  mobile: '+1234567890'
-)
-
-# Create a payout user (seller/merchant)
-response = ZaiPayment.users.create(
-  user_type: 'payout',
-  email: 'seller@example.com',
-  first_name: 'Jane',
-  last_name: 'Smith',
-  country: 'AUS',
-  dob: '01/01/1990',
-  address_line1: '456 Market St',
-  city: 'Sydney',
-  state: 'NSW',
-  zip: '2000'
-)
-
-# Create a business user with company details
-response = ZaiPayment.users.create(
-  user_type: 'payout',
-  email: 'director@company.com',
-  first_name: 'John',
-  last_name: 'Director',
-  country: 'AUS',
-  mobile: '+61412345678',
-  authorized_signer_title: 'Director',
-  company: {
-    name: 'My Company',
-    legal_name: 'My Company Pty Ltd',
-    tax_number: '123456789',
-    business_email: 'admin@company.com',
-    country: 'AUS',
-    charge_tax: true
-  }
-)
-
-# List users
-response = ZaiPayment.users.list(limit: 10, offset: 0)
-
-# Get user details
-response = ZaiPayment.users.show('user_id')
-
-# Update user
-response = ZaiPayment.users.update('user_id', mobile: '+9876543210')
-
-# Show user wallet account
-response = ZaiPayment.users.wallet_account('user_id')
-
-# List user items with pagination
-response = ZaiPayment.users.items('user_id', limit: 50, offset: 10)
-
-# Set user disbursement account
-response = ZaiPayment.users.set_disbursement_account('user_id', 'bank_account_id')
-
-# Show user bank account
-response = ZaiPayment.users.bank_account('user_id')
-
-# Verify user (prelive only)
-response = ZaiPayment.users.verify('user_id')
-
-# Show user card account
-response = ZaiPayment.users.card_account('user_id')
-
-# List user's BPay accounts
-response = ZaiPayment.users.bpay_accounts('user_id')
-```
+Manage payin (buyer) and payout (seller/merchant) users.
 
 **📚 Documentation:**
 - 📖 [User Management Guide](docs/users.md) - Complete guide for payin and payout users
@@ -173,69 +99,25 @@ response = ZaiPayment.users.bpay_accounts('user_id')
 
 ### Items
 
-Manage transactions/payments between buyers and sellers:
-
-```ruby
-# Create an item
-response = ZaiPayment.items.create(
-  name: "Product Purchase",
-  amount: 10000, # Amount in cents ($100.00)
-  payment_type: 2, # Credit card
-  buyer_id: "buyer-123",
-  seller_id: "seller-456",
-  description: "Purchase of premium product",
-  currency: "AUD",
-  tax_invoice: true
-)
-
-# List items
-response = ZaiPayment.items.list(limit: 20, offset: 0)
-
-# Get item details
-response = ZaiPayment.items.show('item_id')
-
-# Update item
-response = ZaiPayment.items.update('item_id', name: 'Updated Name')
-
-# Get item status
-response = ZaiPayment.items.show_status('item_id')
-
-# Get buyer/seller details
-response = ZaiPayment.items.show_buyer('item_id')
-response = ZaiPayment.items.show_seller('item_id')
-
-# List transactions
-response = ZaiPayment.items.list_transactions('item_id')
-```
+Manage transactions/payments between buyers and sellers.
 
 **📚 Documentation:**
 - 📖 [Item Management Guide](docs/items.md) - Complete guide for creating and managing items
 - 💡 [Item Examples](examples/items.md) - Real-world usage patterns and complete workflows
 - 🔗 [Zai: Items API Reference](https://developer.hellozai.com/reference/listitems)
 
+### Bank Accounts
+
+Manage bank accounts for Australian and UK users, with routing number validation.
+
+**📚 Documentation:**
+- 📖 [Bank Account Management Guide](docs/bank_accounts.md) - Complete guide for bank accounts
+- 💡 [Bank Account Examples](examples/bank_accounts.md) - Real-world patterns and integration
+- 🔗 [Zai: Bank Accounts API Reference](https://developer.hellozai.com/reference/showbankaccount)
+
 ### Token Auth
 
-Generate secure tokens for collecting bank and card account information:
-
-```ruby
-# Generate a bank token (for collecting bank account details)
-response = ZaiPayment.token_auths.generate(
-  user_id: "seller-68611249",
-  token_type: "bank"
-)
-
-token = response.data['token_auth']['token']
-# Use this token with PromisePay.js on the frontend
-
-# Generate a card token (for collecting credit card details)
-response = ZaiPayment.token_auths.generate(
-  user_id: "buyer-12345",
-  token_type: "card"
-)
-
-token = response.data['token_auth']['token']
-# Use this token with PromisePay.js on the frontend
-```
+Generate secure tokens for collecting bank and card account information.
 
 **📚 Documentation:**
 - 💡 [Token Auth Examples](examples/token_auths.md) - Complete integration guide with PromisePay.js
@@ -243,24 +125,7 @@ token = response.data['token_auth']['token']
 
 ### Webhooks
 
-Manage webhook endpoints:
-
-```ruby
-# List webhooks
-response = ZaiPayment.webhooks.list
-webhooks = response.data
-
-# Create a webhook
-response = ZaiPayment.webhooks.create(
-  url: 'https://example.com/webhooks/zai',
-  object_type: 'transactions',
-  enabled: true
-)
-
-# Secure your webhooks with signature verification
-secret_key = SecureRandom.alphanumeric(32)
-ZaiPayment.webhooks.create_secret_key(secret_key: secret_key)
-```
+Manage webhook endpoints with secure signature verification.
 
 **📚 Documentation:**
 - 📖 [Webhook Examples & Complete Guide](examples/webhooks.md) - Full CRUD operations and patterns
@@ -301,6 +166,7 @@ end
 | ✅ Webhooks                     | CRUD for webhook endpoints        | Done           |
 | ✅ Users                        | Manage PayIn / PayOut users       | Done           |
 | ✅ Items                        | Transactions/payments (CRUD)      | Done           |
+| ✅ Bank Accounts                | AU/UK bank accounts + validation  | Done           |
 | ✅ Token Auth                   | Generate bank/card tokens         | Done           |
 | 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
 | 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
@@ -360,12 +226,14 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 - [**Authentication Guide**](docs/authentication.md) - Two approaches to getting tokens, automatic management
 - [**User Management Guide**](docs/users.md) - Managing payin and payout users
 - [**Item Management Guide**](docs/items.md) - Creating and managing transactions/payments
+- [**Bank Account Guide**](docs/bank_accounts.md) - Managing bank accounts for AU/UK users
 - [**Webhook Examples**](examples/webhooks.md) - Complete webhook usage guide
 - [**Documentation Index**](docs/readme.md) - Full documentation navigation
 
 ### Examples & Patterns
 - [User Examples](examples/users.md) - Real-world user management patterns
 - [Item Examples](examples/items.md) - Transaction and payment workflows
+- [Bank Account Examples](examples/bank_accounts.md) - Bank account integration patterns
 - [Token Auth Examples](examples/token_auths.md) - Secure token generation and integration
 - [Webhook Examples](examples/webhooks.md) - Webhook integration patterns
 
