@@ -168,11 +168,50 @@ Show the user's wallet account using a given user ID.
 ```ruby
 response = ZaiPayment.users.wallet_account('user_id')
 
+# Access wallet account details (automatically extracted from response)
 wallet = response.data
-puts wallet['id']
-puts wallet['balance']
-puts wallet['currency']
+puts "Wallet Account ID: #{wallet['id']}"
+puts "Active: #{wallet['active']}"
+puts "Balance: #{wallet['balance']}"
+puts "Currency: #{wallet['currency']}"
+puts "Created At: #{wallet['created_at']}"
+puts "Updated At: #{wallet['updated_at']}"
+
+# Access related resource links
+puts "Self URL: #{wallet['links']['self']}"
+puts "Users URL: #{wallet['links']['users']}"
+puts "Batch Transactions URL: #{wallet['links']['batch_transactions']}"
+puts "Transactions URL: #{wallet['links']['transactions']}"
+puts "BPay Details URL: #{wallet['links']['bpay_details']}"
+puts "NPP Details URL: #{wallet['links']['npp_details']}"
+puts "Virtual Accounts URL: #{wallet['links']['virtual_accounts']}"
 ```
+
+**Response Structure:**
+
+```ruby
+{
+  "wallet_accounts" => {
+    "id" => "5c1c6b10-4c56-0137-8cd7-0242ac110002",
+    "active" => true,
+    "created_at" => "2019-04-29T02:42:31.536Z",
+    "updated_at" => "2020-05-03T12:01:02.254Z",
+    "balance" => 663337,
+    "currency" => "AUD",
+    "links" => {
+      "self" => "/transactions/aed45af0-6f63-0138-901c-0a58a9feac03/wallet_accounts",
+      "users" => "/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/users",
+      "batch_transactions" => "/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/batch_transactions",
+      "transactions" => "/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/transactions",
+      "bpay_details" => "/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/bpay_details",
+      "npp_details" => "/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/npp_details",
+      "virtual_accounts" => "/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/virtual_accounts"
+    }
+  }
+}
+```
+
+**Note:** The `response.data` method automatically extracts the `wallet_accounts` object from the response, so you can access the wallet account fields directly without needing to access `response.data['wallet_accounts']`.
 
 ### List User Items
 

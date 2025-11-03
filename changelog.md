@@ -1,5 +1,31 @@
 ## [Released]
 
+## [2.6.1] - 2025-11-03
+
+### Changed
+- **Wallet Accounts Response Structure**: Updated to match actual API response format 🔄
+  - Response now properly returns nested `wallet_accounts` object with complete structure
+  - Added `wallet_accounts` to `Response#data` automatic extraction
+  - The `Response#data` method now automatically extracts the `wallet_accounts` object for cleaner API usage
+  - Updated response includes: `id`, `active`, `created_at`, `updated_at`, `balance`, `currency`
+  - Enhanced `links` structure with: `self`, `users`, `batch_transactions`, `transactions`, `bpay_details`, `npp_details`, `virtual_accounts`
+
+### Improved
+- **API Consistency**: `response.data` now works consistently across all resources
+  - Before: `response.data['wallet_accounts']['balance']` (manual extraction)
+  - After: `response.data['balance']` (automatic extraction)
+- **Documentation**: Updated all wallet_account documentation and examples
+  - Updated `docs/users.md` with complete wallet account response structure
+  - Added note about automatic data extraction in Response class
+  - Updated code examples in `lib/zai_payment/resources/user.rb`
+- **Test Coverage**: Enhanced wallet_account test suite
+  - Split tests into focused examples for better maintainability
+  - Added comprehensive validation for all wallet account fields
+  - Tests for active status, timestamps, and all link fields
+  - All tests comply with RuboCop standards
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.6.0...v2.6.1
+
 ## [2.6.0] - 2025-11-03
 
 ### Added

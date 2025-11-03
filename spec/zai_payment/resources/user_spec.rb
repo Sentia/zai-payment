@@ -861,9 +861,23 @@ RSpec.describe ZaiPayment::Resources::User do
 
       let(:wallet_account_data) do
         {
-          'id' => 'wallet_acc_123',
-          'balance' => 1000,
-          'currency' => 'USD'
+          'wallet_accounts' => {
+            'id' => '5c1c6b10-4c56-0137-8cd7-0242ac110002',
+            'active' => true,
+            'created_at' => '2019-04-29T02:42:31.536Z',
+            'updated_at' => '2020-05-03T12:01:02.254Z',
+            'balance' => 663_337,
+            'currency' => 'AUD',
+            'links' => {
+              'self' => '/transactions/aed45af0-6f63-0138-901c-0a58a9feac03/wallet_accounts',
+              'users' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/users',
+              'batch_transactions' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/batch_transactions',
+              'transactions' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/transactions',
+              'bpay_details' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/bpay_details',
+              'npp_details' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/npp_details',
+              'virtual_accounts' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/virtual_accounts'
+            }
+          }
         }
       end
 
@@ -875,8 +889,45 @@ RSpec.describe ZaiPayment::Resources::User do
 
       it 'returns the wallet account details' do
         response = user_resource.wallet_account('user_123')
-        expect(response.data['id']).to eq('wallet_acc_123')
-        expect(response.data['balance']).to eq(1000)
+        wallet_data = response.data
+        expect(wallet_data['id']).to eq('5c1c6b10-4c56-0137-8cd7-0242ac110002')
+        expect(wallet_data['balance']).to eq(663_337)
+        expect(wallet_data['currency']).to eq('AUD')
+      end
+
+      it 'returns the wallet account active status' do
+        response = user_resource.wallet_account('user_123')
+        wallet_data = response.data
+        expect(wallet_data['active']).to be true
+      end
+
+      it 'returns the wallet account timestamps' do
+        response = user_resource.wallet_account('user_123')
+        wallet_data = response.data
+        expect(wallet_data['created_at']).to eq('2019-04-29T02:42:31.536Z')
+        expect(wallet_data['updated_at']).to eq('2020-05-03T12:01:02.254Z')
+      end
+
+      it 'returns the wallet account self and users links' do
+        response = user_resource.wallet_account('user_123')
+        links = response.data['links']
+        expect(links['self']).not_to be_nil
+        expect(links['users']).not_to be_nil
+      end
+
+      it 'returns the wallet account transaction related links' do
+        response = user_resource.wallet_account('user_123')
+        links = response.data['links']
+        expect(links['batch_transactions']).not_to be_nil
+        expect(links['transactions']).not_to be_nil
+      end
+
+      it 'returns the wallet account payment method links' do
+        response = user_resource.wallet_account('user_123')
+        links = response.data['links']
+        expect(links['bpay_details']).not_to be_nil
+        expect(links['npp_details']).not_to be_nil
+        expect(links['virtual_accounts']).not_to be_nil
       end
     end
 
