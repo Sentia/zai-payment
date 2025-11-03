@@ -272,7 +272,7 @@ module ZaiPayment
 
       def validate_country!(country)
         # Country should be ISO 3166-1 alpha-3 code (3 letters)
-        return if country.to_s.match?(/\A[A-Z]{3}\z/i) && country.to_s.length <= 3
+        return if country.to_s.match?(/\A[A-Z]{3}\z/i)
 
         raise Errors::ValidationError, 'country must be a valid ISO 3166-1 alpha-3 code (e.g., AUS, GBR)'
       end
