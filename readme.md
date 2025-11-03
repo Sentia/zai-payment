@@ -21,12 +21,13 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 - 🧠 **Smart Token Caching** - Auto-refresh before expiration, thread-safe storage  
 - 👥 **User Management** - Create and manage payin (buyers) & payout (sellers) users  
 - 📦 **Item Management** - Full CRUD for transactions/payments between buyers and sellers  
+- 🏦 **Bank Account Management** - Complete CRUD + validation for AU/UK bank accounts  
 - 🎫 **Token Auth** - Generate secure tokens for bank and card account data collection  
 - 🪝 **Webhooks** - Full CRUD + secure signature verification (HMAC SHA256)  
 - ⚙️ **Environment-Aware** - Seamless Pre-live / Production switching  
 - 🧱 **Modular & Extensible** - Clean resource-based architecture  
 - 🧰 **Zero Heavy Dependencies** - Lightweight, fast, and reliable  
-- 📦 **Production Ready** - 88%+ test coverage, RuboCop compliant  
+- 📦 **Production Ready** - 97%+ test coverage, RuboCop compliant  
 
 ---
 
@@ -213,6 +214,63 @@ response = ZaiPayment.items.list_transactions('item_id')
 - 💡 [Item Examples](examples/items.md) - Real-world usage patterns and complete workflows
 - 🔗 [Zai: Items API Reference](https://developer.hellozai.com/reference/listitems)
 
+### Bank Accounts
+
+Manage bank accounts for Australian and UK users, with routing number validation:
+
+```ruby
+# Create an Australian bank account
+response = ZaiPayment.bank_accounts.create_au(
+  user_id: 'user-123',
+  bank_name: 'Commonwealth Bank',
+  account_name: 'John Doe',
+  routing_number: '123456',
+  account_number: '12345678',
+  account_type: 'checking',
+  holder_type: 'personal',
+  country: 'AUS'
+)
+
+# Create a UK bank account with IBAN and SWIFT
+response = ZaiPayment.bank_accounts.create_uk(
+  user_id: 'user-123',
+  bank_name: 'Barclays',
+  account_name: 'Jane Smith',
+  routing_number: '123456',
+  account_number: '12345678',
+  account_type: 'savings',
+  holder_type: 'business',
+  country: 'GBR',
+  iban: 'GB82WEST12345698765432',
+  swift_code: 'BARCGB22'
+)
+
+# Show bank account details
+response = ZaiPayment.bank_accounts.show('bank_account_id')
+
+# Show bank account with decrypted fields (use with caution)
+response = ZaiPayment.bank_accounts.show(
+  'bank_account_id',
+  include_decrypted_fields: true
+)
+
+# Validate US routing number
+response = ZaiPayment.bank_accounts.validate_routing_number('122235821')
+if response.success?
+  bank_info = response.data
+  puts "Bank: #{bank_info['customer_name']}"  # => "US BANK NA"
+  puts "City: #{bank_info['city']}"           # => "ST. PAUL"
+end
+
+# Redact (deactivate) a bank account
+response = ZaiPayment.bank_accounts.redact('bank_account_id')
+```
+
+**📚 Documentation:**
+- 📖 [Bank Account Management Guide](docs/bank_accounts.md) - Complete guide for bank accounts
+- 💡 [Bank Account Examples](examples/bank_accounts.md) - Real-world patterns and integration
+- 🔗 [Zai: Bank Accounts API Reference](https://developer.hellozai.com/reference/showbankaccount)
+
 ### Token Auth
 
 Generate secure tokens for collecting bank and card account information:
@@ -301,6 +359,7 @@ end
 | ✅ Webhooks                     | CRUD for webhook endpoints        | Done           |
 | ✅ Users                        | Manage PayIn / PayOut users       | Done           |
 | ✅ Items                        | Transactions/payments (CRUD)      | Done           |
+| ✅ Bank Accounts                | AU/UK bank accounts + validation  | Done           |
 | ✅ Token Auth                   | Generate bank/card tokens         | Done           |
 | 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
 | 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
@@ -360,12 +419,14 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 - [**Authentication Guide**](docs/authentication.md) - Two approaches to getting tokens, automatic management
 - [**User Management Guide**](docs/users.md) - Managing payin and payout users
 - [**Item Management Guide**](docs/items.md) - Creating and managing transactions/payments
+- [**Bank Account Guide**](docs/bank_accounts.md) - Managing bank accounts for AU/UK users
 - [**Webhook Examples**](examples/webhooks.md) - Complete webhook usage guide
 - [**Documentation Index**](docs/readme.md) - Full documentation navigation
 
 ### Examples & Patterns
 - [User Examples](examples/users.md) - Real-world user management patterns
 - [Item Examples](examples/items.md) - Transaction and payment workflows
+- [Bank Account Examples](examples/bank_accounts.md) - Bank account integration patterns
 - [Token Auth Examples](examples/token_auths.md) - Secure token generation and integration
 - [Webhook Examples](examples/webhooks.md) - Webhook integration patterns
 

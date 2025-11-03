@@ -1,4 +1,45 @@
 ## [Released]
+
+## [2.5.0] - 2025-11-03
+
+### Added
+- **Bank Account Resource**: Complete CRUD operations plus validation for Australian and UK bank accounts 🏦
+  - `ZaiPayment.bank_accounts.show(bank_account_id, include_decrypted_fields:)` - Get bank account details with optional decrypted fields
+  - `ZaiPayment.bank_accounts.create_au(user_id:, bank_name:, account_name:, routing_number:, account_number:, account_type:, holder_type:, country:)` - Create Australian bank account
+  - `ZaiPayment.bank_accounts.create_uk(user_id:, bank_name:, account_name:, routing_number:, account_number:, account_type:, holder_type:, country:, iban:, swift_code:)` - Create UK bank account with IBAN and SWIFT code
+  - `ZaiPayment.bank_accounts.redact(bank_account_id)` - Redact (deactivate) a bank account
+  - `ZaiPayment.bank_accounts.validate_routing_number(routing_number)` - Validate US bank routing numbers and get bank information
+  - Support for retrieving decrypted sensitive fields (full account numbers)
+  - Support for savings and checking account types
+  - Support for personal and business holder types
+  - Comprehensive validation for required fields and formats
+  - Full RSpec test suite with 25 test examples
+  - Comprehensive documentation in `docs/bank_accounts.md`
+  - Practical examples in `examples/bank_accounts.md`
+
+### Documentation
+- **Bank Accounts Guide** (`docs/bank_accounts.md`):
+  - Complete guide for showing, creating, validating, and redacting bank accounts
+  - Documentation for decrypted fields parameter
+  - Validation endpoint documentation for US routing numbers
+  - Redaction endpoint documentation with warnings
+  - Validation rules for account types, holder types, and country codes
+  - Response structure documentation
+  - Error handling examples
+  - Use cases for disbursement accounts, multi-currency setups, and routing number validation
+- **Bank Accounts Examples** (`examples/bank_accounts.md`):
+  - Examples for retrieving bank account details (masked and decrypted)
+  - Examples for redacting bank accounts with error handling (Examples 9-10)
+  - Examples for validating US routing numbers (Examples 11-13)
+  - Real-world scenarios for Australian bank accounts
+  - UK bank account creation with IBAN/SWIFT
+  - Business account setup examples
+  - Multi-region account management patterns
+  - Routing number validation integration in forms
+  - Security best practices for handling decrypted data
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.4.0...v2.5.0
+
 ## [2.4.0] - 2025-11-02
 ### Added
 - **Item Payment Actions API**: Advanced payment operations for managing item transactions 💳

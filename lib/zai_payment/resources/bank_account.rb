@@ -178,6 +178,28 @@ module ZaiPayment
         client.delete("/bank_accounts/#{bank_account_id}")
       end
 
+      # Validate a US bank routing number
+      #
+      # Validates a US bank routing number before creating an account. This can be used to
+      # provide on-demand verification and further information of the bank information a user
+      # is providing.
+      #
+      # @param routing_number [String] the US bank routing number
+      # @return [Response] the API response containing routing number details
+      #
+      # @example
+      #   bank_accounts = ZaiPayment::Resources::BankAccount.new
+      #   response = bank_accounts.validate_routing_number("122235821")
+      #   response.data # => {"routing_number" => "122235821", "customer_name" => "US BANK NA", ...}
+      #
+      # @see https://developer.hellozai.com/reference/validateroutingnumber
+      def validate_routing_number(routing_number)
+        validate_presence!(routing_number, 'routing_number')
+
+        params = { routing_number: routing_number }
+        client.get('/tools/routing_number', params: params)
+      end
+
       private
 
       def validate_id!(value, field_name)

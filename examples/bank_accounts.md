@@ -7,6 +7,7 @@ This document provides practical examples for managing bank accounts in Zai Paym
 - [Setup](#setup)
 - [Show Bank Account Example](#show-bank-account-example)
 - [Redact Bank Account Example](#redact-bank-account-example)
+- [Validate Routing Number Example](#validate-routing-number-example)
 - [Australian Bank Account Examples](#australian-bank-account-examples)
 - [UK Bank Account Examples](#uk-bank-account-examples)
 - [Common Patterns](#common-patterns)
@@ -147,6 +148,132 @@ rescue ZaiPayment::Errors::ValidationError => e
   puts "Invalid bank account ID: #{e.message}"
 rescue ZaiPayment::Errors::ApiError => e
   puts "API error occurred: #{e.message}"
+end
+```
+
+## Validate Routing Number Example
+
+### Example 11: Validate US Bank Routing Number
+
+Validate a US bank routing number to get bank information.
+
+```ruby
+# Validate a routing number
+bank_accounts = ZaiPayment::Resources::BankAccount.new
+
+response = bank_accounts.validate_routing_number('122235821')
+
+if response.success?
+  routing_info = response.data
+  
+  puts "Routing Number Validation Results:"
+  puts "  Routing Number: #{routing_info['routing_number']}"
+  puts "  Bank Name: #{routing_info['customer_name']}"
+  puts "  Address: #{routing_info['address']}"
+  puts "  City: #{routing_info['city']}"
+  puts "  State: #{routing_info['state_code']}"
+  puts "  ZIP: #{routing_info['zip']}-#{routing_info['zip_extension']}"
+  
+  # Format phone number
+  phone = "#{routing_info['phone_area_code']}-#{routing_info['phone_prefix']}-#{routing_info['phone_suffix']}"
+  puts "  Phone: #{phone}"
+else
+  puts "Invalid routing number"
+  puts "Error: #{response.error}"
+end
+```
+
+### Example 12: Validate Routing Number Before Account Creation
+
+Use routing number validation as part of the account creation flow.
+
+```ruby
+bank_accounts = ZaiPayment::Resources::BankAccount.new
+
+# Step 1: Validate the routing number
+routing_number = '122235821'
+
+begin
+  validation_response = bank_accounts.validate_routing_number(routing_number)
+  
+  if validation_response.success?
+    bank_info = validation_response.data
+    
+    # Show user the bank information for confirmation
+    puts "You are creating an account with:"
+    puts "  Bank: #{bank_info['customer_name']}"
+    puts "  Location: #{bank_info['city']}, #{bank_info['state_code']}"
+    
+    # Step 2: Create the bank account if validation passes
+    account_response = bank_accounts.create_au(
+      user_id: 'user_123',
+      bank_name: bank_info['customer_name'],
+      account_name: 'John Doe',
+      routing_number: routing_number,
+      account_number: '12345678',
+      account_type: 'checking',
+      holder_type: 'personal',
+      country: 'USA'
+    )
+    
+    if account_response.success?
+      puts "Bank account created successfully!"
+      puts "Account ID: #{account_response.data['id']}"
+    end
+  else
+    puts "Invalid routing number. Please check and try again."
+  end
+rescue ZaiPayment::Errors::NotFoundError
+  puts "Routing number not found. Please verify the number."
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+end
+```
+
+### Example 13: Real-time Routing Number Validation in Forms
+
+Implement real-time validation for user input.
+
+```ruby
+# In a Rails controller or form handler
+class BankAccountsController < ApplicationController
+  def validate_routing_number
+    routing_number = params[:routing_number]
+    
+    bank_accounts = ZaiPayment::Resources::BankAccount.new
+    
+    begin
+      response = bank_accounts.validate_routing_number(routing_number)
+      
+      if response.success?
+        bank_info = response.data
+        
+        # Return bank info to display in the form
+        render json: {
+          valid: true,
+          bank_name: bank_info['customer_name'],
+          city: bank_info['city'],
+          state: bank_info['state_code'],
+          message: "Valid routing number for #{bank_info['customer_name']}"
+        }
+      else
+        render json: {
+          valid: false,
+          message: 'Invalid routing number'
+        }, status: :unprocessable_entity
+      end
+    rescue ZaiPayment::Errors::NotFoundError
+      render json: {
+        valid: false,
+        message: 'Routing number not found'
+      }, status: :not_found
+    rescue ZaiPayment::Errors::ValidationError => e
+      render json: {
+        valid: false,
+        message: e.message
+      }, status: :bad_request
+    end
+  end
 end
 ```
 

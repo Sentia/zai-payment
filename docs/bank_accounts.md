@@ -103,6 +103,55 @@ end
 - This action cannot be undone
 - Use with caution
 
+### Validate Routing Number
+
+Validate a US bank routing number before creating an account. This can be used to provide on-demand verification and further information of the bank information a user is providing.
+
+#### Parameters
+
+- `routing_number` (required) - The US bank routing number (9 digits)
+
+#### Example
+
+```ruby
+response = bank_accounts.validate_routing_number('122235821')
+
+if response.success?
+  routing_info = response.data
+  puts "Routing Number: #{routing_info['routing_number']}"
+  puts "Bank Name: #{routing_info['customer_name']}"
+  puts "City: #{routing_info['city']}"
+  puts "State: #{routing_info['state_code']}"
+  puts "ZIP: #{routing_info['zip']}"
+  puts "Phone: #{routing_info['phone_area_code']}-#{routing_info['phone_prefix']}-#{routing_info['phone_suffix']}"
+else
+  puts "Invalid routing number"
+end
+```
+
+#### Response
+
+```ruby
+{
+  "routing_number" => "122235821",
+  "customer_name" => "US BANK NA",
+  "address" => "EP-MN-WN1A",
+  "city" => "ST. PAUL",
+  "state_code" => "MN",
+  "zip" => "55107",
+  "zip_extension" => "1419",
+  "phone_area_code" => "800",
+  "phone_prefix" => "937",
+  "phone_suffix" => "631"
+}
+```
+
+**Use Cases:**
+- Validate routing numbers before bank account creation
+- Display bank information to users for confirmation
+- Provide real-time feedback during form entry
+- Reduce errors in bank account setup
+
 ### Create Australian Bank Account
 
 Create a new bank account for an Australian user.

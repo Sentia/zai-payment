@@ -178,6 +178,76 @@ RSpec.describe ZaiPayment::Resources::BankAccount do
     end
   end
 
+  describe '#validate_routing_number' do
+    let(:routing_number_data) do
+      {
+        'routing_number' => {
+          'routing_number' => '122235821',
+          'customer_name' => 'US BANK NA',
+          'address' => 'EP-MN-WN1A',
+          'city' => 'ST. PAUL',
+          'state_code' => 'MN',
+          'zip' => '55107',
+          'zip_extension' => '1419',
+          'phone_area_code' => '800',
+          'phone_prefix' => '937',
+          'phone_suffix' => '631'
+        }
+      }
+    end
+
+    context 'when routing number is valid' do
+      before do
+        stubs.get('/tools/routing_number') do |env|
+          if env.params['routing_number'] == '122235821'
+            [200, { 'Content-Type' => 'application/json' }, routing_number_data]
+          else
+            [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Invalid routing number' }]
+          end
+        end
+      end
+
+      it 'returns the correct response type' do
+        response = bank_account_resource.validate_routing_number('122235821')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns routing number details' do
+        response = bank_account_resource.validate_routing_number('122235821')
+
+        expect(response.data['routing_number']).to eq('122235821')
+        expect(response.data['customer_name']).to eq('US BANK NA')
+      end
+    end
+
+    context 'when routing number is invalid' do
+      before do
+        stubs.get('/tools/routing_number') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Invalid routing number' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { bank_account_resource.validate_routing_number('invalid') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when routing_number is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { bank_account_resource.validate_routing_number('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /routing_number/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { bank_account_resource.validate_routing_number(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /routing_number/)
+      end
+    end
+  end
+
   describe '#create_au' do
     let(:bank_account_data) do
       {
