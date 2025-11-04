@@ -240,6 +240,7 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 ### Technical Guides
 - [Webhook Architecture](docs/webhooks.md) - Technical implementation details
 - [Architecture Overview](docs/architecture.md) - System architecture and design
+- [**Direct API Usage Guide**](docs/direct_api_usage.md) - 🔥 How to call unimplemented APIs directly
 
 ### Security
 - [Webhook Security Quick Start](docs/webhook_security_quickstart.md) - 5-minute setup guide
