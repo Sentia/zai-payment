@@ -24,6 +24,7 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 - 🏦 **Bank Account Management** - Complete CRUD + validation for AU/UK bank accounts  
 - 🎫 **Token Auth** - Generate secure tokens for bank and card account data collection  
 - 🪝 **Webhooks** - Full CRUD + secure signature verification (HMAC SHA256)  
+- 🧪 **Batch Transactions** - Prelive-only endpoints for testing batch transaction flows  
 - ⚙️ **Environment-Aware** - Seamless Pre-live / Production switching  
 - 🧱 **Modular & Extensible** - Clean resource-based architecture  
 - 🧰 **Zero Heavy Dependencies** - Lightweight, fast, and reliable  
@@ -133,6 +134,35 @@ Manage webhook endpoints with secure signature verification.
 - 🏗️ [Architecture & Implementation](docs/webhooks.md) - Detailed technical documentation
 - 🔐 [Signature Verification Details](docs/webhook_signature.md) - Security implementation specs
 
+### Batch Transactions (Prelive Only)
+
+Simulate batch transaction processing for testing in the prelive environment.
+
+**📚 Documentation:**
+- 📖 [Batch Transaction Guide](docs/batch_transactions.md) - Complete guide and method reference
+- 💡 [Batch Transaction Examples](examples/batch_transactions.md) - Testing workflows and webhook simulation
+- ⚠️ **Note:** These endpoints are only available in prelive environment
+
+**Quick Example:**
+```ruby
+# Export pending transactions to batched state
+export_response = ZaiPayment.batch_transactions.export_transactions
+batch_id = export_response.data.first['batch_id']
+transaction_ids = export_response.data.map { |t| t['id'] }
+
+# Move to bank_processing state
+ZaiPayment.batch_transactions.process_to_bank_processing(
+  batch_id,
+  exported_ids: transaction_ids
+)
+
+# Complete processing (triggers webhooks)
+ZaiPayment.batch_transactions.process_to_successful(
+  batch_id,
+  exported_ids: transaction_ids
+)
+```
+
 ### Error Handling
 
 The gem provides specific error classes for different scenarios:
@@ -168,6 +198,7 @@ end
 | ✅ Items                        | Transactions/payments (CRUD)      | Done           |
 | ✅ Bank Accounts                | AU/UK bank accounts + validation  | Done           |
 | ✅ Token Auth                   | Generate bank/card tokens         | Done           |
+| ✅ Batch Transactions (Prelive) | Simulate batch processing flows   | Done           |
 | 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
 | 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
 | 💼 Wallets                      | Create and manage wallet accounts | ⏳ Planned      |
@@ -236,6 +267,7 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 - [Bank Account Examples](examples/bank_accounts.md) - Bank account integration patterns
 - [Token Auth Examples](examples/token_auths.md) - Secure token generation and integration
 - [Webhook Examples](examples/webhooks.md) - Webhook integration patterns
+- [Batch Transaction Examples](examples/batch_transactions.md) - Testing batch transaction flows (prelive only)
 
 ### Technical Guides
 - [Webhook Architecture](docs/webhooks.md) - Technical implementation details

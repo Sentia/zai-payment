@@ -7,7 +7,7 @@ module ZaiPayment
 
     RESPONSE_DATA_KEYS = %w[
       webhooks users items fees transactions
-      batch_transactions bpay_accounts bank_accounts card_accounts
+      batch_transactions batches bpay_accounts bank_accounts card_accounts
       wallet_accounts routing_number
     ].freeze
 
