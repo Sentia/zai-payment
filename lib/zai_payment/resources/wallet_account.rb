@@ -19,6 +19,22 @@ module ZaiPayment
         @client = client || Client.new
       end
 
+      # Get a specific wallet account by ID
+      #
+      # @param wallet_account_id [String] the wallet account ID
+      # @return [Response] the API response containing wallet account details
+      #
+      # @example
+      #   wallet_accounts = ZaiPayment::Resources::WalletAccount.new
+      #   response = wallet_accounts.show("wallet_account_id")
+      #   response.data # => {"id" => "wallet_account_id", "active" => true, ...}
+      #
+      # @see https://developer.hellozai.com/reference
+      def show(wallet_account_id)
+        validate_id!(wallet_account_id, 'wallet_account_id')
+        client.get("/wallet_accounts/#{wallet_account_id}")
+      end
+
       # Get the user associated with a Wallet Account
       #
       # Show the User the Wallet Account is associated with using a given wallet_account_id.
@@ -35,6 +51,44 @@ module ZaiPayment
       def show_user(wallet_account_id)
         validate_id!(wallet_account_id, 'wallet_account_id')
         client.get("/wallet_accounts/#{wallet_account_id}/users")
+      end
+
+      # Get NPP details for a Wallet Account
+      #
+      # Show NPP details of a specific Wallet Account using a given wallet_account_id.
+      # NPP (New Payments Platform) details include PayID and payment reference information.
+      #
+      # @param wallet_account_id [String] the wallet account ID
+      # @return [Response] the API response containing NPP details
+      #
+      # @example
+      #   wallet_accounts = ZaiPayment::Resources::WalletAccount.new
+      #   response = wallet_accounts.show_npp_details("wallet_account_id")
+      #   response.data # => {"id" => "wallet_account_id", "npp_details" => {...}}
+      #
+      # @see https://developer.hellozai.com/reference
+      def show_npp_details(wallet_account_id)
+        validate_id!(wallet_account_id, 'wallet_account_id')
+        client.get("/wallet_accounts/#{wallet_account_id}/npp_details")
+      end
+
+      # Get BPay details for a Wallet Account
+      #
+      # Show BPay details of a specific Wallet Account using a given wallet_account_id.
+      # BPay details include biller code, reference, and amount information.
+      #
+      # @param wallet_account_id [String] the wallet account ID
+      # @return [Response] the API response containing BPay details
+      #
+      # @example
+      #   wallet_accounts = ZaiPayment::Resources::WalletAccount.new
+      #   response = wallet_accounts.show_bpay_details("wallet_account_id")
+      #   response.data # => {"id" => "wallet_account_id", "bpay_details" => {...}}
+      #
+      # @see https://developer.hellozai.com/reference
+      def show_bpay_details(wallet_account_id)
+        validate_id!(wallet_account_id, 'wallet_account_id')
+        client.get("/wallet_accounts/#{wallet_account_id}/bpay_details")
       end
 
       # Pay a bill by withdrawing funds from a Wallet Account to a specified BPay account

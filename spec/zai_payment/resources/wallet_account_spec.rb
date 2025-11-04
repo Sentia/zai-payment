@@ -31,6 +31,71 @@ RSpec.describe ZaiPayment::Resources::WalletAccount do
     stubs.verify_stubbed_calls
   end
 
+  describe '#show' do
+    let(:wallet_account_data) do
+      {
+        'wallet_accounts' => {
+          'id' => '5c1c6b10-4c56-0137-8cd7-0242ac110002',
+          'active' => true,
+          'created_at' => '2019-04-29T02:42:31.536Z',
+          'updated_at' => '2020-05-03T12:01:02.254Z',
+          'balance' => 663_337,
+          'currency' => 'AUD',
+          'links' => {
+            'self' => '/transactions/aed45af0-6f63-0138-901c-0a58a9feac03/wallet_accounts',
+            'users' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/users',
+            'batch_transactions' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/batch_transactions',
+            'transactions' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/transactions',
+            'bpay_details' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/bpay_details',
+            'npp_details' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/npp_details',
+            'virtual_accounts' => '/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/virtual_accounts'
+          }
+        }
+      }
+    end
+
+    context 'when wallet account exists' do
+      before do
+        stubs.get('/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002') do
+          [200, { 'Content-Type' => 'application/json' }, wallet_account_data]
+        end
+      end
+
+      it 'returns the correct response type and wallet account details' do
+        response = wallet_account_resource.show('5c1c6b10-4c56-0137-8cd7-0242ac110002')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+        expect(response.data['id']).to eq('5c1c6b10-4c56-0137-8cd7-0242ac110002')
+      end
+    end
+
+    context 'when wallet account does not exist' do
+      before do
+        stubs.get('/wallet_accounts/invalid_id') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { wallet_account_resource.show('invalid_id') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when wallet_account_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { wallet_account_resource.show('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { wallet_account_resource.show(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
+      end
+    end
+  end
+
   describe '#show_user' do
     let(:user_data) do
       {
@@ -93,6 +158,134 @@ RSpec.describe ZaiPayment::Resources::WalletAccount do
 
       it 'raises a ValidationError for nil' do
         expect { wallet_account_resource.show_user(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
+      end
+    end
+  end
+
+  describe '#show_npp_details' do
+    let(:npp_details_data) do
+      {
+        'wallet_accounts' => {
+          'id' => '5c1c6b10-4c56-0137-8cd7-0242ac110002',
+          'npp_details' => {
+            'pay_id' => 'npp@assemblypayments.com',
+            'marketplace_pay_ids' => [
+              {
+                'pay_id' => 'npp@assemblypayments.com',
+                'type' => 'emal'
+              },
+              {
+                'pay_id' => 'Assembly Payments',
+                'type' => 'orgn'
+              },
+              {
+                'pay_id' => 96_637_632_645,
+                'type' => 'aubn'
+              }
+            ],
+            'reference' => '100014012148074',
+            'amount' => '$0.00',
+            'currency' => 'AUD'
+          }
+        }
+      }
+    end
+
+    context 'when Wallet Account has NPP details' do
+      before do
+        stubs.get('/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/npp_details') do
+          [200, { 'Content-Type' => 'application/json' }, npp_details_data]
+        end
+      end
+
+      it 'returns the correct response type and NPP details' do
+        response = wallet_account_resource.show_npp_details('5c1c6b10-4c56-0137-8cd7-0242ac110002')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+        expect(response.data['id']).to eq('5c1c6b10-4c56-0137-8cd7-0242ac110002')
+      end
+    end
+
+    context 'when Wallet Account does not exist' do
+      before do
+        stubs.get('/wallet_accounts/invalid_id/npp_details') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { wallet_account_resource.show_npp_details('invalid_id') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when wallet_account_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { wallet_account_resource.show_npp_details('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { wallet_account_resource.show_npp_details(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
+      end
+    end
+  end
+
+  describe '#show_bpay_details' do
+    let(:bpay_details_data) do
+      {
+        'wallet_accounts' => {
+          'id' => '5c1c6b10-4c56-0137-8cd7-0242ac110002',
+          'bpay_details' => {
+            'biller_code' => '230680',
+            'reference' => '100014012148074',
+            'amount' => '$0.00',
+            'currency' => 'AUD'
+          }
+        }
+      }
+    end
+
+    context 'when Wallet Account has BPay details' do
+      before do
+        stubs.get('/wallet_accounts/5c1c6b10-4c56-0137-8cd7-0242ac110002/bpay_details') do
+          [200, { 'Content-Type' => 'application/json' }, bpay_details_data]
+        end
+      end
+
+      it 'returns the correct response type and BPay details' do
+        response = wallet_account_resource.show_bpay_details('5c1c6b10-4c56-0137-8cd7-0242ac110002')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+        expect(response.data['id']).to eq('5c1c6b10-4c56-0137-8cd7-0242ac110002')
+      end
+    end
+
+    context 'when Wallet Account does not exist' do
+      before do
+        stubs.get('/wallet_accounts/invalid_id/bpay_details') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { wallet_account_resource.show_bpay_details('invalid_id') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when wallet_account_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { wallet_account_resource.show_bpay_details('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { wallet_account_resource.show_bpay_details(nil) }
           .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
       end
     end
