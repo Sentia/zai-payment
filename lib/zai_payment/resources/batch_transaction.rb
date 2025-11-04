@@ -64,6 +64,31 @@ module ZaiPayment
         client.get('/batch_transactions', params: params)
       end
 
+      # Show a batch transaction
+      #
+      # Get a batch transaction using its ID (UUID or numeric ID).
+      #
+      # @param id [String] the batch transaction ID
+      # @return [Response] the API response containing batch_transactions object
+      #
+      # @example Get a batch transaction by UUID
+      #   batch_transactions = ZaiPayment.batch_transactions
+      #   response = batch_transactions.show('90c1418b-f4f4-413e-a4ba-f29c334e7f55')
+      #   response.data # => {"id" => 13143, "uuid" => "90c1418b-f4f4-413e-a4ba-f29c334e7f55", ...}
+      #
+      # @example Get a batch transaction by numeric ID
+      #   response = batch_transactions.show('13143')
+      #   response.data['state'] # => "successful"
+      #
+      # @raise [Errors::ValidationError] if id is blank
+      #
+      # @see https://developer.hellozai.com/reference/showbatchtransaction
+      def show(id)
+        validate_id!(id, 'id')
+
+        client.get("/batch_transactions/#{id}")
+      end
+
       # Export batch transactions (Prelive only)
       #
       # Calls the GET /batch_transactions/export_transactions API which moves all pending

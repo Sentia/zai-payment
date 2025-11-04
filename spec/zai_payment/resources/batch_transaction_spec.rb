@@ -107,6 +107,97 @@ RSpec.describe ZaiPayment::Resources::BatchTransaction do
     end
   end
 
+  describe '#show' do
+    let(:batch_transaction_data) do
+      {
+        'batch_transactions' => {
+          'created_at' => '2020-05-05T12:26:59.112Z',
+          'updated_at' => '2020-05-05T12:31:03.389Z',
+          'id' => 13_143,
+          'reference_id' => '7190770-1-2908',
+          'uuid' => '90c1418b-f4f4-413e-a4ba-f29c334e7f55',
+          'account_external' => {
+            'account_type_id' => 9100,
+            'currency' => { 'code' => 'AUD' }
+          },
+          'user_email' => 'assemblybuyer71391895@assemblypayments.com',
+          'first_name' => 'Buyer',
+          'last_name' => 'Last Name',
+          'legal_entity_id' => '5f46763e-fb7a-4feb-9820-93a5703ddd17',
+          'user_external_id' => 'buyer-71391895',
+          'phone' => '+1588681395',
+          'marketplace' => {
+            'name' => 'platform1556505750',
+            'uuid' => '041e8015-5101-44f1-9b7d-6a206603f29f'
+          },
+          'account_type' => 9100,
+          'type' => 'payment',
+          'type_method' => 'direct_debit',
+          'batch_id' => 245,
+          'reference' => 'platform1556505750',
+          'state' => 'successful',
+          'status' => 12_000,
+          'user_id' => '1ea8d380-70f9-0138-ba3b-0a58a9feac06',
+          'account_id' => '26065be0-70f9-0138-9abc-0a58a9feac06',
+          'from_user_name' => 'Neol1604984243 Calangi',
+          'from_user_id' => 1_604_984_243,
+          'amount' => 109,
+          'currency' => 'AUD',
+          'debit_credit' => 'debit',
+          'description' => 'Debit of $1.09 from Bank Account for Credit of $1.09 to Item',
+          'related' => {
+            'account_to' => {
+              'id' => 'edf4e4ef-0d78-48db-85e0-0af04c5dc2d6',
+              'account_type' => 'item',
+              'user_id' => '5b9fe350-4c56-0137-e134-0242ac110002'
+            }
+          },
+          'links' => {
+            'self' => '/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55',
+            'users' => '/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/users'
+          }
+        }
+      }
+    end
+
+    context 'with valid UUID' do
+      before do
+        stubs.get('/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55') do
+          [200, { 'Content-Type' => 'application/json' }, batch_transaction_data]
+        end
+      end
+
+      it 'returns batch transaction details' do
+        response = batch_transaction_resource.show('90c1418b-f4f4-413e-a4ba-f29c334e7f55')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.data['uuid']).to eq('90c1418b-f4f4-413e-a4ba-f29c334e7f55')
+        expect(response.data['state']).to eq('successful')
+      end
+    end
+
+    context 'with valid numeric ID' do
+      before do
+        stubs.get('/batch_transactions/13143') do
+          [200, { 'Content-Type' => 'application/json' }, batch_transaction_data]
+        end
+      end
+
+      it 'returns batch transaction details' do
+        response = batch_transaction_resource.show('13143')
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.data['id']).to eq(13_143)
+      end
+    end
+
+    context 'with blank ID' do
+      it 'raises validation error' do
+        expect do
+          batch_transaction_resource.show('')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /id is required/)
+      end
+    end
+  end
+
   describe '#export_transactions' do
     context 'when in prelive environment' do
       before do

@@ -7,8 +7,9 @@ The batch transaction endpoints allow you to work with batch transactions in bot
 ### Available Operations
 
 1. **List Batch Transactions** - Query and filter batch transactions (all environments)
-2. **Export Transactions** - Export pending transactions to batched state (prelive only)
-3. **Update Transaction States** - Move transactions through processing states (prelive only)
+2. **Show Batch Transaction** - Get a single batch transaction by ID (all environments)
+3. **Export Transactions** - Export pending transactions to batched state (prelive only)
+4. **Update Transaction States** - Move transactions through processing states (prelive only)
 
 ## Configuration
 
@@ -78,6 +79,80 @@ response = ZaiPayment.batch_transactions.list(
 # - created_after: ISO 8601 date/time
 # - disbursement_bank: bank used for disbursing
 # - processing_bank: bank used for processing
+```
+
+### Show Batch Transaction
+
+Get a single batch transaction using its ID. You can use either the UUID or numeric ID.
+
+```ruby
+# Get by UUID
+response = ZaiPayment.batch_transactions.show('90c1418b-f4f4-413e-a4ba-f29c334e7f55')
+
+response.data
+# => {
+#   "created_at" => "2020-05-05T12:26:59.112Z",
+#   "updated_at" => "2020-05-05T12:31:03.389Z",
+#   "id" => 13143,
+#   "reference_id" => "7190770-1-2908",
+#   "uuid" => "90c1418b-f4f4-413e-a4ba-f29c334e7f55",
+#   "account_external" => {
+#     "account_type_id" => 9100,
+#     "currency" => { "code" => "AUD" }
+#   },
+#   "user_email" => "assemblybuyer71391895@assemblypayments.com",
+#   "first_name" => "Buyer",
+#   "last_name" => "Last Name",
+#   "legal_entity_id" => "5f46763e-fb7a-4feb-9820-93a5703ddd17",
+#   "user_external_id" => "buyer-71391895",
+#   "phone" => "+1588681395",
+#   "marketplace" => {
+#     "name" => "platform1556505750",
+#     "uuid" => "041e8015-5101-44f1-9b7d-6a206603f29f"
+#   },
+#   "account_type" => 9100,
+#   "type" => "payment",
+#   "type_method" => "direct_debit",
+#   "batch_id" => 245,
+#   "reference" => "platform1556505750",
+#   "state" => "successful",
+#   "status" => 12000,
+#   "user_id" => "1ea8d380-70f9-0138-ba3b-0a58a9feac06",
+#   "account_id" => "26065be0-70f9-0138-9abc-0a58a9feac06",
+#   "from_user_name" => "Neol1604984243 Calangi",
+#   "from_user_id" => 1604984243,
+#   "amount" => 109,
+#   "currency" => "AUD",
+#   "debit_credit" => "debit",
+#   "description" => "Debit of $1.09 from Bank Account for Credit of $1.09 to Item",
+#   "related" => {
+#     "account_to" => {
+#       "id" => "edf4e4ef-0d78-48db-85e0-0af04c5dc2d6",
+#       "account_type" => "item",
+#       "user_id" => "5b9fe350-4c56-0137-e134-0242ac110002"
+#     }
+#   },
+#   "links" => {
+#     "self" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55",
+#     "users" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/users",
+#     "fees" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/fees",
+#     "wallet_accounts" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/wallet_accounts",
+#     "card_accounts" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/card_accounts",
+#     "paypal_accounts" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/paypal_accounts",
+#     "bank_accounts" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/bank_accounts",
+#     "items" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/items",
+#     "marketplace" => "/batch_transactions/90c1418b-f4f4-413e-a4ba-f29c334e7f55/marketplaces"
+#   }
+# }
+
+# Get by numeric ID
+response = ZaiPayment.batch_transactions.show('13143')
+response.data['id'] # => 13143
+
+# Check transaction state
+response = ZaiPayment.batch_transactions.show('90c1418b-f4f4-413e-a4ba-f29c334e7f55')
+response.data['state'] # => "successful"
+response.data['status'] # => 12000
 ```
 
 ### Step 1: Export Transactions (Prelive Only)
@@ -239,14 +314,21 @@ end
 
 ## Querying Batch Transactions
 
-If you need more information on the item, transactions, or batch_transaction, you can query them using their IDs:
+If you need more information on the item, transactions, or batch_transaction, you can use the `show` method:
 
 ```ruby
-# Query a specific batch transaction using cURL or direct API call
-# GET /batch_transactions/{batch_transaction_id}
+# Query a specific batch transaction by UUID
+response = ZaiPayment.batch_transactions.show('90c1418b-f4f4-413e-a4ba-f29c334e7f55')
 
-# Example cURL:
-# curl https://test.api.promisepay.com/batch_transactions/dabcfd50-bf5a-0138-7b40-0a58a9feac03
+# Access transaction details
+response.data['state'] # => "successful"
+response.data['amount'] # => 109
+response.data['currency'] # => "AUD"
+response.data['type'] # => "payment"
+response.data['type_method'] # => "direct_debit"
+
+# Or query by numeric ID
+response = ZaiPayment.batch_transactions.show('13143')
 ```
 
 ## State Codes
@@ -290,6 +372,36 @@ ZaiPayment.batch_transactions.update_transaction_states('batch_id', exported_ids
 ```
 
 ## Available Methods
+
+### `list(**options)`
+
+List and filter batch transactions.
+
+- **Parameters:**
+  - `limit` (Integer): Number of records to return (default: 10, max: 200)
+  - `offset` (Integer): Number of records to skip (default: 0)
+  - `account_id` (String): Filter by account ID
+  - `batch_id` (String): Filter by batch ID
+  - `item_id` (String): Filter by item ID
+  - `transaction_type` (String): payment, refund, disbursement, fee, deposit, withdrawal
+  - `transaction_type_method` (String): credit_card, npp, bpay, wallet_account_transfer, wire_transfer, misc
+  - `direction` (String): debit or credit
+  - `created_before` (String): ISO 8601 date/time
+  - `created_after` (String): ISO 8601 date/time
+  - `disbursement_bank` (String): Bank used for disbursing
+  - `processing_bank` (String): Bank used for processing
+- **Returns:** Response with batch_transactions array
+- **Available in:** All environments
+
+### `show(id)`
+
+Get a single batch transaction using its ID.
+
+- **Parameters:**
+  - `id` (String): The batch transaction ID (UUID or numeric ID)
+- **Returns:** Response with batch_transactions object
+- **Raises:** ValidationError if id is blank
+- **Available in:** All environments
 
 ### `export_transactions`
 
