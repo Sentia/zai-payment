@@ -19,6 +19,24 @@ module ZaiPayment
         @client = client || Client.new
       end
 
+      # Get the user associated with a Wallet Account
+      #
+      # Show the User the Wallet Account is associated with using a given wallet_account_id.
+      #
+      # @param wallet_account_id [String] the wallet account ID
+      # @return [Response] the API response containing user details
+      #
+      # @example
+      #   wallet_accounts = ZaiPayment::Resources::WalletAccount.new
+      #   response = wallet_accounts.show_user("wallet_account_id")
+      #   response.data # => {"id" => "user_id", "full_name" => "Samuel Seller", ...}
+      #
+      # @see https://developer.hellozai.com/reference
+      def show_user(wallet_account_id)
+        validate_id!(wallet_account_id, 'wallet_account_id')
+        client.get("/wallet_accounts/#{wallet_account_id}/users")
+      end
+
       # Pay a bill by withdrawing funds from a Wallet Account to a specified BPay account
       #
       # @param wallet_account_id [String] the wallet account ID

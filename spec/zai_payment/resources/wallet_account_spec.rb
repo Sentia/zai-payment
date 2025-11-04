@@ -31,6 +31,73 @@ RSpec.describe ZaiPayment::Resources::WalletAccount do
     stubs.verify_stubbed_calls
   end
 
+  describe '#show_user' do
+    let(:user_data) do
+      {
+        'users' => {
+          'created_at' => '2020-04-03T07:59:00.379Z',
+          'updated_at' => '2020-04-03T07:59:00.379Z',
+          'id' => 'Seller_1234',
+          'full_name' => 'Samuel Seller',
+          'email' => 'sam@example.com',
+          'mobile' => 69_543_131,
+          'first_name' => 'Samuel',
+          'last_name' => 'Seller',
+          'custom_descriptor' => 'Sam Garden Jobs',
+          'location' => 'AUS',
+          'verification_state' => 'pending',
+          'held_state' => false,
+          'roles' => ['customer'],
+          'links' => {
+            'self' => '/wallet_accounts/901d8cd0-6af3-0138-967d-0a58a9feac04/users',
+            'items' => '/users/e6bc0480-57ae-0138-c46e-0a58a9feac03/items'
+          }
+        }
+      }
+    end
+
+    context 'when Wallet Account has an associated user' do
+      before do
+        stubs.get('/wallet_accounts/901d8cd0-6af3-0138-967d-0a58a9feac04/users') do
+          [200, { 'Content-Type' => 'application/json' }, user_data]
+        end
+      end
+
+      it 'returns the correct response type and user details' do
+        response = wallet_account_resource.show_user('901d8cd0-6af3-0138-967d-0a58a9feac04')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+        expect(response.data['id']).to eq('Seller_1234')
+      end
+    end
+
+    context 'when Wallet Account does not exist' do
+      before do
+        stubs.get('/wallet_accounts/invalid_id/users') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { wallet_account_resource.show_user('invalid_id') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when wallet_account_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { wallet_account_resource.show_user('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { wallet_account_resource.show_user(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /wallet_account_id/)
+      end
+    end
+  end
+
   describe '#pay_bill' do
     let(:disbursement_data) do
       {
