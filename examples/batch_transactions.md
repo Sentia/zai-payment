@@ -2,12 +2,13 @@
 
 ## Overview
 
-The batch transaction endpoints are available **only in the prelive environment** and are used to simulate the batch transaction lifecycle for testing purposes.
+The batch transaction endpoints allow you to work with batch transactions in both prelive and production environments. The prelive-specific endpoints are used for testing and simulation.
 
-These endpoints allow you to:
-1. Export pending batch transactions to the "batched" state
-2. Move batch transactions to the "bank_processing" state
-3. Move batch transactions to the "successful" state (which triggers webhooks)
+### Available Operations
+
+1. **List Batch Transactions** - Query and filter batch transactions (all environments)
+2. **Export Transactions** - Export pending transactions to batched state (prelive only)
+3. **Update Transaction States** - Move transactions through processing states (prelive only)
 
 ## Configuration
 
@@ -24,7 +25,62 @@ end
 
 ## Usage
 
-### Step 1: Export Transactions
+### List Batch Transactions
+
+List and filter batch transactions. Available in all environments.
+
+```ruby
+# List all batch transactions
+response = ZaiPayment.batch_transactions.list
+
+response.data
+# => [
+#   {
+#     "id" => 12484,
+#     "status" => 12200,
+#     "reference_id" => "7190770-1-2908",
+#     "type" => "disbursement",
+#     "type_method" => "direct_credit",
+#     "state" => "batched",
+#     ...
+#   }
+# ]
+
+# Filter by transaction type
+response = ZaiPayment.batch_transactions.list(
+  transaction_type: 'disbursement',
+  limit: 50
+)
+
+# Filter by direction and date range
+response = ZaiPayment.batch_transactions.list(
+  direction: 'credit',
+  created_after: '2024-01-01T00:00:00Z',
+  created_before: '2024-12-31T23:59:59Z'
+)
+
+# Filter by batch ID
+response = ZaiPayment.batch_transactions.list(
+  batch_id: '241',
+  limit: 100
+)
+
+# Available filters:
+# - limit: number of records (default: 10, max: 200)
+# - offset: pagination offset (default: 0)
+# - account_id: filter by account ID
+# - batch_id: filter by batch ID
+# - item_id: filter by item ID
+# - transaction_type: payment, refund, disbursement, fee, deposit, withdrawal
+# - transaction_type_method: credit_card, npp, bpay, wallet_account_transfer, wire_transfer, misc
+# - direction: debit or credit
+# - created_before: ISO 8601 date/time
+# - created_after: ISO 8601 date/time
+# - disbursement_bank: bank used for disbursing
+# - processing_bank: bank used for processing
+```
+
+### Step 1: Export Transactions (Prelive Only)
 
 Call the `GET /batch_transactions/export_transactions` API which moves all pending batch_transactions into batched state. This will return all the batch_transactions that have moved from pending to batched, including their `batch_id` which you'll need for the next steps.
 

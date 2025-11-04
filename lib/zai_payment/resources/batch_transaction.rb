@@ -8,9 +8,60 @@ module ZaiPayment
     class BatchTransaction
       attr_reader :client, :config
 
+      # Valid transaction types
+      TRANSACTION_TYPES = %w[payment refund disbursement fee deposit withdrawal].freeze
+
+      # Valid transaction type methods
+      TRANSACTION_TYPE_METHODS = %w[credit_card npp bpay wallet_account_transfer wire_transfer misc].freeze
+
+      # Valid directions
+      DIRECTIONS = %w[debit credit].freeze
+
       def initialize(client: nil, config: nil)
         @client = client || Client.new(base_endpoint: :core_base)
         @config = config || ZaiPayment.config
+      end
+
+      # List batch transactions
+      #
+      # Retrieve an ordered and paginated list of existing batch transactions.
+      # The list can be filtered by account, batch ID, item, and transaction type.
+      #
+      # @param options [Hash] optional filters
+      # @option options [Integer] :limit number of records to return (default: 10, max: 200)
+      # @option options [Integer] :offset number of records to skip (default: 0)
+      # @option options [String] :account_id Bank, Card or Wallet Account ID
+      # @option options [String] :batch_id Batch ID
+      # @option options [String] :item_id Item ID
+      # @option options [String] :transaction_type transaction type
+      #   (payment, refund, disbursement, fee, deposit, withdrawal)
+      # @option options [String] :transaction_type_method transaction method (credit_card, npp, bpay, etc.)
+      # @option options [String] :direction direction (debit, credit)
+      # @option options [String] :created_before ISO 8601 date/time to filter transactions created before
+      # @option options [String] :created_after ISO 8601 date/time to filter transactions created after
+      # @option options [String] :disbursement_bank the bank used for disbursing the payment
+      # @option options [String] :processing_bank the bank used for processing the payment
+      # @return [Response] the API response containing batch_transactions array
+      #
+      # @example List all batch transactions
+      #   batch_transactions = ZaiPayment.batch_transactions
+      #   response = batch_transactions.list
+      #   response.data # => [{"id" => 12484, "status" => 12200, ...}]
+      #
+      # @example List with filters
+      #   response = batch_transactions.list(
+      #     transaction_type: 'disbursement',
+      #     direction: 'credit',
+      #     limit: 50
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference/listbatchtransactions
+      def list(**options)
+        validate_list_options(options)
+
+        params = build_list_params(options)
+
+        client.get('/batch_transactions', params: params)
       end
 
       # Export batch transactions (Prelive only)
@@ -176,6 +227,50 @@ module ZaiPayment
 
         raise Errors::ValidationError,
               "state must be 12700 (bank_processing) or 12000 (successful), got: #{state}"
+      end
+
+      def validate_transaction_type!(transaction_type)
+        return if TRANSACTION_TYPES.include?(transaction_type.to_s)
+
+        raise Errors::ValidationError,
+              "transaction_type must be one of: #{TRANSACTION_TYPES.join(', ')}"
+      end
+
+      def validate_transaction_type_method!(transaction_type_method)
+        return if TRANSACTION_TYPE_METHODS.include?(transaction_type_method.to_s)
+
+        raise Errors::ValidationError,
+              "transaction_type_method must be one of: #{TRANSACTION_TYPE_METHODS.join(', ')}"
+      end
+
+      def validate_direction!(direction)
+        return if DIRECTIONS.include?(direction.to_s)
+
+        raise Errors::ValidationError,
+              "direction must be one of: #{DIRECTIONS.join(', ')}"
+      end
+
+      def validate_list_options(options)
+        validate_transaction_type!(options[:transaction_type]) if options[:transaction_type]
+        validate_transaction_type_method!(options[:transaction_type_method]) if options[:transaction_type_method]
+        validate_direction!(options[:direction]) if options[:direction]
+      end
+
+      def build_list_params(options)
+        {
+          limit: options.fetch(:limit, 10),
+          offset: options.fetch(:offset, 0),
+          account_id: options[:account_id],
+          batch_id: options[:batch_id],
+          item_id: options[:item_id],
+          transaction_type: options[:transaction_type],
+          transaction_type_method: options[:transaction_type_method],
+          direction: options[:direction],
+          created_before: options[:created_before],
+          created_after: options[:created_after],
+          disbursement_bank: options[:disbursement_bank],
+          processing_bank: options[:processing_bank]
+        }.compact
       end
     end
   end

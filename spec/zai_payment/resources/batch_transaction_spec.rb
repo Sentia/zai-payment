@@ -33,6 +33,80 @@ RSpec.describe ZaiPayment::Resources::BatchTransaction do
     stubs.verify_stubbed_calls
   end
 
+  describe '#list' do
+    context 'with default parameters' do
+      before do
+        stubs.get('/batch_transactions') do |env|
+          [200, { 'Content-Type' => 'application/json' }, list_data] if env.params['limit'] == '10'
+        end
+      end
+
+      let(:list_data) do
+        {
+          'batch_transactions' => [
+            {
+              'id' => 12_484,
+              'status' => 12_200,
+              'reference_id' => '7190770-1-2908',
+              'type' => 'disbursement',
+              'type_method' => 'direct_credit'
+            }
+          ],
+          'meta' => { 'limit' => 10, 'offset' => 0, 'total' => 1 }
+        }
+      end
+
+      it 'returns batch transactions list' do
+        response = batch_transaction_resource.list
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.data.first['id']).to eq(12_484)
+      end
+    end
+
+    context 'with filters' do
+      before do
+        stubs.get('/batch_transactions') do |env|
+          response_data = {
+            'batch_transactions' => [],
+            'meta' => { 'limit' => 50, 'offset' => 0, 'total' => 0 }
+          }
+          if env.params['transaction_type'] == 'disbursement'
+            [200, { 'Content-Type' => 'application/json' }, response_data]
+          end
+        end
+      end
+
+      it 'accepts valid filters' do
+        response = batch_transaction_resource.list(
+          transaction_type: 'disbursement',
+          direction: 'credit',
+          limit: 50
+        )
+        expect(response).to be_a(ZaiPayment::Response)
+      end
+    end
+
+    context 'with invalid enum values' do
+      it 'raises error for invalid transaction_type' do
+        expect do
+          batch_transaction_resource.list(transaction_type: 'invalid')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /transaction_type must be one of/)
+      end
+
+      it 'raises error for invalid transaction_type_method' do
+        expect do
+          batch_transaction_resource.list(transaction_type_method: 'invalid')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /transaction_type_method must be one of/)
+      end
+
+      it 'raises error for invalid direction' do
+        expect do
+          batch_transaction_resource.list(direction: 'invalid')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /direction must be one of/)
+      end
+    end
+  end
+
   describe '#export_transactions' do
     context 'when in prelive environment' do
       before do
