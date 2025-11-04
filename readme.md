@@ -22,6 +22,8 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 - 👥 **User Management** - Create and manage payin (buyers) & payout (sellers) users  
 - 📦 **Item Management** - Full CRUD for transactions/payments between buyers and sellers  
 - 🏦 **Bank Account Management** - Complete CRUD + validation for AU/UK bank accounts  
+- 💳 **BPay Account Management** - Manage BPay accounts for Australian bill payments  
+- 💼 **Wallet Account Management** - Show wallet accounts, check balances, and pay bills via BPay  
 - 🎫 **Token Auth** - Generate secure tokens for bank and card account data collection  
 - 🪝 **Webhooks** - Full CRUD + secure signature verification (HMAC SHA256)  
 - 🧪 **Batch Transactions** - Prelive-only endpoints for testing batch transaction flows  
@@ -116,6 +118,48 @@ Manage bank accounts for Australian and UK users, with routing number validation
 - 💡 [Bank Account Examples](examples/bank_accounts.md) - Real-world patterns and integration
 - 🔗 [Zai: Bank Accounts API Reference](https://developer.hellozai.com/reference/showbankaccount)
 
+### BPay Accounts
+
+Manage BPay accounts for Australian bill payments.
+
+**📚 Documentation:**
+- 📖 [BPay Account Management Guide](docs/bpay_accounts.md) - Complete guide for BPay accounts
+- 💡 [BPay Account Examples](examples/bpay_accounts.md) - Real-world patterns and bill payment workflows
+- 🔗 [Zai: BPay Accounts API Reference](https://developer.hellozai.com/reference/createbpayaccount)
+
+### Wallet Accounts
+
+Manage wallet accounts, check balances, and pay bills via BPay.
+
+**📚 Documentation:**
+- 📖 [Wallet Account Management Guide](docs/wallet_accounts.md) - Complete guide for wallet accounts
+- 💡 [Wallet Account Examples](examples/wallet_accounts.md) - Real-world patterns and payment workflows
+- 🔗 [Zai: Wallet Accounts API Reference](https://developer.hellozai.com/reference)
+
+**Quick Example:**
+```ruby
+wallet_accounts = ZaiPayment::Resources::WalletAccount.new
+
+# Check wallet balance
+response = wallet_accounts.show('wallet_account_id')
+balance = response.data['balance']  # in cents
+puts "Balance: $#{balance / 100.0}"
+
+# Pay a bill from wallet to BPay account
+payment_response = wallet_accounts.pay_bill(
+  'wallet_account_id',
+  account_id: 'bpay_account_id',
+  amount: 17300,  # $173.00 in cents
+  reference_id: 'bill_nov_2024'
+)
+
+if payment_response.success?
+  disbursement = payment_response.data
+  puts "Payment successful: #{disbursement['id']}"
+  puts "State: #{disbursement['state']}"
+end
+```
+
 ### Token Auth
 
 Generate secure tokens for collecting bank and card account information.
@@ -197,11 +241,12 @@ end
 | ✅ Users                        | Manage PayIn / PayOut users       | Done           |
 | ✅ Items                        | Transactions/payments (CRUD)      | Done           |
 | ✅ Bank Accounts                | AU/UK bank accounts + validation  | Done           |
+| ✅ BPay Accounts                | Manage BPay accounts              | Done           |
+| ✅ Wallet Accounts              | Show, check balance, pay bills    | Done           |
 | ✅ Token Auth                   | Generate bank/card tokens         | Done           |
 | ✅ Batch Transactions (Prelive) | Simulate batch processing flows   | Done           |
-| 💳 Payments                     | Single and recurring payments     | 🚧 In progress |
+| ✅ Payments                     | Single and recurring payments     | Done           |
 | 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
-| 💼 Wallets                      | Create and manage wallet accounts | ⏳ Planned      |
 
 ## 🧪 Development
 
@@ -258,6 +303,8 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 - [**User Management Guide**](docs/users.md) - Managing payin and payout users
 - [**Item Management Guide**](docs/items.md) - Creating and managing transactions/payments
 - [**Bank Account Guide**](docs/bank_accounts.md) - Managing bank accounts for AU/UK users
+- [**BPay Account Guide**](docs/bpay_accounts.md) - Managing BPay accounts for Australian bill payments
+- [**Wallet Account Guide**](docs/wallet_accounts.md) - Managing wallet accounts, checking balances, and paying bills
 - [**Webhook Examples**](examples/webhooks.md) - Complete webhook usage guide
 - [**Documentation Index**](docs/readme.md) - Full documentation navigation
 
@@ -265,6 +312,8 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 - [User Examples](examples/users.md) - Real-world user management patterns
 - [Item Examples](examples/items.md) - Transaction and payment workflows
 - [Bank Account Examples](examples/bank_accounts.md) - Bank account integration patterns
+- [BPay Account Examples](examples/bpay_accounts.md) - BPay account integration patterns
+- [Wallet Account Examples](examples/wallet_accounts.md) - Wallet account and bill payment workflows
 - [Token Auth Examples](examples/token_auths.md) - Secure token generation and integration
 - [Webhook Examples](examples/webhooks.md) - Webhook integration patterns
 - [Batch Transaction Examples](examples/batch_transactions.md) - Testing batch transaction flows (prelive only)

@@ -1,5 +1,88 @@
 ## [Released]
 
+## [2.7.0] - 2025-11-04
+
+### Added
+- **Batch Transactions Resource**: Complete batch transaction management for testing in prelive environment 🔄
+  - `ZaiPayment.batch_transactions.export_transactions` - Export pending transactions to batched state
+  - `ZaiPayment.batch_transactions.process_to_bank_processing(batch_id, exported_ids:)` - Move batch to bank_processing state
+  - `ZaiPayment.batch_transactions.process_to_successful(batch_id, exported_ids:)` - Complete batch processing (triggers webhooks)
+  - `ZaiPayment.batch_transactions.show_batches` - List all batches
+  - `ZaiPayment.batch_transactions.show_batch(batch_id)` - Get specific batch details
+  - `ZaiPayment.batch_transactions.show_transactions(batch_id, limit:, offset:)` - List transactions in a batch with pagination
+  - Prelive-only endpoints for testing transaction processing workflows
+  - Full RSpec test suite with 20+ test examples
+  - Comprehensive documentation in `docs/batch_transactions.md`
+  - Practical examples in `examples/batch_transactions.md`
+
+- **Wallet Account Resource**: Complete wallet account management for Australian payments 💼
+  - `ZaiPayment.wallet_accounts.show(wallet_account_id)` - Get wallet account details including balance
+  - `ZaiPayment.wallet_accounts.show_user(wallet_account_id)` - Get user associated with wallet account
+  - `ZaiPayment.wallet_accounts.show_npp_details(wallet_account_id)` - Get NPP (New Payments Platform) details including PayID
+  - `ZaiPayment.wallet_accounts.show_bpay_details(wallet_account_id)` - Get BPay details including biller code and reference
+  - `ZaiPayment.wallet_accounts.pay_bill(wallet_account_id, account_id:, amount:, reference_id:)` - Pay bills via BPay from wallet
+  - Support for checking wallet balances before transactions
+  - Support for NPP payments with PayID
+  - Support for BPay bill payments
+  - Validation for payment amounts and reference IDs
+  - Full RSpec test suite with 35+ test examples across 5 describe blocks
+  - Comprehensive documentation in `docs/wallet_accounts.md`
+  - Practical examples in `examples/wallet_accounts.md`
+
+### Documentation
+- **Batch Transactions Guide** (`docs/batch_transactions.md`):
+  - Complete guide for all 6 batch transaction endpoints
+  - Detailed workflow for simulating batch processing
+  - State transition diagrams and examples
+  - Error handling patterns for batch operations
+  - Important notes about prelive-only usage
+  
+- **Batch Transactions Examples** (`examples/batch_transactions.md`):
+  - Export transactions examples (3 examples)
+  - Process to bank_processing examples (3 examples)
+  - Process to successful examples (3 examples)
+  - Show batches and transactions examples (6 examples)
+  - Complete workflow patterns
+  - Rails integration examples
+  - Webhook simulation workflows
+
+- **Wallet Accounts Guide** (`docs/wallet_accounts.md`):
+  - Complete guide for all 5 wallet account endpoints
+  - Balance checking and payment workflows
+  - NPP PayID integration examples
+  - BPay bill payment patterns
+  - Validation rules and error handling
+  - Four comprehensive use cases:
+    - Balance verification before payment
+    - Multiple bill payments workflow
+    - User verification for payments
+    - Disbursement status monitoring
+
+- **Wallet Accounts Examples** (`examples/wallet_accounts.md`):
+  - Show wallet account examples (3 examples)
+  - Show user examples (3 examples)
+  - NPP details examples
+  - BPay details examples
+  - Pay bill examples (3 examples)
+  - Three common patterns:
+    - Complete payment workflow
+    - Wallet payment service class
+    - Rails controller integration
+
+### Enhanced
+- **Response Class**: Added `disbursements` to `RESPONSE_DATA_KEYS` for automatic data extraction
+  - `response.data` now properly extracts disbursement objects from pay_bill responses
+  - Consistent with other resource response handling
+
+### Updated
+- **README.md**: 
+  - Added Wallet Accounts to features section
+  - Added Batch Transactions documentation links
+  - Updated roadmap to mark Payments as Done
+  - Added quick start examples for wallet account operations
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.6.1...v2.7.0
+
 ## [2.6.1] - 2025-11-03
 
 ### Changed
