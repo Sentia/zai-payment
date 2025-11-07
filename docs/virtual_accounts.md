@@ -136,6 +136,76 @@ The response contains an array of virtual account objects. Each object has the s
 - Monitor account statuses across multiple properties
 - Generate reports on virtual account usage
 
+### Show Virtual Account
+
+Show details of a specific Virtual Account using the given virtual account ID.
+
+#### Parameters
+
+- `virtual_account_id` (required) - The virtual account ID
+
+#### Example
+
+```ruby
+# Get specific virtual account details
+response = virtual_accounts.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+# Access virtual account details
+if response.success?
+  account = response.data
+  
+  puts "Virtual Account: #{account['account_name']}"
+  puts "Status: #{account['status']}"
+  puts "BSB: #{account['routing_number']}"
+  puts "Account Number: #{account['account_number']}"
+  puts "Currency: #{account['currency']}"
+  
+  # Access AKA names
+  account['aka_names'].each do |aka_name|
+    puts "AKA: #{aka_name}"
+  end
+end
+```
+
+#### Response
+
+```ruby
+{
+  "virtual_accounts" => {
+    "id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc",
+    "routing_number" => "123456",
+    "account_number" => "100000017",
+    "currency" => "AUD",
+    "user_external_id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc",
+    "wallet_account_id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc",
+    "status" => "active",
+    "created_at" => "2020-04-27T20:28:22.378Z",
+    "updated_at" => "2020-04-27T20:28:22.378Z",
+    "account_type" => "NIND",
+    "full_legal_account_name" => "Prop Tech Marketplace",
+    "account_name" => "Real Estate Agency X",
+    "aka_names" => [
+      "Realestate Agency X",
+      "Realestate Agency X of PropTech Marketplace"
+    ],
+    "merchant_id" => "46deb476c1a641eb8eb726a695bbe5bc"
+  }
+}
+```
+
+**Response Fields:**
+
+The response contains a single virtual account object with all the fields described in the Create Virtual Account section.
+
+**Use Cases:**
+
+- Verify virtual account details before sharing with customers
+- Check account status before processing payments
+- Generate payment instructions for customers
+- Audit specific virtual account configurations
+- Validate account information
+- Monitor individual account updates
+
 ### Create Virtual Account
 
 Create a Virtual Account for a given Wallet Account. This generates unique bank account details that can be used to receive funds.

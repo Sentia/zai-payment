@@ -6,6 +6,7 @@ This document provides practical examples for managing virtual accounts in Zai P
 
 - [Setup](#setup)
 - [List Virtual Accounts Example](#list-virtual-accounts-example)
+- [Show Virtual Account Example](#show-virtual-account-example)
 - [Create Virtual Account Example](#create-virtual-account-example)
 - [Common Patterns](#common-patterns)
 
@@ -175,6 +176,254 @@ if response.success?
 else
   puts "Failed to retrieve virtual accounts"
 end
+```
+
+## Show Virtual Account Example
+
+### Example 1: Get Virtual Account Details
+
+Retrieve details of a specific virtual account by its ID.
+
+```ruby
+# Get virtual account details
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+if response.success?
+  account = response.data
+  
+  puts "Virtual Account Details:"
+  puts "─" * 60
+  puts "ID: #{account['id']}"
+  puts "Account Name: #{account['account_name']}"
+  puts "Status: #{account['status']}"
+  puts ""
+  puts "Banking Details:"
+  puts "  BSB (Routing Number): #{account['routing_number']}"
+  puts "  Account Number: #{account['account_number']}"
+  puts "  Currency: #{account['currency']}"
+  puts ""
+  puts "Account Information:"
+  puts "  Account Type: #{account['account_type']}"
+  puts "  Full Legal Name: #{account['full_legal_account_name']}"
+  puts "  Merchant ID: #{account['merchant_id']}"
+  puts ""
+  puts "Associated IDs:"
+  puts "  Wallet Account ID: #{account['wallet_account_id']}"
+  puts "  User External ID: #{account['user_external_id']}"
+  puts ""
+  puts "AKA Names:"
+  account['aka_names'].each do |aka_name|
+    puts "  - #{aka_name}"
+  end
+  puts ""
+  puts "Timestamps:"
+  puts "  Created: #{account['created_at']}"
+  puts "  Updated: #{account['updated_at']}"
+  puts "─" * 60
+else
+  puts "Failed to retrieve virtual account"
+  puts "Error: #{response.error}"
+end
+```
+
+### Example 2: Check Virtual Account Status
+
+Check if a virtual account is active before proceeding with operations.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+begin
+  response = virtual_accounts.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+  
+  if response.success?
+    account = response.data
+    
+    case account['status']
+    when 'active'
+      puts "✓ Virtual account is active and ready to receive payments"
+      puts "  BSB: #{account['routing_number']}"
+      puts "  Account: #{account['account_number']}"
+      puts "  Name: #{account['account_name']}"
+    when 'pending_activation'
+      puts "⏳ Virtual account is pending activation"
+      puts "  Please wait for activation to complete"
+    when 'inactive'
+      puts "✗ Virtual account is inactive"
+      puts "  Cannot receive payments at this time"
+    else
+      puts "⚠ Unknown status: #{account['status']}"
+    end
+  end
+  
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Virtual account not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API Error: #{e.message}"
+end
+```
+
+### Example 3: Get Payment Instructions
+
+Generate payment instructions for customers based on virtual account details.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+if response.success?
+  account = response.data
+  
+  if account['status'] == 'active'
+    puts "Payment Instructions for #{account['account_name']}"
+    puts "=" * 60
+    puts ""
+    puts "To make a payment, please transfer funds to:"
+    puts ""
+    puts "  Account Name: #{account['account_name']}"
+    puts "  BSB: #{account['routing_number']}"
+    puts "  Account Number: #{account['account_number']}"
+    puts ""
+    puts "Please use one of the following names when making the transfer:"
+    account['aka_names'].each_with_index do |aka_name, index|
+      puts "  #{index + 1}. #{aka_name}"
+    end
+    puts ""
+    puts "Currency: #{account['currency']}"
+    puts "=" * 60
+  else
+    puts "This virtual account is not active yet."
+    puts "Status: #{account['status']}"
+  end
+end
+```
+
+### Example 4: Using Convenience Method
+
+Use the convenience method from ZaiPayment module.
+
+```ruby
+# Using convenience accessor
+response = ZaiPayment.virtual_accounts.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+if response.success?
+  account = response.data
+  puts "Account: #{account['account_name']}"
+  puts "Status: #{account['status']}"
+  puts "BSB: #{account['routing_number']} | Account: #{account['account_number']}"
+end
+```
+
+### Example 5: Validate Virtual Account Before Payment
+
+Validate virtual account details before initiating a payment.
+
+```ruby
+def validate_virtual_account(virtual_account_id)
+  virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+  
+  begin
+    response = virtual_accounts.show(virtual_account_id)
+    
+    if response.success?
+      account = response.data
+      
+      # Validation checks
+      errors = []
+      errors << "Account is not active" unless account['status'] == 'active'
+      errors << "Missing routing number" unless account['routing_number']
+      errors << "Missing account number" unless account['account_number']
+      errors << "Currency mismatch" unless account['currency'] == 'AUD'
+      
+      if errors.empty?
+        {
+          valid: true,
+          account: account,
+          payment_details: {
+            bsb: account['routing_number'],
+            account_number: account['account_number'],
+            account_name: account['account_name']
+          }
+        }
+      else
+        {
+          valid: false,
+          errors: errors,
+          account: account
+        }
+      end
+    else
+      {
+        valid: false,
+        errors: ['Failed to retrieve virtual account']
+      }
+    end
+    
+  rescue ZaiPayment::Errors::NotFoundError
+    {
+      valid: false,
+      errors: ['Virtual account not found']
+    }
+  rescue ZaiPayment::Errors::ApiError => e
+    {
+      valid: false,
+      errors: ["API Error: #{e.message}"]
+    }
+  end
+end
+
+# Usage
+result = validate_virtual_account('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+if result[:valid]
+  puts "✓ Virtual account is valid"
+  puts "Payment Details:"
+  puts "  BSB: #{result[:payment_details][:bsb]}"
+  puts "  Account: #{result[:payment_details][:account_number]}"
+  puts "  Name: #{result[:payment_details][:account_name]}"
+else
+  puts "✗ Virtual account validation failed:"
+  result[:errors].each { |error| puts "  - #{error}" }
+end
+```
+
+### Example 6: Compare Multiple Virtual Accounts
+
+Retrieve and compare multiple virtual accounts.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+account_ids = [
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+]
+
+puts "Virtual Account Comparison"
+puts "=" * 80
+
+account_ids.each do |account_id|
+  begin
+    response = virtual_accounts.show(account_id)
+    
+    if response.success?
+      account = response.data
+      puts "\n#{account['account_name']}"
+      puts "  ID: #{account_id[0..7]}..."
+      puts "  Status: #{account['status']}"
+      puts "  BSB: #{account['routing_number']} | Account: #{account['account_number']}"
+      puts "  Created: #{Date.parse(account['created_at']).strftime('%Y-%m-%d')}"
+    end
+  rescue ZaiPayment::Errors::NotFoundError
+    puts "\n#{account_id[0..7]}..."
+    puts "  Status: Not Found"
+  end
+end
+
+puts "\n#{'=' * 80}"
 ```
 
 ## Create Virtual Account Example

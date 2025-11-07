@@ -4,7 +4,7 @@ module ZaiPayment
   module Resources
     # VirtualAccount resource for managing Zai virtual accounts
     #
-    # @see https://developer.hellozai.com/reference
+    # @see https://developer.hellozai.com/reference/createvirtualaccount
     class VirtualAccount
       attr_reader :client
 
@@ -35,6 +35,22 @@ module ZaiPayment
         client.get("/wallet_accounts/#{wallet_account_id}/virtual_accounts")
       end
 
+      # Show a specific Virtual Account
+      #
+      # @param virtual_account_id [String] the virtual account ID
+      # @return [Response] the API response containing virtual account details
+      #
+      # @example Get virtual account details
+      #   virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+      #   response = virtual_accounts.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+      #   response.data # => {"id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc", ...}
+      #
+      # @see https://developer.hellozai.com/reference/showvirtualaccount
+      def show(virtual_account_id)
+        validate_id!(virtual_account_id, 'virtual_account_id')
+        client.get("/virtual_accounts/#{virtual_account_id}")
+      end
+
       # Create a Virtual Account for a given Wallet Account
       #
       # @param wallet_account_id [String] the wallet account ID
@@ -52,7 +68,7 @@ module ZaiPayment
       #   )
       #   response.data # => {"id" => "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", ...}
       #
-      # @see https://developer.hellozai.com/reference
+      # @see https://developer.hellozai.com/reference/listvirtualaccountbywalletaccount
       def create(wallet_account_id, **attributes)
         validate_id!(wallet_account_id, 'wallet_account_id')
         validate_create_attributes!(attributes)

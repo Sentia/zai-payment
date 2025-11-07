@@ -204,6 +204,136 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
     end
   end
 
+  describe '#show' do
+    let(:virtual_account_data) do
+      {
+        'virtual_accounts' => {
+          'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+          'routing_number' => '123456',
+          'account_number' => '100000017',
+          'currency' => 'AUD',
+          'user_external_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+          'wallet_account_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+          'status' => 'active',
+          'created_at' => '2020-04-27T20:28:22.378Z',
+          'updated_at' => '2020-04-27T20:28:22.378Z',
+          'account_type' => 'NIND',
+          'full_legal_account_name' => 'Prop Tech Marketplace',
+          'account_name' => 'Real Estate Agency X',
+          'aka_names' => ['Realestate Agency X', 'Realestate Agency X of PropTech Marketplace'],
+          'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
+        }
+      }
+    end
+
+    context 'when virtual account exists' do
+      before do
+        stubs.get('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc') do
+          [200, { 'Content-Type' => 'application/json' }, virtual_account_data]
+        end
+      end
+
+      it 'returns the correct response type and virtual account details' do
+        response = virtual_account_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+        expect(response.data['id']).to eq('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+      end
+
+      it 'returns virtual account with correct details' do
+        response = virtual_account_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response.data['account_name']).to eq('Real Estate Agency X')
+        expect(response.data['status']).to eq('active')
+        expect(response.data['currency']).to eq('AUD')
+      end
+
+      it 'includes banking details' do
+        response = virtual_account_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response.data['routing_number']).to eq('123456')
+        expect(response.data['account_number']).to eq('100000017')
+      end
+
+      it 'includes aka_names array' do
+        response = virtual_account_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response.data['aka_names']).to be_an(Array)
+        expect(response.data['aka_names'].length).to eq(2)
+      end
+    end
+
+    context 'when virtual_account_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { virtual_account_resource.show('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /virtual_account_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { virtual_account_resource.show(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /virtual_account_id/)
+      end
+
+      it 'raises a ValidationError for whitespace only' do
+        expect { virtual_account_resource.show('   ') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /virtual_account_id/)
+      end
+    end
+
+    context 'when virtual account does not exist' do
+      before do
+        stubs.get('/virtual_accounts/invalid_id') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { virtual_account_resource.show('invalid_id') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when API returns bad request' do
+      before do
+        stubs.get('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc') do
+          [400, { 'Content-Type' => 'application/json' }, { 'errors' => 'Bad request' }]
+        end
+      end
+
+      it 'raises a BadRequestError' do
+        expect { virtual_account_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc') }
+          .to raise_error(ZaiPayment::Errors::BadRequestError)
+      end
+    end
+
+    context 'when API returns unauthorized' do
+      before do
+        stubs.get('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc') do
+          [401, { 'Content-Type' => 'application/json' }, { 'errors' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect { virtual_account_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc') }
+          .to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+
+    context 'when API returns forbidden' do
+      before do
+        stubs.get('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc') do
+          [403, { 'Content-Type' => 'application/json' }, { 'errors' => 'Forbidden' }]
+        end
+      end
+
+      it 'raises a ForbiddenError' do
+        expect { virtual_account_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc') }
+          .to raise_error(ZaiPayment::Errors::ForbiddenError)
+      end
+    end
+  end
+
   describe '#create' do
     let(:virtual_account_data) do
       {
