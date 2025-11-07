@@ -206,6 +206,169 @@ The response contains a single virtual account object with all the fields descri
 - Validate account information
 - Monitor individual account updates
 
+### Update AKA Names
+
+Update (replace) the list of AKA Names for a Virtual Account. This operation completely replaces the existing AKA names with the new list provided.
+
+#### Parameters
+
+- `virtual_account_id` (required) - The virtual account ID
+- `aka_names` (required) - Array of AKA names (0 to 3 items)
+
+#### Example
+
+```ruby
+# Update AKA names
+response = virtual_accounts.update_aka_names(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  ['Updated Name 1', 'Updated Name 2']
+)
+
+# Access updated virtual account
+if response.success?
+  account = response.data
+  
+  puts "Updated AKA names for: #{account['account_name']}"
+  account['aka_names'].each do |aka_name|
+    puts "  - #{aka_name}"
+  end
+end
+
+# Clear all AKA names
+response = virtual_accounts.update_aka_names(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  []
+)
+```
+
+#### Response
+
+The response contains the complete updated virtual account object with the same structure as the Show Virtual Account response.
+
+**Use Cases:**
+
+- Update AKA names after business name changes
+- Add or remove alternative names for better CoP matching
+- Clear AKA names when no longer needed
+- Standardize naming across virtual accounts
+- Update names based on customer feedback
+- Maintain up-to-date payment reference information
+
+### Update Account Name
+
+Update (change) the name of a Virtual Account. This is used in CoP lookups.
+
+#### Parameters
+
+- `virtual_account_id` (required) - The virtual account ID
+- `account_name` (required) - The new account name (max 140 characters)
+
+#### Example
+
+```ruby
+# Update account name
+response = virtual_accounts.update_account_name(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'New Real Estate Agency Name'
+)
+
+# Access updated virtual account
+if response.success?
+  account = response.data
+  
+  puts "Account name updated successfully"
+  puts "New name: #{account['account_name']}"
+  puts "Virtual Account ID: #{account['id']}"
+end
+```
+
+#### Response
+
+The response contains the complete updated virtual account object with the same structure as the Show Virtual Account response.
+
+**Use Cases:**
+
+- Update account name after business rebranding
+- Change name to match legal business name changes
+- Correct misspellings or formatting issues
+- Update names for better CoP matching
+- Align virtual account names with organizational changes
+- Update names for regulatory compliance
+
+### Update Status
+
+Update the status of a Virtual Account. Currently, this endpoint only supports closing virtual accounts by setting the status to 'closed'. This is an asynchronous operation that returns a 202 Accepted response.
+
+**Important:** Once a virtual account is closed, it cannot be reopened and will no longer be able to receive payments.
+
+#### Parameters
+
+- `virtual_account_id` (required) - The virtual account ID
+- `status` (required) - The new status (must be 'closed')
+
+#### Example
+
+```ruby
+# Close a virtual account
+response = virtual_accounts.update_status(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'closed'
+)
+
+# Check the response
+if response.success?
+  puts "Virtual account closure initiated"
+  puts "ID: #{response.data['id']}"
+  puts "Message: #{response.data['message']}"
+  puts "Link: #{response.data['links']['self']}"
+  
+  # Note: The operation is asynchronous
+  # Use the show method to check the current status
+  sleep(2)  # Wait a moment
+  
+  show_response = virtual_accounts.show(response.data['id'])
+  puts "Current status: #{show_response.data['status']}"
+end
+```
+
+#### Response
+
+```ruby
+{
+  "id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc",
+  "message" => "Virtual Account update has been accepted for processing",
+  "links" => {
+    "self" => "/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc"
+  }
+}
+```
+
+**Response Fields:**
+
+- `id` - The virtual account ID
+- `message` - Confirmation message about the status update
+- `links` - Object containing related resource links
+  - `self` - URL to the virtual account resource
+
+**Use Cases:**
+
+- Close unused virtual accounts to maintain clean account lists
+- Deactivate accounts when a customer relationship ends
+- Close accounts as part of account cleanup or migration
+- Permanently disable accounts that should no longer receive payments
+- Close test or temporary accounts after use
+- Implement account lifecycle management
+- Meet regulatory requirements for account closure
+
+**Important Notes:**
+
+- This operation returns 202 Accepted because it's processed asynchronously
+- The actual status change may take a few moments to complete
+- Use the `show` method to verify the status has been updated
+- Only 'closed' is a valid status value; other values will raise a ValidationError
+- Closed accounts cannot be reopened
+- Ensure no pending transactions before closing an account
+
 ### Create Virtual Account
 
 Create a Virtual Account for a given Wallet Account. This generates unique bank account details that can be used to receive funds.

@@ -8,6 +8,9 @@ This document provides practical examples for managing virtual accounts in Zai P
 - [List Virtual Accounts Example](#list-virtual-accounts-example)
 - [Show Virtual Account Example](#show-virtual-account-example)
 - [Create Virtual Account Example](#create-virtual-account-example)
+- [Update AKA Names Example](#update-aka-names-example)
+- [Update Account Name Example](#update-account-name-example)
+- [Update Status Example](#update-status-example)
 - [Common Patterns](#common-patterns)
 
 ## Setup
@@ -565,6 +568,694 @@ rescue ZaiPayment::Errors::NotFoundError => e
 rescue ZaiPayment::Errors::UnauthorizedError => e
   puts "Unauthorized: #{e.message}"
   puts "Please check your API credentials"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API Error: #{e.message}"
+end
+```
+
+## Update AKA Names Example
+
+### Example 1: Update AKA Names for a Virtual Account
+
+Replace the list of AKA names for a virtual account.
+
+```ruby
+# Update AKA names
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.update_aka_names(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  ['Updated Name 1', 'Updated Name 2', 'Updated Name 3']
+)
+
+if response.success?
+  account = response.data
+  puts "AKA Names Updated Successfully!"
+  puts "Virtual Account: #{account['account_name']}"
+  puts "New AKA Names:"
+  account['aka_names'].each_with_index do |aka_name, index|
+    puts "  #{index + 1}. #{aka_name}"
+  end
+else
+  puts "Failed to update AKA names"
+  puts "Error: #{response.error}"
+end
+```
+
+### Example 2: Clear All AKA Names
+
+Remove all AKA names from a virtual account by passing an empty array.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.update_aka_names(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  []
+)
+
+if response.success?
+  puts "All AKA names cleared successfully"
+  puts "Current AKA names: #{response.data['aka_names'].inspect}"
+end
+```
+
+### Example 3: Set Single AKA Name
+
+Update to have just one AKA name.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.update_aka_names(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  ['Preferred Name']
+)
+
+if response.success?
+  account = response.data
+  puts "✓ AKA names updated to single name"
+  puts "  Account: #{account['account_name']}"
+  puts "  AKA: #{account['aka_names'].first}"
+end
+```
+
+### Example 4: Using Convenience Method
+
+Use the convenience method from ZaiPayment module.
+
+```ruby
+# Using convenience accessor
+response = ZaiPayment.virtual_accounts.update_aka_names(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  ['New Name 1', 'New Name 2']
+)
+
+if response.success?
+  puts "Updated AKA names: #{response.data['aka_names'].join(', ')}"
+end
+```
+
+### Example 5: Update After Checking Current Names
+
+Check current AKA names before updating.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+virtual_account_id = '46deb476-c1a6-41eb-8eb7-26a695bbe5bc'
+
+begin
+  # First, show current virtual account
+  show_response = virtual_accounts.show(virtual_account_id)
+  
+  if show_response.success?
+    current_account = show_response.data
+    
+    puts "Current AKA names:"
+    current_account['aka_names'].each { |name| puts "  - #{name}" }
+    
+    # Update with new names
+    new_aka_names = [
+      'Real Estate Agency',
+      'RE Agency',
+      'Property Management'
+    ]
+    
+    update_response = virtual_accounts.update_aka_names(virtual_account_id, new_aka_names)
+    
+    if update_response.success?
+      puts "\n✓ Successfully updated AKA names"
+      puts "New AKA names:"
+      update_response.data['aka_names'].each { |name| puts "  - #{name}" }
+    end
+  end
+  
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation Error: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API Error: #{e.message}"
+end
+```
+
+### Example 6: Bulk Update with Validation
+
+Update AKA names with pre-validation and error handling.
+
+```ruby
+def safely_update_aka_names(virtual_account_id, new_aka_names)
+  # Pre-validate
+  errors = []
+  errors << "aka_names must be an array" unless new_aka_names.is_a?(Array)
+  errors << "Maximum 3 AKA names allowed" if new_aka_names.length > 3
+  errors << "AKA names cannot be empty strings" if new_aka_names.any? { |name| name.to_s.strip.empty? }
+  
+  if errors.any?
+    return {
+      success: false,
+      errors: errors
+    }
+  end
+  
+  virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+  
+  begin
+    response = virtual_accounts.update_aka_names(virtual_account_id, new_aka_names)
+    
+    {
+      success: true,
+      account: response.data,
+      aka_names: response.data['aka_names']
+    }
+  rescue ZaiPayment::Errors::ValidationError => e
+    {
+      success: false,
+      errors: [e.message]
+    }
+  rescue ZaiPayment::Errors::NotFoundError => e
+    {
+      success: false,
+      errors: ['Virtual account not found']
+    }
+  rescue ZaiPayment::Errors::ApiError => e
+    {
+      success: false,
+      errors: ["API Error: #{e.message}"]
+    }
+  end
+end
+
+# Usage
+result = safely_update_aka_names(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  ['Agency A', 'Agency B']
+)
+
+if result[:success]
+  puts "✓ AKA names updated successfully"
+  puts "New names: #{result[:aka_names].join(', ')}"
+else
+  puts "✗ Update failed:"
+  result[:errors].each { |error| puts "  - #{error}" }
+end
+```
+
+## Update Account Name Example
+
+### Example 1: Update Account Name for a Virtual Account
+
+Change the name of a virtual account.
+
+```ruby
+# Update account name
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.update_account_name(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'New Real Estate Agency Name'
+)
+
+if response.success?
+  account = response.data
+  puts "Account Name Updated Successfully!"
+  puts "Virtual Account ID: #{account['id']}"
+  puts "New Account Name: #{account['account_name']}"
+  puts "Status: #{account['status']}"
+else
+  puts "Failed to update account name"
+  puts "Error: #{response.error}"
+end
+```
+
+### Example 2: Update After Business Name Change
+
+Update account name after a business rebranding or name change.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+begin
+  # Show current account first
+  show_response = virtual_accounts.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+  
+  if show_response.success?
+    old_name = show_response.data['account_name']
+    puts "Current account name: #{old_name}"
+    
+    # Update to new name
+    new_name = 'Premium Real Estate Partners'
+    update_response = virtual_accounts.update_account_name(
+      '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+      new_name
+    )
+    
+    if update_response.success?
+      puts "✓ Successfully updated account name"
+      puts "  From: #{old_name}"
+      puts "  To: #{update_response.data['account_name']}"
+    end
+  end
+  
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation Error: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API Error: #{e.message}"
+end
+```
+
+### Example 3: Using Convenience Method
+
+Use the convenience method from ZaiPayment module.
+
+```ruby
+# Using convenience accessor
+response = ZaiPayment.virtual_accounts.update_account_name(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'Updated Property Management Co'
+)
+
+if response.success?
+  puts "Updated account name: #{response.data['account_name']}"
+end
+```
+
+### Example 4: Update with Maximum Length Name
+
+Update with a name at the maximum allowed length (140 characters).
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+# Create a name at exactly 140 characters
+long_name = 'A' * 140
+
+response = virtual_accounts.update_account_name(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  long_name
+)
+
+if response.success?
+  account = response.data
+  puts "✓ Account name updated"
+  puts "  Length: #{account['account_name'].length} characters"
+  puts "  Name: #{account['account_name'][0..50]}..." # Show first 50 chars
+end
+```
+
+### Example 5: Validate Before Updating
+
+Pre-validate the account name before making the API call.
+
+```ruby
+def safely_update_account_name(virtual_account_id, new_account_name)
+  # Pre-validate
+  errors = []
+  
+  if new_account_name.nil? || new_account_name.strip.empty?
+    errors << "Account name cannot be blank"
+  elsif new_account_name.length > 140
+    errors << "Account name must be 140 characters or less (currently #{new_account_name.length})"
+  end
+  
+  if errors.any?
+    return {
+      success: false,
+      errors: errors
+    }
+  end
+  
+  virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+  
+  begin
+    response = virtual_accounts.update_account_name(virtual_account_id, new_account_name)
+    
+    {
+      success: true,
+      account: response.data,
+      account_name: response.data['account_name']
+    }
+  rescue ZaiPayment::Errors::ValidationError => e
+    {
+      success: false,
+      errors: [e.message]
+    }
+  rescue ZaiPayment::Errors::NotFoundError => e
+    {
+      success: false,
+      errors: ['Virtual account not found']
+    }
+  rescue ZaiPayment::Errors::ApiError => e
+    {
+      success: false,
+      errors: ["API Error: #{e.message}"]
+    }
+  end
+end
+
+# Usage
+result = safely_update_account_name(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'New Business Name'
+)
+
+if result[:success]
+  puts "✓ Account name updated successfully"
+  puts "New name: #{result[:account_name]}"
+else
+  puts "✗ Update failed:"
+  result[:errors].each { |error| puts "  - #{error}" }
+end
+```
+
+### Example 6: Update Multiple Virtual Accounts
+
+Update account names for multiple virtual accounts in bulk.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+updates = [
+  { id: '46deb476-c1a6-41eb-8eb7-26a695bbe5bc', name: 'Property A Trust' },
+  { id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', name: 'Property B Trust' }
+]
+
+results = updates.map do |update|
+  begin
+    response = virtual_accounts.update_account_name(update[:id], update[:name])
+    
+    {
+      id: update[:id],
+      success: true,
+      new_name: response.data['account_name']
+    }
+  rescue ZaiPayment::Errors::ApiError => e
+    {
+      id: update[:id],
+      success: false,
+      error: e.message
+    }
+  end
+end
+
+# Display results
+results.each do |result|
+  if result[:success]
+    puts "✓ #{result[:id][0..7]}... → #{result[:new_name]}"
+  else
+    puts "✗ #{result[:id][0..7]}... → #{result[:error]}"
+  end
+end
+
+successes = results.count { |r| r[:success] }
+puts "\nUpdated #{successes} out of #{results.length} virtual accounts"
+```
+
+## Update Status Example
+
+### Example 1: Close a Virtual Account
+
+Close a virtual account by setting its status to 'closed'. This is an asynchronous operation.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+begin
+  response = virtual_accounts.update_status(
+    '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+    'closed'
+  )
+  
+  if response.success?
+    puts "Virtual account closure initiated"
+    puts "ID: #{response.data['id']}"
+    puts "Message: #{response.data['message']}"
+    puts "Link: #{response.data['links']['self']}"
+    puts "\nNote: The status update is being processed asynchronously."
+    puts "Use the show method to check the current status."
+  end
+  
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Virtual account not found: #{e.message}"
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API Error: #{e.message}"
+end
+```
+
+### Example 2: Close and Verify Status
+
+Close a virtual account and verify the status change.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+virtual_account_id = '46deb476-c1a6-41eb-8eb7-26a695bbe5bc'
+
+begin
+  # Get current status
+  current_response = virtual_accounts.show(virtual_account_id)
+  current_status = current_response.data['status']
+  
+  puts "Current status: #{current_status}"
+  
+  if current_status == 'closed'
+    puts "Virtual account is already closed"
+  elsif current_status == 'pending_activation'
+    puts "Virtual account is still pending activation. Cannot close yet."
+  else
+    # Close the account
+    close_response = virtual_accounts.update_status(virtual_account_id, 'closed')
+    
+    if close_response.success?
+      puts "✓ Closure request submitted successfully"
+      puts "Message: #{close_response.data['message']}"
+      
+      # Wait a moment for processing
+      sleep(2)
+      
+      # Check new status
+      updated_response = virtual_accounts.show(virtual_account_id)
+      new_status = updated_response.data['status']
+      
+      puts "\nUpdated status: #{new_status}"
+      puts "Status changed: #{current_status} → #{new_status}"
+    end
+  end
+  
+rescue ZaiPayment::Errors::ApiError => e
+  puts "Error: #{e.message}"
+end
+```
+
+### Example 3: Close Multiple Virtual Accounts
+
+Close multiple virtual accounts in batch.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+account_ids_to_close = [
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+  'cccccccc-dddd-eeee-ffff-000000000000'
+]
+
+results = []
+
+puts "Closing #{account_ids_to_close.length} virtual accounts..."
+puts "─" * 60
+
+account_ids_to_close.each_with_index do |account_id, index|
+  begin
+    response = virtual_accounts.update_status(account_id, 'closed')
+    
+    if response.success?
+      results << {
+        id: account_id,
+        success: true,
+        message: response.data['message']
+      }
+      puts "✓ Account #{index + 1}: #{account_id[0..7]}... - Closure initiated"
+    end
+    
+  rescue ZaiPayment::Errors::NotFoundError => e
+    results << { id: account_id, success: false, error: 'Not found' }
+    puts "✗ Account #{index + 1}: #{account_id[0..7]}... - Not found"
+  rescue ZaiPayment::Errors::ApiError => e
+    results << { id: account_id, success: false, error: e.message }
+    puts "✗ Account #{index + 1}: #{account_id[0..7]}... - #{e.message}"
+  end
+end
+
+puts "─" * 60
+successes = results.count { |r| r[:success] }
+failures = results.count { |r| !r[:success] }
+
+puts "\nResults:"
+puts "  Successful closures: #{successes}"
+puts "  Failed closures: #{failures}"
+```
+
+### Example 4: Safe Close with Confirmation
+
+Close a virtual account with additional safety checks.
+
+```ruby
+def close_virtual_account_safely(virtual_account_id)
+  virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+  
+  begin
+    # First, retrieve the account details
+    account_response = virtual_accounts.show(virtual_account_id)
+    account = account_response.data
+    
+    puts "Virtual Account Details:"
+    puts "  ID: #{account['id']}"
+    puts "  Account Name: #{account['account_name']}"
+    puts "  BSB: #{account['routing_number']}"
+    puts "  Account Number: #{account['account_number']}"
+    puts "  Current Status: #{account['status']}"
+    puts "  Created: #{account['created_at']}"
+    
+    # Check if already closed
+    if account['status'] == 'closed'
+      puts "\n⚠ Account is already closed."
+      return { success: false, reason: 'already_closed' }
+    end
+    
+    # Check if pending activation
+    if account['status'] == 'pending_activation'
+      puts "\n⚠ Account is still pending activation."
+      puts "Consider waiting for activation before closing."
+      return { success: false, reason: 'pending_activation' }
+    end
+    
+    # Proceed with closing
+    puts "\nProceeding to close account..."
+    close_response = virtual_accounts.update_status(virtual_account_id, 'closed')
+    
+    if close_response.success?
+      puts "✓ Account closure initiated successfully"
+      puts "Message: #{close_response.data['message']}"
+      
+      return {
+        success: true,
+        id: close_response.data['id'],
+        message: close_response.data['message']
+      }
+    end
+    
+  rescue ZaiPayment::Errors::NotFoundError => e
+    puts "✗ Virtual account not found: #{virtual_account_id}"
+    return { success: false, reason: 'not_found', error: e.message }
+  rescue ZaiPayment::Errors::ValidationError => e
+    puts "✗ Validation error: #{e.message}"
+    return { success: false, reason: 'validation_error', error: e.message }
+  rescue ZaiPayment::Errors::ApiError => e
+    puts "✗ API Error: #{e.message}"
+    return { success: false, reason: 'api_error', error: e.message }
+  end
+end
+
+# Usage
+result = close_virtual_account_safely('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+puts "\nFinal result: #{result.inspect}"
+```
+
+### Example 5: Close with Status Polling
+
+Close an account and poll for status confirmation.
+
+```ruby
+def close_and_wait_for_confirmation(virtual_account_id, max_attempts = 10, wait_seconds = 3)
+  virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+  
+  begin
+    # Initiate closure
+    puts "Initiating closure for virtual account #{virtual_account_id[0..7]}..."
+    close_response = virtual_accounts.update_status(virtual_account_id, 'closed')
+    
+    unless close_response.success?
+      puts "✗ Failed to initiate closure"
+      return { success: false, reason: 'closure_failed' }
+    end
+    
+    puts "✓ Closure request accepted"
+    puts "Message: #{close_response.data['message']}"
+    puts "\nPolling for status confirmation..."
+    
+    # Poll for status
+    max_attempts.times do |attempt|
+      sleep(wait_seconds)
+      
+      show_response = virtual_accounts.show(virtual_account_id)
+      current_status = show_response.data['status']
+      
+      puts "  Attempt #{attempt + 1}/#{max_attempts}: Status = #{current_status}"
+      
+      if current_status == 'closed'
+        puts "\n✓ Account successfully closed!"
+        return {
+          success: true,
+          status: current_status,
+          attempts: attempt + 1,
+          elapsed_time: (attempt + 1) * wait_seconds
+        }
+      end
+    end
+    
+    puts "\n⚠ Timeout: Status not confirmed as 'closed' after #{max_attempts} attempts"
+    puts "The account may still be processing. Check again later."
+    
+    return {
+      success: false,
+      reason: 'timeout',
+      max_attempts: max_attempts,
+      elapsed_time: max_attempts * wait_seconds
+    }
+    
+  rescue ZaiPayment::Errors::ApiError => e
+    puts "✗ Error: #{e.message}"
+    return { success: false, reason: 'api_error', error: e.message }
+  end
+end
+
+# Usage
+result = close_and_wait_for_confirmation('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+puts "\nResult: #{result.inspect}"
+```
+
+### Example 6: Validate Status Before Closing
+
+Ensure only valid status transitions.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+virtual_account_id = '46deb476-c1a6-41eb-8eb7-26a695bbe5bc'
+
+# Note: Only 'closed' is a valid status value for the update_status method
+valid_status = 'closed'
+
+begin
+  # Attempt to use an invalid status (for demonstration)
+  invalid_status = 'active'
+  
+  begin
+    virtual_accounts.update_status(virtual_account_id, invalid_status)
+  rescue ZaiPayment::Errors::ValidationError => e
+    puts "Expected validation error for invalid status:"
+    puts "  Error: #{e.message}"
+    puts "  Only 'closed' is allowed as a status value"
+  end
+  
+  # Now use the correct status
+  puts "\nUsing valid status: '#{valid_status}'"
+  response = virtual_accounts.update_status(virtual_account_id, valid_status)
+  
+  if response.success?
+    puts "✓ Status update successful"
+    puts "Message: #{response.data['message']}"
+  end
+  
 rescue ZaiPayment::Errors::ApiError => e
   puts "API Error: #{e.message}"
 end

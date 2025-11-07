@@ -77,6 +77,84 @@ module ZaiPayment
         client.post("/wallet_accounts/#{wallet_account_id}/virtual_accounts", body: body)
       end
 
+      # Update AKA Names for a Virtual Account
+      #
+      # Replace the list of AKA Names for a Virtual Account. This completely replaces
+      # the existing AKA names with the new list provided.
+      #
+      # @param virtual_account_id [String] the virtual account ID
+      # @param aka_names [Array<String>] array of AKA names (0 to 3 items)
+      # @return [Response] the API response containing updated virtual account details
+      #
+      # @example Update AKA names
+      #   virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+      #   response = virtual_accounts.update_aka_names(
+      #     '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+      #     ['New Name 1', 'New Name 2']
+      #   )
+      #   response.data # => {"id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc", ...}
+      #
+      # @see https://developer.hellozai.com/reference/updatevirtualaccountakaname
+      def update_aka_names(virtual_account_id, aka_names)
+        validate_id!(virtual_account_id, 'virtual_account_id')
+        validate_aka_names!(aka_names)
+
+        body = { aka_names: aka_names }
+        client.patch("/virtual_accounts/#{virtual_account_id}/aka_names", body: body)
+      end
+
+      # Update Account Name for a Virtual Account
+      #
+      # Change the name of a Virtual Account. This is used in CoP lookups.
+      #
+      # @param virtual_account_id [String] the virtual account ID
+      # @param account_name [String] the new account name (max 140 characters)
+      # @return [Response] the API response containing updated virtual account details
+      #
+      # @example Update account name
+      #   virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+      #   response = virtual_accounts.update_account_name(
+      #     '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+      #     'New Real Estate Agency Name'
+      #   )
+      #   response.data # => {"id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc", ...}
+      #
+      # @see https://developer.hellozai.com/reference/updatevirtualaccountaccountname
+      def update_account_name(virtual_account_id, account_name)
+        validate_id!(virtual_account_id, 'virtual_account_id')
+        validate_account_name!(account_name)
+
+        body = { account_name: account_name }
+        client.patch("/virtual_accounts/#{virtual_account_id}/account_name", body: body)
+      end
+
+      # Update Status for a Virtual Account
+      #
+      # Close a Virtual Account. Once closed, the account cannot be reopened and will
+      # no longer be able to receive payments. This operation is asynchronous and returns
+      # a 202 Accepted response.
+      #
+      # @param virtual_account_id [String] the virtual account ID
+      # @param status [String] the new status (must be 'closed')
+      # @return [Response] the API response containing the operation status
+      #
+      # @example Close a virtual account
+      #   virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+      #   response = virtual_accounts.update_status(
+      #     '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+      #     'closed'
+      #   )
+      #   response.data # => {"id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc", "message" => "...", ...}
+      #
+      # @see https://developer.hellozai.com/reference/updatevirtualaccount
+      def update_status(virtual_account_id, status)
+        validate_id!(virtual_account_id, 'virtual_account_id')
+        validate_status!(status)
+
+        body = { status: status }
+        client.patch("/virtual_accounts/#{virtual_account_id}/status", body: body)
+      end
+
       private
 
       def validate_id!(value, field_name)
@@ -107,6 +185,14 @@ module ZaiPayment
         return unless aka_names.length > 3
 
         raise Errors::ValidationError, 'aka_names must contain between 0 and 3 items'
+      end
+
+      def validate_status!(status)
+        raise Errors::ValidationError, 'status cannot be blank' if status.nil? || status.to_s.strip.empty?
+
+        return if status.to_s == 'closed'
+
+        raise Errors::ValidationError, "status must be 'closed', got '#{status}'"
       end
 
       def build_create_body(attributes)
