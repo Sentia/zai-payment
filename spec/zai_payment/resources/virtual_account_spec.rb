@@ -207,22 +207,20 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
   describe '#show' do
     let(:virtual_account_data) do
       {
-        'virtual_accounts' => {
-          'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'routing_number' => '123456',
-          'account_number' => '100000017',
-          'currency' => 'AUD',
-          'user_external_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'wallet_account_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'status' => 'active',
-          'created_at' => '2020-04-27T20:28:22.378Z',
-          'updated_at' => '2020-04-27T20:28:22.378Z',
-          'account_type' => 'NIND',
-          'full_legal_account_name' => 'Prop Tech Marketplace',
-          'account_name' => 'Real Estate Agency X',
-          'aka_names' => ['Realestate Agency X', 'Realestate Agency X of PropTech Marketplace'],
-          'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
-        }
+        'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'routing_number' => '123456',
+        'account_number' => '100000017',
+        'currency' => 'AUD',
+        'user_external_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'wallet_account_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'status' => 'active',
+        'created_at' => '2020-04-27T20:28:22.378Z',
+        'updated_at' => '2020-04-27T20:28:22.378Z',
+        'account_type' => 'NIND',
+        'full_legal_account_name' => 'Prop Tech Marketplace',
+        'account_name' => 'Real Estate Agency X',
+        'aka_names' => ['Realestate Agency X', 'Realestate Agency X of PropTech Marketplace'],
+        'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
       }
     end
 
@@ -337,22 +335,20 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
   describe '#update_aka_names' do
     let(:updated_virtual_account_data) do
       {
-        'virtual_accounts' => {
-          'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'routing_number' => '123456',
-          'account_number' => '100000017',
-          'currency' => 'AUD',
-          'user_external_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'wallet_account_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'status' => 'active',
-          'created_at' => '2020-04-27T20:28:22.378Z',
-          'updated_at' => '2020-04-27T20:28:22.378Z',
-          'account_type' => 'NIND',
-          'full_legal_account_name' => 'Prop Tech Marketplace',
-          'account_name' => 'Real Estate Agency X',
-          'aka_names' => ['Updated Name 1', 'Updated Name 2'],
-          'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
-        }
+        'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'routing_number' => '123456',
+        'account_number' => '100000017',
+        'currency' => 'AUD',
+        'user_external_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'wallet_account_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'status' => 'active',
+        'created_at' => '2020-04-27T20:28:22.378Z',
+        'updated_at' => '2020-04-27T20:28:22.378Z',
+        'account_type' => 'NIND',
+        'full_legal_account_name' => 'Prop Tech Marketplace',
+        'account_name' => 'Real Estate Agency X',
+        'aka_names' => ['Updated Name 1', 'Updated Name 2'],
+        'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
       }
     end
 
@@ -388,7 +384,7 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
       before do
         stubs.patch('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/aka_names') do
           [200, { 'Content-Type' => 'application/json' },
-           { 'virtual_accounts' => updated_virtual_account_data['virtual_accounts'].merge('aka_names' => []) }]
+           updated_virtual_account_data.merge('aka_names' => [])]
         end
       end
 
@@ -407,8 +403,8 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
     context 'with single aka_name' do
       before do
         stubs.patch('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/aka_names') do
-          updated_data = updated_virtual_account_data['virtual_accounts'].merge('aka_names' => ['Single Name'])
-          [200, { 'Content-Type' => 'application/json' }, { 'virtual_accounts' => updated_data }]
+          updated_data = updated_virtual_account_data.merge('aka_names' => ['Single Name'])
+          [200, { 'Content-Type' => 'application/json' }, updated_data]
         end
       end
 
@@ -426,8 +422,7 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
       before do
         stubs.patch('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/aka_names') do
           [200, { 'Content-Type' => 'application/json' },
-           { 'virtual_accounts' => updated_virtual_account_data['virtual_accounts']
-             .merge('aka_names' => ['Name 1', 'Name 2', 'Name 3']) }]
+           updated_virtual_account_data.merge('aka_names' => ['Name 1', 'Name 2', 'Name 3'])]
         end
       end
 
@@ -531,22 +526,20 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
   describe '#update_account_name' do
     let(:updated_account_data) do
       {
-        'virtual_accounts' => {
-          'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'routing_number' => '123456',
-          'account_number' => '100000017',
-          'currency' => 'AUD',
-          'user_external_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'wallet_account_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
-          'status' => 'active',
-          'created_at' => '2020-04-27T20:28:22.378Z',
-          'updated_at' => '2020-04-27T20:28:22.378Z',
-          'account_type' => 'NIND',
-          'full_legal_account_name' => 'Prop Tech Marketplace',
-          'account_name' => 'Updated Account Name',
-          'aka_names' => ['Realestate Agency X'],
-          'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
-        }
+        'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'routing_number' => '123456',
+        'account_number' => '100000017',
+        'currency' => 'AUD',
+        'user_external_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'wallet_account_id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'status' => 'active',
+        'created_at' => '2020-04-27T20:28:22.378Z',
+        'updated_at' => '2020-04-27T20:28:22.378Z',
+        'account_type' => 'NIND',
+        'full_legal_account_name' => 'Prop Tech Marketplace',
+        'account_name' => 'Updated Account Name',
+        'aka_names' => ['Realestate Agency X'],
+        'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
       }
     end
 
@@ -582,8 +575,8 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
       before do
         stubs.patch('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/account_name') do
           long_name = 'A' * 140
-          updated_data = updated_account_data['virtual_accounts'].merge('account_name' => long_name)
-          [202, { 'Content-Type' => 'application/json' }, { 'virtual_accounts' => updated_data }]
+          updated_data = updated_account_data.merge('account_name' => long_name)
+          [202, { 'Content-Type' => 'application/json' }, updated_data]
         end
       end
 
@@ -850,22 +843,20 @@ RSpec.describe ZaiPayment::Resources::VirtualAccount do
   describe '#create' do
     let(:virtual_account_data) do
       {
-        'virtual_accounts' => {
-          'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-          'routing_number' => '123456',
-          'account_number' => '100000017',
-          'currency' => 'AUD',
-          'wallet_account_id' => 'ae07556e-22ef-11eb-adc1-0242ac120002',
-          'user_external_id' => 'ca12346e-22ef-11eb-adc1-0242ac120002',
-          'status' => 'pending_activation',
-          'created_at' => '2020-04-27T20:28:22.378Z',
-          'updated_at' => '2020-04-27T20:28:22.378Z',
-          'account_type' => 'NIND',
-          'full_legal_account_name' => 'Prop Tech Marketplace',
-          'account_name' => 'Real Estate Agency X',
-          'aka_names' => ['Realestate agency X'],
-          'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
-        }
+        'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        'routing_number' => '123456',
+        'account_number' => '100000017',
+        'currency' => 'AUD',
+        'wallet_account_id' => 'ae07556e-22ef-11eb-adc1-0242ac120002',
+        'user_external_id' => 'ca12346e-22ef-11eb-adc1-0242ac120002',
+        'status' => 'pending_activation',
+        'created_at' => '2020-04-27T20:28:22.378Z',
+        'updated_at' => '2020-04-27T20:28:22.378Z',
+        'account_type' => 'NIND',
+        'full_legal_account_name' => 'Prop Tech Marketplace',
+        'account_name' => 'Real Estate Agency X',
+        'aka_names' => ['Realestate agency X'],
+        'merchant_id' => '46deb476c1a641eb8eb726a695bbe5bc'
       }
     end
 

@@ -1,5 +1,24 @@
 ## [Released]
 
+## [2.8.1] - 2025-11-07
+
+### Fixed
+- **Response Data Extraction Bug**: Fixed `.data` method returning only `routing_number` value instead of full object 🐛
+  - Removed `routing_number` from `RESPONSE_DATA_KEYS` constant - it's a field within responses, not a collection wrapper key
+  - The `.data` method was incorrectly treating `routing_number` as a top-level data key
+  - This caused `response.data` to return just `"803320"` (the routing number) instead of the complete virtual account object
+  - Now properly returns the full response object when no wrapper key is found
+  - Affected resources: Virtual Accounts (and potentially other resources with `routing_number` field)
+  - Updated test mocks to match actual API response format (flat objects for single resources)
+  
+### Changed
+- **Virtual Account Test Fixtures**: Updated response structure to match actual Zai API format
+  - Single resource responses (show, create, update) now return flat objects without wrapper keys
+  - Collection responses (list) continue to use `virtual_accounts` wrapper key
+  - All 87 virtual account tests passing with corrected response structure
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.8.0...v2.8.1
+
 ## [2.8.0] - 2025-11-07
 
 ### Added
