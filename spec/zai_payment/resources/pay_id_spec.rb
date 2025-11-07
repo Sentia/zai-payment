@@ -355,4 +355,295 @@ RSpec.describe ZaiPayment::Resources::PayId do
       end
     end
   end
+
+  describe '#show' do
+    let(:pay_id_data) do
+      {
+        'pay_ids' => {
+          'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+          'pay_id' => 'jsmith@mydomain.com',
+          'type' => 'EMAIL',
+          'status' => 'active',
+          'created_at' => '2020-04-27T20:28:22.378Z',
+          'updated_at' => '2020-04-27T20:28:22.378Z',
+          'details' => {
+            'pay_id_name' => 'J Smith',
+            'owner_legal_name' => 'Mr John Smith'
+          },
+          'links' => {
+            'self' => '/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+            'virtual_accounts' => '/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc'
+          }
+        }
+      }
+    end
+
+    context 'when PayID exists' do
+      before do
+        stubs.get('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc') do
+          [200, { 'Content-Type' => 'application/json' }, pay_id_data]
+        end
+      end
+
+      it 'returns the correct response type and PayID details' do
+        response = pay_id_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+        expect(response.data['id']).to eq('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+      end
+
+      it 'returns PayID with correct details' do
+        response = pay_id_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response.data['pay_id']).to eq('jsmith@mydomain.com')
+        expect(response.data['type']).to eq('EMAIL')
+        expect(response.data['status']).to eq('active')
+      end
+
+      it 'includes details hash' do
+        response = pay_id_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response.data['details']).to be_a(Hash)
+        expect(response.data['details']['pay_id_name']).to eq('J Smith')
+        expect(response.data['details']['owner_legal_name']).to eq('Mr John Smith')
+      end
+
+      it 'includes timestamps' do
+        response = pay_id_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response.data['created_at']).to eq('2020-04-27T20:28:22.378Z')
+        expect(response.data['updated_at']).to eq('2020-04-27T20:28:22.378Z')
+      end
+
+      it 'includes links' do
+        response = pay_id_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+        expect(response.data['links']).to be_a(Hash)
+        expect(response.data['links']['self']).to eq('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+        expect(response.data['links']['virtual_accounts'])
+          .to eq('/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+      end
+    end
+
+    context 'when pay_id_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { pay_id_resource.show('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /pay_id_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { pay_id_resource.show(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /pay_id_id/)
+      end
+
+      it 'raises a ValidationError for whitespace only' do
+        expect { pay_id_resource.show('   ') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /pay_id_id/)
+      end
+    end
+
+    context 'when PayID does not exist' do
+      before do
+        stubs.get('/pay_ids/invalid_id') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { pay_id_resource.show('invalid_id') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when API returns bad request' do
+      before do
+        stubs.get('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc') do
+          [400, { 'Content-Type' => 'application/json' }, { 'errors' => 'Bad request' }]
+        end
+      end
+
+      it 'raises a BadRequestError' do
+        expect { pay_id_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc') }
+          .to raise_error(ZaiPayment::Errors::BadRequestError)
+      end
+    end
+
+    context 'when API returns unauthorized' do
+      before do
+        stubs.get('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc') do
+          [401, { 'Content-Type' => 'application/json' }, { 'errors' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect { pay_id_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc') }
+          .to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+
+    context 'when API returns forbidden' do
+      before do
+        stubs.get('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc') do
+          [403, { 'Content-Type' => 'application/json' }, { 'errors' => 'Forbidden' }]
+        end
+      end
+
+      it 'raises a ForbiddenError' do
+        expect { pay_id_resource.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc') }
+          .to raise_error(ZaiPayment::Errors::ForbiddenError)
+      end
+    end
+  end
+
+  describe '#update_status' do
+    let(:status_update_response_data) do
+      {
+        'id' => '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+        'message' => 'PayID deregistration has been accepted for processing',
+        'links' => {
+          'self' => '/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc'
+        }
+      }
+    end
+
+    context 'when successful' do
+      before do
+        stubs.patch('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/status') do
+          [202, { 'Content-Type' => 'application/json' }, status_update_response_data]
+        end
+      end
+
+      it 'returns the correct response type' do
+        response = pay_id_resource.update_status(
+          '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+          'deregistered'
+        )
+
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the status update acceptance message' do
+        response = pay_id_resource.update_status(
+          '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+          'deregistered'
+        )
+
+        expect(response.data['id']).to eq('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+        expect(response.data['message']).to eq('PayID deregistration has been accepted for processing')
+      end
+
+      it 'includes links in response' do
+        response = pay_id_resource.update_status(
+          '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+          'deregistered'
+        )
+
+        expect(response.data['links']).to be_a(Hash)
+        expect(response.data['links']['self']).to eq('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+      end
+    end
+
+    context 'when pay_id_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { pay_id_resource.update_status('', 'deregistered') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /pay_id_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { pay_id_resource.update_status(nil, 'deregistered') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /pay_id_id/)
+      end
+
+      it 'raises a ValidationError for whitespace only' do
+        expect { pay_id_resource.update_status('   ', 'deregistered') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /pay_id_id/)
+      end
+    end
+
+    context 'when status validation fails' do
+      it 'raises error for blank status' do
+        expect do
+          pay_id_resource.update_status('46deb476-c1a6-41eb-8eb7-26a695bbe5bc', '')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /status cannot be blank/)
+      end
+
+      it 'raises error for nil status' do
+        expect do
+          pay_id_resource.update_status('46deb476-c1a6-41eb-8eb7-26a695bbe5bc', nil)
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /status cannot be blank/)
+      end
+
+      it 'raises error for whitespace only status' do
+        expect do
+          pay_id_resource.update_status('46deb476-c1a6-41eb-8eb7-26a695bbe5bc', '   ')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /status cannot be blank/)
+      end
+
+      it 'raises error for invalid status value' do
+        expect do
+          pay_id_resource.update_status('46deb476-c1a6-41eb-8eb7-26a695bbe5bc', 'active')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /status must be 'deregistered'/)
+      end
+
+      it 'includes the invalid status in error message' do
+        expect do
+          pay_id_resource.update_status('46deb476-c1a6-41eb-8eb7-26a695bbe5bc', 'pending')
+        end.to raise_error(ZaiPayment::Errors::ValidationError, /got 'pending'/)
+      end
+    end
+
+    context 'when PayID does not exist' do
+      before do
+        stubs.patch('/pay_ids/invalid_id/status') do
+          [404, { 'Content-Type' => 'application/json' }, { 'errors' => 'Not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { pay_id_resource.update_status('invalid_id', 'deregistered') }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when API returns bad request' do
+      before do
+        stubs.patch('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/status') do
+          [400, { 'Content-Type' => 'application/json' }, { 'errors' => 'Bad request' }]
+        end
+      end
+
+      it 'raises a BadRequestError' do
+        expect { pay_id_resource.update_status('46deb476-c1a6-41eb-8eb7-26a695bbe5bc', 'deregistered') }
+          .to raise_error(ZaiPayment::Errors::BadRequestError)
+      end
+    end
+
+    context 'when API returns unauthorized' do
+      before do
+        stubs.patch('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/status') do
+          [401, { 'Content-Type' => 'application/json' }, { 'errors' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect { pay_id_resource.update_status('46deb476-c1a6-41eb-8eb7-26a695bbe5bc', 'deregistered') }
+          .to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+
+    context 'when API returns forbidden' do
+      before do
+        stubs.patch('/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc/status') do
+          [403, { 'Content-Type' => 'application/json' }, { 'errors' => 'Forbidden' }]
+        end
+      end
+
+      it 'raises a ForbiddenError' do
+        expect { pay_id_resource.update_status('46deb476-c1a6-41eb-8eb7-26a695bbe5bc', 'deregistered') }
+          .to raise_error(ZaiPayment::Errors::ForbiddenError)
+      end
+    end
+  end
 end

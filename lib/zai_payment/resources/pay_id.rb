@@ -18,6 +18,9 @@ module ZaiPayment
       # Valid PayID types
       VALID_TYPES = %w[EMAIL].freeze
 
+      # Valid PayID statuses for update
+      VALID_STATUSES = %w[deregistered].freeze
+
       def initialize(client: nil)
         @client = client || Client.new(base_endpoint: :va_base)
       end
@@ -53,6 +56,49 @@ module ZaiPayment
 
         body = build_create_body(attributes)
         client.post("/virtual_accounts/#{virtual_account_id}/pay_ids", body: body)
+      end
+
+      # Show a specific PayID
+      #
+      # @param pay_id_id [String] the PayID ID
+      # @return [Response] the API response containing PayID details
+      #
+      # @example Get PayID details
+      #   pay_ids = ZaiPayment::Resources::PayId.new
+      #   response = pay_ids.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+      #   response.data # => {"id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc", ...}
+      #
+      # @see https://developer.hellozai.com/reference/retrieveapayid
+      def show(pay_id_id)
+        validate_id!(pay_id_id, 'pay_id_id')
+        client.get("/pay_ids/#{pay_id_id}")
+      end
+
+      # Update Status for a PayID
+      #
+      # Update the status of a PayID. Currently, this endpoint only supports deregistering
+      # PayIDs by setting the status to 'deregistered'. This is an asynchronous operation
+      # that returns a 202 Accepted response.
+      #
+      # @param pay_id_id [String] the PayID ID
+      # @param status [String] the new status (must be 'deregistered')
+      # @return [Response] the API response containing the operation status
+      #
+      # @example Deregister a PayID
+      #   pay_ids = ZaiPayment::Resources::PayId.new
+      #   response = pay_ids.update_status(
+      #     '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+      #     'deregistered'
+      #   )
+      #   response.data # => {"id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc", "message" => "...", ...}
+      #
+      # @see https://developer.hellozai.com/reference/updatepayidstatus
+      def update_status(pay_id_id, status)
+        validate_id!(pay_id_id, 'pay_id_id')
+        validate_status!(status)
+
+        body = { status: status }
+        client.patch("/pay_ids/#{pay_id_id}/status", body: body)
       end
 
       private
@@ -113,6 +159,15 @@ module ZaiPayment
         return unless owner_legal_name.to_s.length > 140
 
         raise Errors::ValidationError, 'owner_legal_name must be between 1 and 140 characters'
+      end
+
+      def validate_status!(status)
+        raise Errors::ValidationError, 'status cannot be blank' if status.nil? || status.to_s.strip.empty?
+
+        return if VALID_STATUSES.include?(status.to_s)
+
+        raise Errors::ValidationError,
+              "status must be 'deregistered', got '#{status}'"
       end
 
       # rubocop:disable Metrics/AbcSize

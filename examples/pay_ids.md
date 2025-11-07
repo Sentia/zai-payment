@@ -331,6 +331,281 @@ puts "  Successful registrations: #{successes}"
 puts "  Failed registrations: #{failures}"
 ```
 
+## Show PayID Examples
+
+### Example 1: Get PayID Details
+
+Retrieve details of a specific PayID by its ID.
+
+```ruby
+# Get PayID details
+pay_ids = ZaiPayment::Resources::PayId.new
+
+response = pay_ids.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+if response.success?
+  pay_id = response.data
+  
+  puts "PayID Details:"
+  puts "─" * 60
+  puts "ID: #{pay_id['id']}"
+  puts "PayID: #{pay_id['pay_id']}"
+  puts "Type: #{pay_id['type']}"
+  puts "Status: #{pay_id['status']}"
+  puts ""
+  puts "Details:"
+  puts "  PayID Name: #{pay_id['details']['pay_id_name']}"
+  puts "  Owner Legal Name: #{pay_id['details']['owner_legal_name']}"
+  puts ""
+  puts "Timestamps:"
+  puts "  Created: #{pay_id['created_at']}"
+  puts "  Updated: #{pay_id['updated_at']}"
+  puts "─" * 60
+else
+  puts "Failed to retrieve PayID"
+  puts "Error: #{response.error}"
+end
+```
+
+### Example 2: Check PayID Status
+
+Check if a PayID is active before proceeding with operations.
+
+```ruby
+pay_ids = ZaiPayment::Resources::PayId.new
+
+begin
+  response = pay_ids.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+  
+  if response.success?
+    pay_id = response.data
+    
+    case pay_id['status']
+    when 'active'
+      puts "✓ PayID is active and ready to receive payments"
+      puts "  PayID: #{pay_id['pay_id']}"
+      puts "  Type: #{pay_id['type']}"
+    when 'pending_activation'
+      puts "⏳ PayID is pending activation"
+      puts "  Please wait for activation to complete"
+    when 'deregistered'
+      puts "✗ PayID has been deregistered"
+      puts "  Cannot receive payments"
+    else
+      puts "⚠ Unknown status: #{pay_id['status']}"
+    end
+  end
+  
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "PayID not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API Error: #{e.message}"
+end
+```
+
+### Example 3: Display PayID Information to Users
+
+Generate payment instructions for customers based on PayID details.
+
+```ruby
+pay_ids = ZaiPayment::Resources::PayId.new
+
+response = pay_ids.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+if response.success?
+  pay_id = response.data
+  
+  if pay_id['status'] == 'active'
+    puts "Payment Information"
+    puts "=" * 60
+    puts ""
+    puts "You can send payments to:"
+    puts ""
+    puts "  PayID: #{pay_id['pay_id']}"
+    puts "  Type: #{pay_id['type']}"
+    puts "  Name: #{pay_id['details']['pay_id_name']}"
+    puts ""
+    puts "This PayID is registered to:"
+    puts "  #{pay_id['details']['owner_legal_name']}"
+    puts ""
+    puts "=" * 60
+  else
+    puts "This PayID is not active yet."
+    puts "Status: #{pay_id['status']}"
+  end
+end
+```
+
+### Example 4: Validate PayID Before Payment
+
+Validate PayID details before initiating a payment.
+
+```ruby
+def validate_pay_id(pay_id_id)
+  pay_ids = ZaiPayment::Resources::PayId.new
+  
+  begin
+    response = pay_ids.show(pay_id_id)
+    
+    if response.success?
+      pay_id = response.data
+      
+      # Validation checks
+      errors = []
+      errors << "PayID is not active" unless pay_id['status'] == 'active'
+      errors << "Invalid PayID type" unless pay_id['type'] == 'EMAIL'
+      
+      if errors.empty?
+        {
+          valid: true,
+          pay_id: pay_id,
+          payment_info: {
+            pay_id: pay_id['pay_id'],
+            type: pay_id['type'],
+            name: pay_id['details']['pay_id_name']
+          }
+        }
+      else
+        {
+          valid: false,
+          errors: errors,
+          pay_id: pay_id
+        }
+      end
+    else
+      {
+        valid: false,
+        errors: ['Failed to retrieve PayID']
+      }
+    end
+    
+  rescue ZaiPayment::Errors::NotFoundError
+    {
+      valid: false,
+      errors: ['PayID not found']
+    }
+  rescue ZaiPayment::Errors::ApiError => e
+    {
+      valid: false,
+      errors: ["API Error: #{e.message}"]
+    }
+  end
+end
+
+# Usage
+result = validate_pay_id('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+if result[:valid]
+  puts "✓ PayID is valid"
+  puts "Payment Info:"
+  puts "  PayID: #{result[:payment_info][:pay_id]}"
+  puts "  Type: #{result[:payment_info][:type]}"
+  puts "  Name: #{result[:payment_info][:name]}"
+else
+  puts "✗ PayID validation failed:"
+  result[:errors].each { |error| puts "  - #{error}" }
+end
+```
+
+### Example 5: Compare Multiple PayIDs
+
+Retrieve and compare multiple PayIDs.
+
+```ruby
+pay_ids = ZaiPayment::Resources::PayId.new
+
+pay_id_ids = [
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+]
+
+puts "PayID Comparison"
+puts "=" * 80
+
+pay_id_ids.each do |pay_id_id|
+  begin
+    response = pay_ids.show(pay_id_id)
+    
+    if response.success?
+      pay_id = response.data
+      puts "\n#{pay_id['pay_id']}"
+      puts "  ID: #{pay_id_id[0..7]}..."
+      puts "  Status: #{pay_id['status']}"
+      puts "  Type: #{pay_id['type']}"
+      puts "  Created: #{Date.parse(pay_id['created_at']).strftime('%Y-%m-%d')}"
+    end
+  rescue ZaiPayment::Errors::NotFoundError
+    puts "\n#{pay_id_id[0..7]}..."
+    puts "  Status: Not Found"
+  end
+end
+
+puts "\n#{'=' * 80}"
+```
+
+## Update PayID Status Examples
+
+### Example 1: Deregister a PayID
+
+Deregister a PayID by setting its status to 'deregistered'.
+
+```ruby
+pay_ids = ZaiPayment::Resources::PayId.new
+
+begin
+  response = pay_ids.update_status(
+    '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+    'deregistered'
+  )
+  
+  if response.success?
+    puts "PayID deregistration initiated"
+    puts "ID: #{response.data['id']}"
+    puts "Message: #{response.data['message']}"
+    puts "\nNote: The status update is being processed asynchronously."
+  end
+  
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "PayID not found: #{e.message}"
+rescue ZaiPayment::Errors::ValidationError => e
+  puts "Validation error: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API Error: #{e.message}"
+end
+```
+
+### Example 2: Deregister Multiple PayIDs
+
+Deregister multiple PayIDs in batch.
+
+```ruby
+pay_ids = ZaiPayment::Resources::PayId.new
+
+pay_id_ids = [
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+]
+
+results = []
+
+pay_id_ids.each_with_index do |pay_id_id, index|
+  begin
+    response = pay_ids.update_status(pay_id_id, 'deregistered')
+    
+    if response.success?
+      results << { id: pay_id_id, success: true }
+      puts "✓ PayID #{index + 1}: Deregistered"
+    end
+    
+  rescue ZaiPayment::Errors::ApiError => e
+    results << { id: pay_id_id, success: false, error: e.message }
+    puts "✗ PayID #{index + 1}: #{e.message}"
+  end
+end
+
+puts "\nDeregistered #{results.count { |r| r[:success] }} out of #{pay_id_ids.length} PayIDs"
+```
+
 ## Common Patterns
 
 ### Pattern 1: Safe PayID Registration with Retry

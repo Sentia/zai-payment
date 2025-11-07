@@ -128,6 +128,136 @@ end
 - Link email addresses to virtual accounts for payment collection
 - Set up payment collection for businesses and individuals
 
+### Show PayID
+
+Show details of a specific PayID using the given PayID ID.
+
+#### Parameters
+
+- `pay_id_id` (required) - The PayID ID
+
+#### Example
+
+```ruby
+# Get specific PayID details
+pay_ids = ZaiPayment::Resources::PayId.new
+response = pay_ids.show('46deb476-c1a6-41eb-8eb7-26a695bbe5bc')
+
+# Access PayID details
+if response.success?
+  pay_id = response.data
+  
+  puts "PayID: #{pay_id['pay_id']}"
+  puts "Type: #{pay_id['type']}"
+  puts "Status: #{pay_id['status']}"
+  puts "PayID Name: #{pay_id['details']['pay_id_name']}"
+  puts "Owner Legal Name: #{pay_id['details']['owner_legal_name']}"
+end
+```
+
+#### Response
+
+```ruby
+{
+  "pay_ids" => {
+    "id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc",
+    "pay_id" => "jsmith@mydomain.com",
+    "type" => "EMAIL",
+    "status" => "active",
+    "created_at" => "2020-04-27T20:28:22.378Z",
+    "updated_at" => "2020-04-27T20:28:22.378Z",
+    "details" => {
+      "pay_id_name" => "J Smith",
+      "owner_legal_name" => "Mr John Smith"
+    },
+    "links" => {
+      "self" => "/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc",
+      "virtual_accounts" => "/virtual_accounts/46deb476-c1a6-41eb-8eb7-26a695bbe5bc"
+    }
+  }
+}
+```
+
+**Response Fields:**
+
+The response contains a single PayID object with the same fields as described in the Register PayID section.
+
+**Use Cases:**
+
+- Verify PayID details before using
+- Check PayID status
+- Retrieve PayID information for display to users
+- Audit PayID configurations
+- Validate PayID information
+- Monitor PayID updates
+
+### Update PayID Status
+
+Update the status of a PayID. Currently, this endpoint only supports deregistering PayIDs by setting the status to 'deregistered'. This is an asynchronous operation that returns a 202 Accepted response.
+
+**Important:** Once a PayID is deregistered, it cannot be re-registered to the same virtual account.
+
+#### Parameters
+
+- `pay_id_id` (required) - The PayID ID
+- `status` (required) - The new status (must be 'deregistered')
+
+#### Example
+
+```ruby
+# Deregister a PayID
+pay_ids = ZaiPayment::Resources::PayId.new
+
+response = pay_ids.update_status(
+  '46deb476-c1a6-41eb-8eb7-26a695bbe5bc',
+  'deregistered'
+)
+
+# Check the response
+if response.success?
+  puts "PayID deregistration initiated"
+  puts "ID: #{response.data['id']}"
+  puts "Message: #{response.data['message']}"
+  puts "Link: #{response.data['links']['self']}"
+end
+```
+
+#### Response
+
+```ruby
+{
+  "id" => "46deb476-c1a6-41eb-8eb7-26a695bbe5bc",
+  "message" => "PayID deregistration has been accepted for processing",
+  "links" => {
+    "self" => "/pay_ids/46deb476-c1a6-41eb-8eb7-26a695bbe5bc"
+  }
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | String | The PayID ID |
+| `message` | String | Confirmation message about the status update |
+| `links` | Hash | Related resource links |
+| `links.self` | String | URL to the PayID resource |
+
+**Use Cases:**
+
+- Deregister PayIDs when no longer needed
+- Remove PayID from a virtual account
+- Clean up unused payment identifiers
+- Comply with customer requests to remove their email from the system
+- Deactivate PayIDs as part of account closure
+
+**Important Notes:**
+
+- This operation returns 202 Accepted because it's processed asynchronously
+- The actual status change may take a few moments to complete
+- Only 'deregistered' is a valid status value; other values will raise a ValidationError
+- Deregistered PayIDs cannot be re-registered
+
 ## Validation Rules
 
 ### virtual_account_id
