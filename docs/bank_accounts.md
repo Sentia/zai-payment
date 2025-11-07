@@ -117,7 +117,7 @@ Validate a US bank routing number before creating an account. This can be used t
 response = bank_accounts.validate_routing_number('122235821')
 
 if response.success?
-  routing_info = response.data
+  routing_info = response.data['routing_number']
   puts "Routing Number: #{routing_info['routing_number']}"
   puts "Bank Name: #{routing_info['customer_name']}"
   puts "City: #{routing_info['city']}"
@@ -133,16 +133,18 @@ end
 
 ```ruby
 {
-  "routing_number" => "122235821",
-  "customer_name" => "US BANK NA",
-  "address" => "EP-MN-WN1A",
-  "city" => "ST. PAUL",
-  "state_code" => "MN",
-  "zip" => "55107",
-  "zip_extension" => "1419",
-  "phone_area_code" => "800",
-  "phone_prefix" => "937",
-  "phone_suffix" => "631"
+  "routing_number" => {
+    "routing_number" => "122235821",
+    "customer_name" => "US BANK NA",
+    "address" => "EP-MN-WN1A",
+    "city" => "ST. PAUL",
+    "state_code" => "MN",
+    "zip" => "55107",
+    "zip_extension" => "1419",
+    "phone_area_code" => "800",
+    "phone_prefix" => "937",
+    "phone_suffix" => "631"
+  }
 }
 ```
 

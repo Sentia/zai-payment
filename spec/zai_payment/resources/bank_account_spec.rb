@@ -217,8 +217,16 @@ RSpec.describe ZaiPayment::Resources::BankAccount do
       it 'returns routing number details' do
         response = bank_account_resource.validate_routing_number('122235821')
 
-        expect(response.data['routing_number']).to eq('122235821')
-        expect(response.data['customer_name']).to eq('US BANK NA')
+        expect(response.data).to be_a(Hash)
+        expect(response.data['routing_number']['routing_number']).to eq('122235821')
+      end
+
+      it 'returns city, state, and zip' do
+        response = bank_account_resource.validate_routing_number('122235821')
+
+        expect(response.data['routing_number']['customer_name']).to eq('US BANK NA')
+        expect(response.data['routing_number']['city']).to eq('ST. PAUL')
+        expect(response.data['routing_number']['state_code']).to eq('MN')
       end
     end
 

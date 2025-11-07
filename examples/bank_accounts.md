@@ -164,7 +164,7 @@ bank_accounts = ZaiPayment::Resources::BankAccount.new
 response = bank_accounts.validate_routing_number('122235821')
 
 if response.success?
-  routing_info = response.data
+  routing_info = response.data['routing_number']
   
   puts "Routing Number Validation Results:"
   puts "  Routing Number: #{routing_info['routing_number']}"
@@ -197,7 +197,7 @@ begin
   validation_response = bank_accounts.validate_routing_number(routing_number)
   
   if validation_response.success?
-    bank_info = validation_response.data
+    bank_info = validation_response.data['routing_number']
     
     # Show user the bank information for confirmation
     puts "You are creating an account with:"
@@ -246,7 +246,7 @@ class BankAccountsController < ApplicationController
       response = bank_accounts.validate_routing_number(routing_number)
       
       if response.success?
-        bank_info = response.data
+        bank_info = response.data['routing_number']
         
         # Return bank info to display in the form
         render json: {
