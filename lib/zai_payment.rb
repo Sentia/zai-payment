@@ -18,6 +18,7 @@ require_relative 'zai_payment/resources/bank_account'
 require_relative 'zai_payment/resources/bpay_account'
 require_relative 'zai_payment/resources/batch_transaction'
 require_relative 'zai_payment/resources/wallet_account'
+require_relative 'zai_payment/resources/virtual_account'
 
 module ZaiPayment
   class << self
@@ -80,6 +81,11 @@ module ZaiPayment
     # @return [ZaiPayment::Resources::WalletAccount] wallet_account resource instance
     def wallet_accounts
       @wallet_accounts ||= Resources::WalletAccount.new(client: Client.new(base_endpoint: :core_base))
+    end
+
+    # @return [ZaiPayment::Resources::VirtualAccount] virtual_account resource instance
+    def virtual_accounts
+      @virtual_accounts ||= Resources::VirtualAccount.new
     end
   end
 end
