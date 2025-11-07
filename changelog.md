@@ -1,5 +1,80 @@
 ## [Released]
 
+## [2.8.0] - 2025-11-07
+
+### Added
+- **Virtual Accounts Resource**: Complete virtual account management for Australian payments 🏦
+  - `ZaiPayment.virtual_accounts.list(wallet_account_id)` - List all virtual accounts for a wallet account
+  - `ZaiPayment.virtual_accounts.show(virtual_account_id)` - Get virtual account details
+  - `ZaiPayment.virtual_accounts.create(wallet_account_id, account_name:, aka_names:)` - Create virtual account for a wallet account
+  - `ZaiPayment.virtual_accounts.update_aka_names(virtual_account_id, aka_names)` - Update AKA names (0-3 items)
+  - `ZaiPayment.virtual_accounts.update_account_name(virtual_account_id, account_name)` - Update account name (used in CoP lookups)
+  - `ZaiPayment.virtual_accounts.update_status(virtual_account_id, status)` - Close a virtual account (status: 'closed')
+  - Support for AKA names for account aliases
+  - Support for Confirmation of Payee (CoP) lookups via account names
+  - Validation for account names (max 140 characters)
+  - Validation for AKA names (0-3 items)
+  - Full RSpec test suite with 65+ test examples
+  - Comprehensive documentation in `docs/virtual_accounts.md`
+  - Practical examples in `examples/virtual_accounts.md`
+
+- **PayID Resource**: PayID registration management for Australian NPP payments 💳
+  - `ZaiPayment.pay_ids.create(virtual_account_id, pay_id:, type:, details:)` - Register a PayID for a virtual account
+  - `ZaiPayment.pay_ids.show(pay_id_id)` - Get PayID details including status
+  - `ZaiPayment.pay_ids.update_status(pay_id_id, status)` - Deregister a PayID (status: 'deregistered')
+  - Support for EMAIL PayID type
+  - Validation for PayID format (max 256 characters)
+  - Validation for details (pay_id_name and owner_legal_name, 1-140 characters each)
+  - Asynchronous status update with 202 Accepted response
+  - Full RSpec test suite with 35+ test examples
+  - Comprehensive documentation in `docs/pay_ids.md`
+  - Practical examples in `examples/pay_ids.md`
+
+### Documentation
+- **Virtual Accounts Guide** (`docs/virtual_accounts.md`):
+  - Complete guide for all 6 virtual account endpoints
+  - Detailed workflow for account creation and management
+  - AKA names for account aliases
+  - Account name updates for CoP lookups
+  - Status updates for closing accounts
+  - Error handling patterns
+  - Comprehensive use cases
+
+- **Virtual Accounts Examples** (`examples/virtual_accounts.md`):
+  - List virtual accounts examples
+  - Show virtual account examples
+  - Create virtual account examples
+  - Update AKA names examples
+  - Update account name examples
+  - Update status (close account) examples
+  - Complete workflow patterns
+  - Rails integration examples
+
+- **PayID Guide** (`docs/pay_ids.md`):
+  - Complete guide for all 3 PayID endpoints
+  - PayID registration with EMAIL type
+  - PayID format validation rules
+  - Status updates for deregistration
+  - Integration with virtual accounts
+  - Error handling patterns
+  - Comprehensive use cases
+
+- **PayID Examples** (`examples/pay_ids.md`):
+  - Register PayID examples
+  - Show PayID examples
+  - Update status (deregister) examples
+  - Complete workflow patterns
+  - Rails integration examples
+
+### Enhanced
+- **README.md**: 
+  - Added Virtual Accounts to features section
+  - Added PayID to features section
+  - Added documentation links to virtual accounts and PayID guides
+  - Updated roadmap to mark Virtual Accounts and PayID as Done
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.7.0...v2.8.0
+
 ## [2.7.0] - 2025-11-04
 
 ### Added

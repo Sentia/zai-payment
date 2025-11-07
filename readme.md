@@ -24,6 +24,8 @@ A lightweight and extensible Ruby client for the **Zai (AssemblyPay)** API — s
 - 🏦 **Bank Account Management** - Complete CRUD + validation for AU/UK bank accounts  
 - 💳 **BPay Account Management** - Manage BPay accounts for Australian bill payments  
 - 💼 **Wallet Account Management** - Show wallet accounts, check balances, and pay bills via BPay  
+- 🏦 **Virtual Accounts** - Complete virtual account management with PayTo and BPay support  
+- 💳 **PayID Management** - Create and manage PayIDs for Australian NPP payments  
 - 🎫 **Token Auth** - Generate secure tokens for bank and card account data collection  
 - 🪝 **Webhooks** - Full CRUD + secure signature verification (HMAC SHA256)  
 - 🧪 **Batch Transactions** - Prelive-only endpoints for testing batch transaction flows  
@@ -160,6 +162,23 @@ if payment_response.success?
 end
 ```
 
+### Virtual Accounts
+
+Manage virtual accounts with support for AKA names and Confirmation of Payee (CoP) lookups.
+
+**📚 Documentation:**
+- 📖 [Virtual Account Management Guide](docs/virtual_accounts.md) - Complete guide for virtual accounts
+- 💡 [Virtual Account Examples](examples/virtual_accounts.md) - Real-world patterns and workflows
+- 🔗 [Zai: Virtual Accounts API Reference](https://developer.hellozai.com/reference/overview-va)
+
+### PayID
+
+Register and manage PayIDs (EMAIL type) for Australian NPP (New Payments Platform) payments.
+
+**📚 Documentation:**
+- 📖 [PayID Management Guide](docs/pay_ids.md) - Complete guide for PayID registration
+- 💡 [PayID Examples](examples/pay_ids.md) - Real-world patterns and workflows
+
 ### Token Auth
 
 Generate secure tokens for collecting bank and card account information.
@@ -246,7 +265,8 @@ end
 | ✅ Token Auth                   | Generate bank/card tokens         | Done           |
 | ✅ Batch Transactions (Prelive) | Simulate batch processing flows   | Done           |
 | ✅ Payments                     | Single and recurring payments     | Done           |
-| 🏦 Virtual Accounts (VA / PIPU) | Manage virtual accounts & PayTo   | ⏳ Planned      |
+| ✅ Virtual Accounts             | Manage virtual accounts & PayTo   | Done           |
+| ✅ PayID                        | Create and manage PayIDs          | Done           |
 
 ## 🧪 Development
 
@@ -305,6 +325,8 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 - [**Bank Account Guide**](docs/bank_accounts.md) - Managing bank accounts for AU/UK users
 - [**BPay Account Guide**](docs/bpay_accounts.md) - Managing BPay accounts for Australian bill payments
 - [**Wallet Account Guide**](docs/wallet_accounts.md) - Managing wallet accounts, checking balances, and paying bills
+- [**Virtual Account Guide**](docs/virtual_accounts.md) - Managing virtual accounts with PayTo and BPay support
+- [**PayID Guide**](docs/pay_ids.md) - Creating and managing PayIDs for Australian NPP payments
 - [**Webhook Examples**](examples/webhooks.md) - Complete webhook usage guide
 - [**Documentation Index**](docs/readme.md) - Full documentation navigation
 
@@ -314,6 +336,8 @@ Everyone interacting in the ZaiPayment project's codebases, issue trackers, chat
 - [Bank Account Examples](examples/bank_accounts.md) - Bank account integration patterns
 - [BPay Account Examples](examples/bpay_accounts.md) - BPay account integration patterns
 - [Wallet Account Examples](examples/wallet_accounts.md) - Wallet account and bill payment workflows
+- [Virtual Account Examples](examples/virtual_accounts.md) - Virtual account management and PayTo workflows
+- [PayID Examples](examples/pay_ids.md) - PayID creation and management workflows
 - [Token Auth Examples](examples/token_auths.md) - Secure token generation and integration
 - [Webhook Examples](examples/webhooks.md) - Webhook integration patterns
 - [Batch Transaction Examples](examples/batch_transactions.md) - Testing batch transaction flows (prelive only)
