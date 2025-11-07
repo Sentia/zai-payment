@@ -43,6 +43,99 @@ ZaiPayment.virtual_accounts
 
 ## Methods
 
+### List Virtual Accounts
+
+List all Virtual Accounts for a given Wallet Account. This retrieves an array of all virtual accounts associated with the wallet account.
+
+#### Parameters
+
+- `wallet_account_id` (required) - The wallet account ID
+
+#### Example
+
+```ruby
+# List all virtual accounts for a wallet
+response = virtual_accounts.list('ae07556e-22ef-11eb-adc1-0242ac120002')
+
+# Access the list of virtual accounts
+if response.success?
+  accounts = response.data  # Array of virtual accounts
+  total = response.meta['total']
+  
+  puts "Found #{accounts.length} virtual accounts"
+  
+  accounts.each do |account|
+    puts "ID: #{account['id']}"
+    puts "Name: #{account['account_name']}"
+    puts "BSB: #{account['routing_number']}"
+    puts "Account: #{account['account_number']}"
+    puts "Status: #{account['status']}"
+  end
+end
+```
+
+#### Response
+
+```ruby
+{
+  "virtual_accounts" => [
+    {
+      "id" => "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "routing_number" => "123456",
+      "account_number" => "100000017",
+      "wallet_account_id" => "ae07556e-22ef-11eb-adc1-0242ac120002",
+      "user_external_id" => "ca12346e-22ef-11eb-adc1-0242ac120002",
+      "currency" => "AUD",
+      "status" => "active",
+      "created_at" => "2020-04-27T20:28:22.378Z",
+      "updated_at" => "2020-04-27T20:28:22.378Z",
+      "account_type" => "NIND",
+      "full_legal_account_name" => "Prop Tech Marketplace",
+      "account_name" => "Real Estate Agency X",
+      "aka_names" => ["Realestate agency X"],
+      "merchant_id" => "46deb476c1a641eb8eb726a695bbe5bc"
+    },
+    {
+      "id" => "aaaaaaaa-cccc-dddd-eeee-ffffffffffff",
+      "routing_number" => "123456",
+      "account_number" => "100000025",
+      "currency" => "AUD",
+      "wallet_account_id" => "ae07556e-22ef-11eb-adc1-0242ac120002",
+      "user_external_id" => "ca12346e-22ef-11eb-adc1-0242ac120002",
+      "status" => "pending_activation",
+      "created_at" => "2020-04-27T20:28:22.378Z",
+      "updated_at" => "2020-04-27T20:28:22.378Z",
+      "account_type" => "NIND",
+      "full_legal_account_name" => "Prop Tech Marketplace",
+      "account_name" => "Real Estate Agency X",
+      "aka_names" => ["Realestate agency X"],
+      "merchant_id" => "46deb476c1a641eb8eb726a695bbe5bc"
+    }
+  ],
+  "meta" => {
+    "total" => 2
+  }
+}
+```
+
+**Response Fields:**
+
+The response contains an array of virtual account objects. Each object has the same fields as described in the Create Virtual Account section.
+
+**Additional Response Data:**
+
+- `meta` - Contains pagination and metadata information
+  - `total` - Total number of virtual accounts
+
+**Use Cases:**
+
+- Retrieve all virtual accounts for auditing purposes
+- Display available payment accounts to customers
+- Filter accounts by status (active, pending_activation, etc.)
+- Check if virtual accounts exist before creating new ones
+- Monitor account statuses across multiple properties
+- Generate reports on virtual account usage
+
 ### Create Virtual Account
 
 Create a Virtual Account for a given Wallet Account. This generates unique bank account details that can be used to receive funds.
@@ -228,7 +321,7 @@ end
 
 ## Complete Example
 
-Here's a complete workflow showing how to create a virtual account with proper error handling:
+Here's a complete workflow showing how to list and create virtual accounts with proper error handling:
 
 ```ruby
 require 'zai_payment'
@@ -241,39 +334,70 @@ ZaiPayment.configure do |config|
   config.scope = ENV['ZAI_SCOPE']
 end
 
-# Create virtual account
+# Initialize resource
 virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+wallet_account_id = 'ae07556e-22ef-11eb-adc1-0242ac120002'
 
 begin
-  response = virtual_accounts.create(
-    'ae07556e-22ef-11eb-adc1-0242ac120002',
-    account_name: 'Property 123 Trust Account',
-    aka_names: ['Prop 123', 'Property Trust', 'Trust 123']
-  )
-
-  if response.success?
-    virtual_account = response.data
+  # First, list existing virtual accounts
+  puts "Fetching existing virtual accounts..."
+  list_response = virtual_accounts.list(wallet_account_id)
+  
+  if list_response.success?
+    existing_accounts = list_response.data
+    puts "✓ Found #{existing_accounts.length} existing virtual account(s)"
     
-    puts "✓ Virtual Account Created Successfully!"
-    puts "─" * 60
-    puts "ID: #{virtual_account['id']}"
-    puts "Status: #{virtual_account['status']}"
-    puts ""
-    puts "Bank Details (share with customers):"
-    puts "  BSB: #{virtual_account['routing_number']}"
-    puts "  Account: #{virtual_account['account_number']}"
-    puts "  Name: #{virtual_account['account_name']}"
-    puts ""
-    puts "Alternative Names for CoP:"
-    virtual_account['aka_names'].each do |aka_name|
-      puts "  - #{aka_name}"
+    # Display existing accounts
+    existing_accounts.each do |account|
+      puts "  - #{account['account_name']} (#{account['status']})"
+      puts "    BSB: #{account['routing_number']} | Account: #{account['account_number']}"
     end
-    puts "─" * 60
     
-    # Store the details in your database for future reference
-    # YourDatabase.store_virtual_account(virtual_account)
+    # Check if we need to create a new one
+    property_name = 'Property 123 Trust Account'
+    existing = existing_accounts.find { |a| a['account_name'] == property_name }
+    
+    if existing
+      puts "\n✓ Virtual account already exists for '#{property_name}'"
+      puts "  ID: #{existing['id']}"
+      puts "  Status: #{existing['status']}"
+    else
+      puts "\nCreating new virtual account for '#{property_name}'..."
+      
+      # Create new virtual account
+      create_response = virtual_accounts.create(
+        wallet_account_id,
+        account_name: property_name,
+        aka_names: ['Prop 123', 'Property Trust', 'Trust 123']
+      )
+      
+      if create_response.success?
+        virtual_account = create_response.data
+        
+        puts "✓ Virtual Account Created Successfully!"
+        puts "─" * 60
+        puts "ID: #{virtual_account['id']}"
+        puts "Status: #{virtual_account['status']}"
+        puts ""
+        puts "Bank Details (share with customers):"
+        puts "  BSB: #{virtual_account['routing_number']}"
+        puts "  Account: #{virtual_account['account_number']}"
+        puts "  Name: #{virtual_account['account_name']}"
+        puts ""
+        puts "Alternative Names for CoP:"
+        virtual_account['aka_names'].each do |aka_name|
+          puts "  - #{aka_name}"
+        end
+        puts "─" * 60
+        
+        # Store the details in your database for future reference
+        # YourDatabase.store_virtual_account(virtual_account)
+      else
+        puts "Failed to create virtual account"
+      end
+    end
   else
-    puts "Failed to create virtual account"
+    puts "Failed to list virtual accounts"
   end
 
 rescue ZaiPayment::Errors::ValidationError => e

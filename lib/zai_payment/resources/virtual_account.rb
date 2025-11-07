@@ -18,6 +18,23 @@ module ZaiPayment
         @client = client || Client.new(base_endpoint: :va_base)
       end
 
+      # List Virtual Accounts for a given Wallet Account
+      #
+      # @param wallet_account_id [String] the wallet account ID
+      # @return [Response] the API response containing array of virtual accounts
+      #
+      # @example List virtual accounts
+      #   virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+      #   response = virtual_accounts.list('ae07556e-22ef-11eb-adc1-0242ac120002')
+      #   response.data # => [{"id" => "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", ...}, ...]
+      #   response.meta # => {"total" => 2}
+      #
+      # @see https://developer.hellozai.com/reference
+      def list(wallet_account_id)
+        validate_id!(wallet_account_id, 'wallet_account_id')
+        client.get("/wallet_accounts/#{wallet_account_id}/virtual_accounts")
+      end
+
       # Create a Virtual Account for a given Wallet Account
       #
       # @param wallet_account_id [String] the wallet account ID

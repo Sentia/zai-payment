@@ -5,6 +5,7 @@ This document provides practical examples for managing virtual accounts in Zai P
 ## Table of Contents
 
 - [Setup](#setup)
+- [List Virtual Accounts Example](#list-virtual-accounts-example)
 - [Create Virtual Account Example](#create-virtual-account-example)
 - [Common Patterns](#common-patterns)
 
@@ -19,6 +20,160 @@ ZaiPayment.configure do |config|
   config.client_id = ENV['ZAI_CLIENT_ID']
   config.client_secret = ENV['ZAI_CLIENT_SECRET']
   config.scope = ENV['ZAI_SCOPE']
+end
+```
+
+## List Virtual Accounts Example
+
+### Example 1: List All Virtual Accounts
+
+List all virtual accounts for a given wallet account.
+
+```ruby
+# List virtual accounts
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.list('ae07556e-22ef-11eb-adc1-0242ac120002')
+
+if response.success?
+  accounts = response.data
+  
+  puts "Found #{accounts.length} virtual account(s)"
+  puts "Total: #{response.meta['total']}"
+  puts "─" * 60
+  
+  accounts.each_with_index do |account, index|
+    puts "\nVirtual Account ##{index + 1}:"
+    puts "  ID: #{account['id']}"
+    puts "  Account Name: #{account['account_name']}"
+    puts "  BSB: #{account['routing_number']}"
+    puts "  Account Number: #{account['account_number']}"
+    puts "  Status: #{account['status']}"
+    puts "  Currency: #{account['currency']}"
+    puts "  Created: #{account['created_at']}"
+  end
+else
+  puts "Failed to retrieve virtual accounts"
+  puts "Error: #{response.error}"
+end
+```
+
+### Example 2: Check if Virtual Accounts Exist
+
+Check if a wallet account has any virtual accounts.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+begin
+  response = virtual_accounts.list('ae07556e-22ef-11eb-adc1-0242ac120002')
+  
+  if response.success?
+    if response.data.empty?
+      puts "No virtual accounts found for this wallet"
+      puts "You can create one using the create method"
+    else
+      puts "Found #{response.data.length} virtual account(s)"
+      
+      # Check if any are active
+      active_accounts = response.data.select { |a| a['status'] == 'active' }
+      puts "#{active_accounts.length} active account(s)"
+      
+      # Check if any are pending
+      pending_accounts = response.data.select { |a| a['status'] == 'pending_activation' }
+      puts "#{pending_accounts.length} pending activation"
+    end
+  end
+  
+rescue ZaiPayment::Errors::NotFoundError => e
+  puts "Wallet account not found: #{e.message}"
+rescue ZaiPayment::Errors::ApiError => e
+  puts "API Error: #{e.message}"
+end
+```
+
+### Example 3: Find Active Virtual Accounts
+
+Find and display only active virtual accounts.
+
+```ruby
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.list('ae07556e-22ef-11eb-adc1-0242ac120002')
+
+if response.success?
+  active_accounts = response.data.select { |account| account['status'] == 'active' }
+  
+  if active_accounts.any?
+    puts "Active Virtual Accounts:"
+    puts "─" * 60
+    
+    active_accounts.each do |account|
+      puts "\n#{account['account_name']}"
+      puts "  BSB: #{account['routing_number']} | Account: #{account['account_number']}"
+      puts "  ID: #{account['id']}"
+      
+      if account['aka_names'] && account['aka_names'].any?
+        puts "  AKA Names: #{account['aka_names'].join(', ')}"
+      end
+    end
+  else
+    puts "No active virtual accounts found"
+  end
+end
+```
+
+### Example 4: Using Convenience Method
+
+Use the convenience method from ZaiPayment module.
+
+```ruby
+# Using convenience accessor
+response = ZaiPayment.virtual_accounts.list('ae07556e-22ef-11eb-adc1-0242ac120002')
+
+if response.success?
+  puts "Virtual Accounts: #{response.data.length}"
+  puts "Total from meta: #{response.meta['total']}"
+  
+  response.data.each do |account|
+    puts "- #{account['account_name']} (#{account['status']})"
+  end
+end
+```
+
+### Example 5: Export Virtual Accounts to CSV
+
+Export virtual account details to CSV format.
+
+```ruby
+require 'csv'
+
+virtual_accounts = ZaiPayment::Resources::VirtualAccount.new
+
+response = virtual_accounts.list('ae07556e-22ef-11eb-adc1-0242ac120002')
+
+if response.success?
+  CSV.open('virtual_accounts.csv', 'w') do |csv|
+    # Header
+    csv << ['ID', 'Account Name', 'BSB', 'Account Number', 'Status', 'Currency', 'Created At']
+    
+    # Data rows
+    response.data.each do |account|
+      csv << [
+        account['id'],
+        account['account_name'],
+        account['routing_number'],
+        account['account_number'],
+        account['status'],
+        account['currency'],
+        account['created_at']
+      ]
+    end
+  end
+  
+  puts "Exported #{response.data.length} virtual accounts to virtual_accounts.csv"
+else
+  puts "Failed to retrieve virtual accounts"
 end
 ```
 
