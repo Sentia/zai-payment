@@ -19,6 +19,7 @@ require_relative 'zai_payment/resources/bpay_account'
 require_relative 'zai_payment/resources/batch_transaction'
 require_relative 'zai_payment/resources/wallet_account'
 require_relative 'zai_payment/resources/virtual_account'
+require_relative 'zai_payment/resources/pay_id'
 
 module ZaiPayment
   class << self
@@ -86,6 +87,11 @@ module ZaiPayment
     # @return [ZaiPayment::Resources::VirtualAccount] virtual_account resource instance
     def virtual_accounts
       @virtual_accounts ||= Resources::VirtualAccount.new
+    end
+
+    # @return [ZaiPayment::Resources::PayId] pay_id resource instance
+    def pay_ids
+      @pay_ids ||= Resources::PayId.new
     end
   end
 end
