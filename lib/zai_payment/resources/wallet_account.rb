@@ -15,6 +15,16 @@ module ZaiPayment
         reference_id: :reference_id
       }.freeze
 
+      # Map of attribute keys to API field names for withdraw
+      WITHDRAW_FIELD_MAPPING = {
+        account_id: :account_id,
+        amount: :amount,
+        custom_descriptor: :custom_descriptor,
+        reference_id: :reference_id,
+        end_to_end_id: :end_to_end_id,
+        ifti_information: :ifti_information
+      }.freeze
+
       def initialize(client: nil)
         @client = client || Client.new
       end
@@ -118,6 +128,58 @@ module ZaiPayment
         client.post("/wallet_accounts/#{wallet_account_id}/bill_payment", body: body)
       end
 
+      # Withdraw funds from a Wallet Account to a specified disbursement account
+      #
+      # @param wallet_account_id [String] the wallet account ID
+      # @param attributes [Hash] withdrawal attributes
+      # @option attributes [String] :account_id (Required) Account ID to withdraw to
+      # @option attributes [Integer] :amount (Required) Amount in cents to withdraw
+      # @option attributes [String] :custom_descriptor Custom descriptor for the withdrawal
+      #   (max 200 chars for NPP, 18 for DE batch)
+      # @option attributes [String] :reference_id Unique reference information (cannot contain '.' character)
+      # @option attributes [String] :end_to_end_id Unique identifier for NPP IFTI payout tracking (mandatory for IFTI)
+      # @option attributess [Hash] :ifti_information IFTI payer information hash (required for IFTI payouts)
+      # @return [Response] the API response containing disbursement details
+      #
+      # @example Basic withdrawal
+      #   wallet_accounts = ZaiPayment::Resources::WalletAccount.new
+      #   response = wallet_accounts.withdraw(
+      #     'wallet_account_id',
+      #     account_id: 'bank_account_id',
+      #     amount: 10000
+      #   )
+      #
+      # @example Withdrawal with custom descriptor and reference
+      #   response = wallet_accounts.withdraw(
+      #     'wallet_account_id',
+      #     account_id: 'bank_account_id',
+      #     amount: 10000,
+      #     custom_descriptor: 'Invoice #12345 Payment',
+      #     reference_id: 'ref-12345'
+      #   )
+      #
+      # @example NPP IFTI withdrawal
+      #   response = wallet_accounts.withdraw(
+      #     'wallet_account_id',
+      #     account_id: 'bank_account_id',
+      #     amount: 10000,
+      #     end_to_end_id: 'E2E-UNIQUE-ID-123',
+      #     ifti_information: {
+      #       payer_name: 'John Doe',
+      #       payer_address: '123 Main St, Sydney NSW 2000',
+      #       payer_country: 'AUS'
+      #     }
+      #   )
+      #
+      # @see https://developer.hellozai.com/reference
+      def withdraw(wallet_account_id, **attributes)
+        validate_id!(wallet_account_id, 'wallet_account_id')
+        validate_withdraw_attributes!(attributes)
+
+        body = build_withdraw_body(attributes)
+        client.post("/wallet_accounts/#{wallet_account_id}/withdraw", body: body)
+      end
+
       private
 
       def validate_id!(value, field_name)
@@ -159,6 +221,40 @@ module ZaiPayment
         raise Errors::ValidationError, "reference_id cannot contain single quote (') character"
       end
 
+      def validate_withdraw_attributes!(attributes)
+        validate_required_withdraw_attributes!(attributes)
+        validate_amount!(attributes[:amount]) if attributes[:amount]
+        validate_withdraw_reference_id!(attributes[:reference_id]) if attributes[:reference_id]
+        validate_custom_descriptor!(attributes[:custom_descriptor]) if attributes[:custom_descriptor]
+      end
+
+      def validate_required_withdraw_attributes!(attributes)
+        required_fields = %i[account_id amount]
+
+        missing_fields = required_fields.select do |field|
+          attributes[field].nil? || (attributes[field].respond_to?(:to_s) && attributes[field].to_s.strip.empty?)
+        end
+
+        return if missing_fields.empty?
+
+        raise Errors::ValidationError,
+              "Missing required fields: #{missing_fields.join(', ')}"
+      end
+
+      def validate_withdraw_reference_id!(reference_id)
+        # Reference ID cannot contain '.' character
+        return unless reference_id.to_s.include?('.')
+
+        raise Errors::ValidationError, "reference_id cannot contain '.' character"
+      end
+
+      def validate_custom_descriptor!(custom_descriptor)
+        # Basic validation - max 200 characters for NPP (API will enforce specific limits)
+        return if custom_descriptor.to_s.length <= 200
+
+        raise Errors::ValidationError, 'custom_descriptor must be 200 characters or less'
+      end
+
       def build_pay_bill_body(attributes)
         body = {}
 
@@ -166,6 +262,19 @@ module ZaiPayment
           next if value.nil? || (value.respond_to?(:empty?) && value.empty?)
 
           api_field = PAY_BILL_FIELD_MAPPING[key]
+          body[api_field] = value if api_field
+        end
+
+        body
+      end
+
+      def build_withdraw_body(attributes)
+        body = {}
+
+        attributes.each do |key, value|
+          next if value.nil? || (value.respond_to?(:empty?) && value.empty?)
+
+          api_field = WITHDRAW_FIELD_MAPPING[key]
           body[api_field] = value if api_field
         end
 
