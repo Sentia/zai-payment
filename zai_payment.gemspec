@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary = 'Ruby gem for Zai payment integration'
   spec.description = 'A Ruby gem for integrating with Zai payment platform APIs.'
-  spec.homepage = 'https://github.com/Sentia/zai-payment'
+  spec.homepage = 'https://www.sentia.com.au'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.2.0'
 
