@@ -1,5 +1,21 @@
 ## [Released]
 
+## [2.8.3] - 2025-11-21
+
+### Added
+- **Wallet Account Withdraw**: New withdraw method for Wallet Account resource 💰
+  - `ZaiPayment.wallet_accounts.withdraw(wallet_account_id, account_id:, amount:, **options)` - Withdraw funds from a wallet account to a disbursement account
+  - Support for basic withdrawals with account_id and amount
+  - Support for custom descriptors (max 200 chars for NPP, 18 for DE batch)
+  - Support for reference IDs (cannot contain '.' character)
+  - Support for NPP IFTI payouts with end_to_end_id and ifti_information
+  - Validation for required fields (account_id, amount)
+  - Validation for custom descriptor length
+  - Validation for reference_id format
+  - Comprehensive YARD documentation with examples
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.8.2...v2.8.3
+
 ## [2.8.1] - 2025-11-07
 
 ### Fixed
