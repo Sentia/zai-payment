@@ -31,23 +31,10 @@ module ZaiPayment
         }
       when :production
         {
-          core_base: 'https://au-0000.api.assemblypay.com',
-          va_base: 'https://secure.api.promisepay.com',
+          core_base: 'https://secure.api.promisepay.com',
+          va_base: 'https://au-0000.api.assemblypay.com',
           auth_base: 'https://au-0000.auth.assemblypay.com'
         }
-      else
-        raise "Unknown environment: #{environment}"
-      end
-    end
-
-    # Returns the appropriate webhook base endpoint based on environment
-    # Production uses core_base, prelive uses va_base
-    def webhook_base_endpoint
-      case environment.to_sym
-      when :production
-        :core_base
-      when :prelive
-        :va_base
       else
         raise "Unknown environment: #{environment}"
       end

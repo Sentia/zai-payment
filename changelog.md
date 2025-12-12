@@ -1,5 +1,17 @@
 ## [Released]
 
+## [2.8.6] - 2025-12-12
+
+### Fixed
+- **Production API Endpoints**: Fixed incorrect production URL configuration 🔧
+  - Corrected `core_base` endpoint to use `https://secure.api.promisepay.com` (was incorrectly set to assemblypay.com)
+  - Corrected `va_base` endpoint to use `https://au-0000.api.assemblypay.com` (was incorrectly set to promisepay.com)
+  - Removed deprecated `webhook_base_endpoint` method from Config class
+  - Production environment now uses correct endpoints for core API and virtual accounts
+  - Ensures proper routing of production API requests to Zai servers
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.8.5...v2.8.6
+
 ## [2.8.5] - 2025-12-12
 
 ### Fixed
