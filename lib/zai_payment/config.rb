@@ -39,5 +39,18 @@ module ZaiPayment
         raise "Unknown environment: #{environment}"
       end
     end
+
+    # Returns the appropriate webhook base endpoint based on environment
+    # Production uses core_base, prelive uses va_base
+    def webhook_base_endpoint
+      case environment.to_sym
+      when :production
+        :core_base
+      when :prelive
+        :va_base
+      else
+        raise "Unknown environment: #{environment}"
+      end
+    end
   end
 end
