@@ -1,5 +1,15 @@
 ## [Released]
 
+## [2.8.4] - 2025-12-12
+
+### Fixed
+- **Webhook Resource Endpoint**: Fixed webhook client to use `core_base` endpoint 🔧
+  - Updated `ZaiPayment.webhooks` to use `Client.new(base_endpoint: :core_base)` instead of `va_base`
+  - Ensures webhooks API uses the correct endpoint for consistency with other resources
+  - Aligns with the pattern used by other resources (users, items, bank_accounts, etc.)
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.8.3...v2.8.4
+
 ## [2.8.3] - 2025-11-21
 
 ### Added
