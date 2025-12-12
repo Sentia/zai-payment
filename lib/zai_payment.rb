@@ -46,7 +46,7 @@ module ZaiPayment
     # --- Resource accessors ---
     # @return [ZaiPayment::Resources::Webhook] webhook resource instance
     def webhooks
-      @webhooks ||= Resources::Webhook.new(client: Client.new(base_endpoint: :core_base))
+      @webhooks ||= Resources::Webhook.new(client: Client.new(base_endpoint: config.webhook_base_endpoint))
     end
 
     # @return [ZaiPayment::Resources::User] user resource instance

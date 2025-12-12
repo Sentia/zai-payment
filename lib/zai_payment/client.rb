@@ -107,7 +107,7 @@ module ZaiPayment
     def base_url
       # Use specified base_endpoint or default to va_base
       # Users API uses core_base endpoint
-      # Webhooks API uses va_base endpoint
+      # Webhooks API uses core_base (production) or va_base (prelive)
       if base_endpoint
         config.endpoints[base_endpoint]
       else

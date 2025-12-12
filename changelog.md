@@ -1,5 +1,17 @@
 ## [Released]
 
+## [2.8.5] - 2025-12-12
+
+### Fixed
+- **Webhook Environment-Based Base URL**: Fixed webhook base URL to dynamically switch based on environment 🔧
+  - Added `Config#webhook_base_endpoint` method to determine correct endpoint per environment
+  - Production environment: webhooks use `core_base` (`https://au-0000.api.assemblypay.com`)
+  - Prelive environment: webhooks use `va_base` (`https://sandbox.au-0000.api.assemblypay.com`)
+  - Webhook client now automatically uses correct base URL when switching environments
+  - Improves on v2.8.4 which hardcoded to `core_base` for all environments
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.8.4...v2.8.5
+
 ## [2.8.4] - 2025-12-12
 
 ### Fixed
