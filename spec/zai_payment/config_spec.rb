@@ -157,8 +157,8 @@ RSpec.describe ZaiPayment::Config do
 
       it 'returns production endpoints' do
         expect(config.endpoints).to eq(
-          core_base: 'https://au-0000.api.assemblypay.com',
-          va_base: 'https://secure.api.promisepay.com',
+          core_base: 'https://secure.api.promisepay.com',
+          va_base: 'https://au-0000.api.assemblypay.com',
           auth_base: 'https://au-0000.auth.assemblypay.com'
         )
       end
@@ -169,8 +169,8 @@ RSpec.describe ZaiPayment::Config do
 
       it 'returns production endpoints' do
         expect(config.endpoints).to eq(
-          core_base: 'https://au-0000.api.assemblypay.com',
-          va_base: 'https://secure.api.promisepay.com',
+          core_base: 'https://secure.api.promisepay.com',
+          va_base: 'https://au-0000.api.assemblypay.com',
           auth_base: 'https://au-0000.auth.assemblypay.com'
         )
       end
