@@ -133,6 +133,62 @@ module ZaiPayment
         client.delete("/webhooks/#{webhook_id}")
       end
 
+      # List jobs associated with a webhook
+      #
+      # Retrieves an ordered and paginated list of jobs garnered from a webhook.
+      #
+      # @param webhook_id [String] the webhook ID (UUID)
+      # @param limit [Integer] number of records to retrieve (1-200, default: 10)
+      # @param offset [Integer] number of records to skip (default: 0)
+      # @param status [String] filter by status ('success', 'failed', or nil for all)
+      # @param object_id [String] filter by object_id
+      # @return [Response] the API response containing jobs array
+      #
+      # @example List all jobs for a webhook
+      #   webhooks = ZaiPayment::Resources::Webhook.new
+      #   response = webhooks.list_jobs("webhook_uuid")
+      #   response.data # => [{"id" => "...", "status" => "success", ...}, ...]
+      #
+      # @example Filter jobs by status
+      #   response = webhooks.list_jobs("webhook_uuid", status: "failed")
+      #
+      # @example Paginate through jobs
+      #   response = webhooks.list_jobs("webhook_uuid", limit: 50, offset: 100)
+      #
+      # @see https://developer.hellozai.com/reference/getjobs
+      def list_jobs(webhook_id, limit: 10, offset: 0, status: nil, object_id: nil)
+        validate_id!(webhook_id, 'webhook_id')
+        validate_job_status!(status) if status
+
+        params = {
+          limit: limit,
+          offset: offset
+        }
+        params[:status] = status if status
+        params[:object_id] = object_id if object_id
+
+        client.get("/webhooks/#{webhook_id}/jobs", params: params)
+      end
+
+      # Show a specific job associated with a webhook
+      #
+      # @param webhook_id [String] the webhook ID (UUID)
+      # @param job_id [String] the job ID
+      # @return [Response] the API response containing job details
+      #
+      # @example
+      #   webhooks = ZaiPayment::Resources::Webhook.new
+      #   response = webhooks.show_job("webhook_uuid", "job_id")
+      #   response.data # => {"id" => "job_id", "status" => "success", ...}
+      #
+      # @see https://developer.hellozai.com/reference/getjob
+      def show_job(webhook_id, job_id)
+        validate_id!(webhook_id, 'webhook_id')
+        validate_id!(job_id, 'job_id')
+
+        client.get("/webhooks/#{webhook_id}/jobs/#{job_id}")
+      end
+
       # Create a secret key for webhook signature verification
       #
       # @param secret_key [String] the secret key to use for HMAC signature generation
@@ -260,6 +316,14 @@ module ZaiPayment
         return unless secret_key.bytesize < 32
 
         raise Errors::ValidationError, 'secret_key must be at least 32 bytes in size'
+      end
+
+      def validate_job_status!(status)
+        valid_statuses = %w[success failed]
+        return if valid_statuses.include?(status)
+
+        raise Errors::ValidationError,
+              "status must be one of: #{valid_statuses.join(', ')}"
       end
 
       def parse_signature_header(header)
