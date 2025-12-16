@@ -1,5 +1,27 @@
 ## [Released]
 
+## [2.9.0] - 2025-12-16
+
+### Added
+- **Webhook Jobs API**: Retrieve and monitor webhook delivery jobs 📋
+  - `ZaiPayment.webhooks.list_jobs(webhook_id, limit:, offset:, status:, object_id:)` - List jobs associated with a webhook
+  - `ZaiPayment.webhooks.show_job(webhook_id, job_id)` - Get details of a specific webhook job
+  - Support for pagination with `limit` (1-200) and `offset` parameters
+  - Support for filtering by `status` ('success' or 'failed')
+  - Support for filtering by `object_id`
+  - Job details include: `uuid`, `webhook_uuid`, `object_id`, `payload`, `request_responses`, `created_at`, `updated_at`
+  - Request responses include delivery attempts with `response_code`, `message`, and timestamps
+  - Validation for status parameter (must be 'success' or 'failed')
+  - Full RSpec test suite with 21 test examples
+  - Comprehensive YARD documentation with examples
+
+### Enhanced
+- **Response Class**: Added `jobs` to `RESPONSE_DATA_KEYS` for automatic data extraction
+  - `response.data` now properly extracts jobs array from list_jobs responses
+  - Consistent with other resource response handling
+
+**Full Changelog**: https://github.com/Sentia/zai-payment/compare/v2.8.6...v2.9.0
+
 ## [2.8.6] - 2025-12-12
 
 ### Fixed

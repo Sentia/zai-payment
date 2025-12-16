@@ -354,6 +354,278 @@ RSpec.describe ZaiPayment::Resources::Webhook do
     end
   end
 
+  describe '#list_jobs' do
+    let(:webhook_id) { 'webhook_123' }
+
+    context 'when successful' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs") do |env|
+          [200, { 'Content-Type' => 'application/json' }, job_list_data] if env.params['limit'] == '10'
+        end
+      end
+
+      let(:job_list_data) do
+        {
+          'jobs' => [
+            {
+              'id' => 'job_1',
+              'status' => 'success',
+              'object_id' => 'item_123',
+              'created_at' => '2024-01-15T10:30:00Z'
+            },
+            {
+              'id' => 'job_2',
+              'status' => 'failed',
+              'object_id' => 'item_456',
+              'created_at' => '2024-01-15T10:31:00Z'
+            }
+          ],
+          'meta' => {
+            'total' => 2,
+            'limit' => 10,
+            'offset' => 0
+          }
+        }
+      end
+
+      it 'returns the correct response type' do
+        response = webhook_resource.list_jobs(webhook_id)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the jobs data' do
+        response = webhook_resource.list_jobs(webhook_id)
+        expect(response.data).to eq(job_list_data['jobs'])
+      end
+
+      it 'returns the metadata' do
+        response = webhook_resource.list_jobs(webhook_id)
+        expect(response.meta).to eq(job_list_data['meta'])
+      end
+    end
+
+    context 'with custom pagination' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs") do |env|
+          if env.params['limit'] == '50' && env.params['offset'] == '100'
+            [200, { 'Content-Type' => 'application/json' }, paginated_data]
+          end
+        end
+      end
+
+      let(:paginated_data) do
+        {
+          'jobs' => [],
+          'meta' => { 'total' => 0, 'limit' => 50, 'offset' => 100 }
+        }
+      end
+
+      it 'accepts custom limit and offset' do
+        response = webhook_resource.list_jobs(webhook_id, limit: 50, offset: 100)
+        expect(response.success?).to be true
+      end
+    end
+
+    context 'with status filter' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs") do |env|
+          [200, { 'Content-Type' => 'application/json' }, filtered_data] if env.params['status'] == 'success'
+        end
+      end
+
+      let(:filtered_data) do
+        {
+          'jobs' => [{ 'id' => 'job_1', 'status' => 'success' }],
+          'meta' => { 'total' => 1, 'limit' => 10, 'offset' => 0 }
+        }
+      end
+
+      it 'filters jobs by status' do
+        response = webhook_resource.list_jobs(webhook_id, status: 'success')
+        expect(response.success?).to be true
+        expect(response.data.first['status']).to eq('success')
+      end
+    end
+
+    context 'with object_id filter' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs") do |env|
+          [200, { 'Content-Type' => 'application/json' }, filtered_data] if env.params['object_id'] == 'item_123'
+        end
+      end
+
+      let(:filtered_data) do
+        {
+          'jobs' => [{ 'id' => 'job_1', 'object_id' => 'item_123' }],
+          'meta' => { 'total' => 1, 'limit' => 10, 'offset' => 0 }
+        }
+      end
+
+      it 'filters jobs by object_id' do
+        response = webhook_resource.list_jobs(webhook_id, object_id: 'item_123')
+        expect(response.success?).to be true
+        expect(response.data.first['object_id']).to eq('item_123')
+      end
+    end
+
+    context 'when webhook_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { webhook_resource.list_jobs('') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /webhook_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { webhook_resource.list_jobs(nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /webhook_id/)
+      end
+    end
+
+    context 'when status is invalid' do
+      it 'raises a ValidationError' do
+        expect { webhook_resource.list_jobs(webhook_id, status: 'invalid') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /status must be one of/)
+      end
+    end
+
+    context 'when webhook does not exist' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs") do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Webhook not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { webhook_resource.list_jobs(webhook_id) }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when unauthorized' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs") do
+          [401, { 'Content-Type' => 'application/json' }, { 'error' => 'Unauthorized' }]
+        end
+      end
+
+      it 'raises an UnauthorizedError' do
+        expect { webhook_resource.list_jobs(webhook_id) }
+          .to raise_error(ZaiPayment::Errors::UnauthorizedError)
+      end
+    end
+  end
+
+  describe '#show_job' do
+    let(:webhook_id) { 'webhook_123' }
+    let(:job_id) { 'job_456' }
+
+    context 'when job exists' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs/#{job_id}") do
+          [200, { 'Content-Type' => 'application/json' }, {
+            'hashed_payload' => '32187',
+            'updated_at' => '2009-11-11T18:00:00+12:00',
+            'created_at' => '2021-03-18T05:31:32.867255Z',
+            'object_id' => 'buyer-123456',
+            'payload' => {
+              'accounts' => {
+                'account_type_id' => 9100,
+                'amount' => 0,
+                'uuid' => '6f348690-f2d7-0137-3328-0242ac110003'
+              }
+            },
+            'webhook_uuid' => webhook_id,
+            'uuid' => job_id,
+            'request_responses' => [
+              { 'response_code' => 500, 'message' => '', 'created_at' => '2021-05-24T06:54:32.019211768Z' },
+              { 'response_code' => 202, 'message' => '', 'created_at' => '2021-05-24T07:24:34.156212905Z' }
+            ],
+            'links' => {
+              'self' => "/webhooks/#{webhook_id}/jobs/#{job_id}",
+              'jobs' => "/webhooks/#{webhook_id}/jobs/"
+            }
+          }]
+        end
+      end
+
+      it 'returns the correct response type' do
+        response = webhook_resource.show_job(webhook_id, job_id)
+        expect(response).to be_a(ZaiPayment::Response)
+        expect(response.success?).to be true
+      end
+
+      it 'returns the job details' do
+        response = webhook_resource.show_job(webhook_id, job_id)
+        expect(response.data['uuid']).to eq(job_id)
+        expect(response.data['webhook_uuid']).to eq(webhook_id)
+        expect(response.data['object_id']).to eq('buyer-123456')
+      end
+
+      it 'includes request_responses' do
+        response = webhook_resource.show_job(webhook_id, job_id)
+        expect(response.data['request_responses']).to be_an(Array)
+        expect(response.data['request_responses'].length).to eq(2)
+        expect(response.data['request_responses'].last['response_code']).to eq(202)
+      end
+
+      it 'includes payload data' do
+        response = webhook_resource.show_job(webhook_id, job_id)
+        expect(response.data['payload']).to be_a(Hash)
+        expect(response.data['payload']['accounts']['account_type_id']).to eq(9100)
+      end
+    end
+
+    context 'when webhook_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { webhook_resource.show_job('', job_id) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /webhook_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { webhook_resource.show_job(nil, job_id) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /webhook_id/)
+      end
+    end
+
+    context 'when job_id is blank' do
+      it 'raises a ValidationError for empty string' do
+        expect { webhook_resource.show_job(webhook_id, '') }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /job_id/)
+      end
+
+      it 'raises a ValidationError for nil' do
+        expect { webhook_resource.show_job(webhook_id, nil) }
+          .to raise_error(ZaiPayment::Errors::ValidationError, /job_id/)
+      end
+    end
+
+    context 'when job does not exist' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs/#{job_id}") do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Job not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { webhook_resource.show_job(webhook_id, job_id) }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+
+    context 'when webhook does not exist' do
+      before do
+        stubs.get("/webhooks/#{webhook_id}/jobs/#{job_id}") do
+          [404, { 'Content-Type' => 'application/json' }, { 'error' => 'Webhook not found' }]
+        end
+      end
+
+      it 'raises a NotFoundError' do
+        expect { webhook_resource.show_job(webhook_id, job_id) }
+          .to raise_error(ZaiPayment::Errors::NotFoundError)
+      end
+    end
+  end
+
   describe '#create_secret_key' do
     let(:secret_key) { 'a' * 32 } # 32 byte secret key
 

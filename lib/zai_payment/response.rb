@@ -6,7 +6,7 @@ module ZaiPayment
     attr_reader :status, :body, :headers, :raw_response
 
     RESPONSE_DATA_KEYS = %w[
-      webhooks users items fees transactions
+      webhooks users items fees transactions jobs
       batch_transactions batches bpay_accounts bank_accounts card_accounts
       wallet_accounts virtual_accounts disbursements pay_ids
     ].freeze
