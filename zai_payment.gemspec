@@ -29,9 +29,9 @@ Gem::Specification.new do |spec|
     ls.readlines("\x0", chomp: true).reject do |f|
       (f == gemspec) ||
         f.start_with?(*%w[
-          bin/ spec/ docs/ examples/ badges/ vendor/ sig/ .bundle/
-          Gemfile .gitignore .rspec .github/ .rubocop.yml .yardopts Rakefile
-        ]) ||
+                        bin/ spec/ docs/ examples/ badges/ vendor/ sig/ .bundle/
+                        Gemfile .gitignore .rspec .github/ .rubocop.yml .yardopts Rakefile
+                      ]) ||
         f.end_with?('.gem', '.md')
     end
   end
